@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSocket } from "../../hooks/useSocket.js";
-import { fetchMessages, sendMessage } from "../../api/chatAPI.js";
+import { fetchMessages, sendMessage, deleteMessage } from "../../api/chatAPI.js";
 import PropTypes from "prop-types";
 
 const ChatRoom = ({ roomId, userId }) => {
@@ -42,24 +42,51 @@ const ChatRoom = ({ roomId, userId }) => {
         }
     };
 
+    const handleDeleteMessage = async (messageId) => {
+        try {
+            await deleteMessage(messageId);
+            setMessages((prevMessages) => prevMessages.filter((msg) => msg._id !== messageId));
+        } catch (error) {
+            console.error("메시지 삭제 중 오류 발생:", error);
+        }
+    };
+
     return (
-        <div>
-            <h2>채팅방 {roomId}</h2>
-            <div>
+        <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg">
+            <h2 className="text-2xl font-semibold mb-4 text-center">채팅방 {roomId}</h2>
+
+            <div className="space-y-4 mb-4">
                 {messages.map((msg) => (
-                    <div key={msg._id}>
-                        <strong>{msg.sender.name}: </strong>
-                        {msg.text}
+                    <div key={msg._id} className="flex justify-between items-center bg-gray-100 p-3 rounded-lg shadow-sm">
+                        <div className="flex items-center space-x-2">
+                            <strong className="text-blue-600">{msg.sender.name}:</strong>
+                            <span>{msg.text}</span>
+                        </div>
+                        <button
+                            onClick={() => handleDeleteMessage(msg._id)}
+                            className="ml-4 text-red-600 hover:text-red-800 focus:outline-none"
+                        >
+                            삭제
+                        </button>
                     </div>
                 ))}
             </div>
-            <input
-                type="text"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="메시지를 입력하세요..."
-            />
-            <button onClick={handleSendMessage}>전송</button>
+
+            <div className="flex space-x-2">
+                <input
+                    type="text"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="메시지를 입력하세요..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                    onClick={handleSendMessage}
+                    className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none"
+                >
+                    전송
+                </button>
+            </div>
         </div>
     );
 };
