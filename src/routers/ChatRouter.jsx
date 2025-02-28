@@ -1,5 +1,5 @@
 import ChatIndexPage from "../pages/chatpages/ChatIndexPage.jsx";
-import ChatListPage from "../pages/chatpages/ChatListPage.jsx";
+import RandomChatPage from "../pages/chatpages/RandomChatPage.jsx";
 import ChatPage from "../pages/chatpages/ChatPage.jsx";
 
 const ChatRouter = {
@@ -8,10 +8,10 @@ const ChatRouter = {
     children: [
         {
             index: true,
-            element: <ChatListPage />,
+            element: <RandomChatPage />,
         },
         {
-            path: ":roomId",
+            path: ":roomId/:userId",
             element: <ChatPage />,
         },
     ],

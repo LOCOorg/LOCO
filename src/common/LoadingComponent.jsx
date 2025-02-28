@@ -1,13 +1,14 @@
-
-function LoadingComponent() {
+// src/common/LoadingComponent.jsx
+// eslint-disable-next-line react/prop-types
+const LoadingComponent = ({ message = "로딩 중..." }) => {
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
-            <div className="bg-white p-8 rounded-lg shadow-lg w-96">
-                <h2 className="text-xl font-semibold mb-4">Loading</h2>
-                <p className="mb-6">Loading</p>
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center">
+            <div className="bg-white p-6 rounded-lg shadow-lg">
+                <p>{message}</p>
+                <div className="spinner"></div>
             </div>
         </div>
     );
-}
+};
 
 export default LoadingComponent;
