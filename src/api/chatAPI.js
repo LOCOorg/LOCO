@@ -3,9 +3,9 @@ import axios from "axios";
 const host = `${import.meta.env.VITE_API_HOST}/api/chat`;
 
 //채팅방 생성
-export const createChatRoom = async (roomType, capacity) => {
+export const createChatRoom = async (roomType, capacity,matchedGender) => {
     try {
-        const response = await axios.post(`${host}/rooms`, { roomType, capacity });
+        const response = await axios.post(`${host}/rooms`, { roomType, capacity, matchedGender });
         return response.data;
     } catch (error) {
         console.error("채팅방 생성 중 오류 발생:", error);
@@ -57,4 +57,51 @@ export const deleteMessage = async (messageId) => {
         console.error("메시지 삭제 중 오류 발생:", error);
     }
 };
+
+//사용자 참가
+export const joinChatRoom = async (roomId, userId) => {
+    try {
+        const response = await fetch(`${host}/rooms/${roomId}/join`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userId }), // 사용자 ID를 body로 전송
+        });
+
+        const data = await response.json();
+        console.log('채팅방 참가 성공:', data);
+
+    } catch (error) {
+        console.error('채팅방 참가 오류:', error);
+    }
+};
+
+// 채팅방 나가기 시 참여자에서 제거
+export const leaveChatRoom = async (roomId, userId) => {
+    try {
+        const response = await fetch(`${host}/rooms/${roomId}/${userId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "채팅방 나가기 실패");
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("❌ leaveChatRoom API 오류:", error);
+        throw error;
+    }
+};
+
+
+
+
+
+
 
