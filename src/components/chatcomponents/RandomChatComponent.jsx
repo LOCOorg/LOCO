@@ -90,7 +90,7 @@ const RandomChatComponent = () => {
             );
 
             if (existingRoom) {
-                alert(`이미 참여한 랜덤 채팅방에 참가하고 있습니다.`);
+                alert(`이미 참여중인 채팅방으로 이동`);
                 setLoading(false);
                 navigate(`/chat/${existingRoom._id}/${userId}`);
                 return;

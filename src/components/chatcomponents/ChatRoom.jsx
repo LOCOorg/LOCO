@@ -30,14 +30,28 @@ const ChatRoom = ({roomId, userId}) => {
 
 
     // 메시지 수신 처리
-    const handleReceiveMessage = (message) => {
+    const handleReceiveMessage = async (message) => {
         console.log("새 메시지 수신:", message);
 
-        // 내가 보낸 메시지는 추가하지 않도록 필터링
-        if (message.sender !== userId) {
+        if (typeof message.sender === "string") {
+            try {
+                const user = await getUserInfo(message.sender);
+                if (user && user.name) {
+                    message.sender = { _id: message.sender, name: user.name };
+                } else {
+                    console.error("수신 메시지의 sender 정보 조회 실패");
+                    return; // 유저 정보가 없으면 추가하지 않음
+                }
+            } catch (error) {
+                console.error("sender 정보 조회 중 오류:", error);
+                return;
+            }
+        }
+
+        // 내가 보낸 메시지는 추가하지 않음
+        if (message.sender._id !== userId) {
             setMessages((prevMessages) => [...prevMessages, message]);
         }
-        console.log(message.sender)
     };
 
 
@@ -59,26 +73,30 @@ const ChatRoom = ({roomId, userId}) => {
 
     // 메시지 전송 처리
     const handleSendMessage = async () => {
-        console.log("메시지 전송 준비:", {text, userName, socket});
+        console.log("메시지 전송 준비:", { text, userName, socket });
 
         if (!text.trim() || !socket || !userName) {
-            console.log("전송할 수 없는 조건:", {text, socket, userName});
+            console.log("전송할 수 없는 조건:", { text, socket, userName });
             return;
         }
 
-        const message = {chatRoom: roomId, sender: {_id: userId, name: userName}, text};
+        const message = { chatRoom: roomId, sender: { _id: userId, name: userName }, text };
 
         // UI에 메시지 추가 (내가 보낸 메시지는 UI에 즉시 추가)
-        console.log("보낼 메시지:", message);
-        setMessages((prevMessages) => [
-            ...prevMessages,
-            {...message, _id: Date.now().toString()},
-        ]);
+        const tempMessage = { ...message, _id: Date.now().toString() };
+        console.log("보낼 메시지:", tempMessage);
+        setMessages((prevMessages) => [...prevMessages, tempMessage]);
 
         // 서버로 메시지 전송
         socket.emit("sendMessage", message, (response) => {
             console.log("서버 응답:", response);
             if (response.success) {
+                // 서버에서 반환된 실제 messageId로 상태 업데이트
+                setMessages((prevMessages) =>
+                    prevMessages.map((msg) =>
+                        msg._id === tempMessage._id ? { ...msg, _id: response.message._id } : msg
+                    )
+                );
                 setText(""); // 성공적으로 메시지를 보냈다면 텍스트 초기화
             } else {
                 console.error("메시지 전송 실패", response);
@@ -87,15 +105,30 @@ const ChatRoom = ({roomId, userId}) => {
     };
 
 
-    // 메시지 삭제 처리
+
+
+// 메시지 삭제 처리
     const handleDeleteMessage = async (messageId) => {
         try {
             await deleteMessage(messageId);
-            setMessages((prevMessages) => prevMessages.filter((msg) => msg._id !== messageId));
+
+            // 내 화면에서 즉시 업데이트
+            setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                    msg._id === messageId ? { ...msg, isDeleted: true } : msg
+                )
+            );
+
+            // 소켓을 통해 상대방에게 메시지 삭제 알림
+            if (socket) {
+                socket.emit("deleteMessage", { messageId, roomId });
+            }
         } catch (error) {
             console.error("메시지 삭제 중 오류 발생:", error);
         }
     };
+
+
 
     useEffect(() => {
         fetchMessages(roomId).then((fetchedMessages) => {
@@ -109,9 +142,20 @@ const ChatRoom = ({roomId, userId}) => {
             socket.on("userLeft", ({userId}) => {
                 console.log(`🚪 사용자 ${userId}가 채팅방을 떠났습니다.`);
             });
+            // 상대방이 메시지를 삭제하면 내 화면에서도 반영
+            socket.on("messageDeleted", ({ messageId }) => {
+                console.log("메시지 삭제 이벤트 수신:", messageId);
+                setMessages((prevMessages) =>
+                    prevMessages.map((msg) =>
+                        msg._id === messageId ? { ...msg, isDeleted: true } : msg
+                    )
+                );
+            });
 
             return () => {
                 socket.off("receiveMessage", handleReceiveMessage);
+                socket.off("messageDeleted");
+                socket.off("userLeft");
             };
         }
 
@@ -133,10 +177,10 @@ const ChatRoom = ({roomId, userId}) => {
                     >
                         <div className="flex items-center space-x-2">
                             <strong className="text-blue-600">{msg.sender.name}</strong>
-                            <span>{msg.text}</span>
+                            <span>{msg.isDeleted ? "삭제된 메시지입니다." : msg.text}</span>
                         </div>
 
-                        {msg.sender._id === userId && (
+                        {!msg.isDeleted && msg.sender._id === userId && (
                             <button
                                 onClick={() => handleDeleteMessage(msg._id)}
                                 className="ml-4 text-red-600 hover:text-red-800 focus:outline-none"
@@ -146,6 +190,7 @@ const ChatRoom = ({roomId, userId}) => {
                         )}
                     </div>
                 ))}
+
             </div>
 
             <div className="flex space-x-2">
