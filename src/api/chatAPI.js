@@ -55,6 +55,7 @@ export const deleteMessage = async (messageId) => {
         return response.data;
     } catch (error) {
         console.error("메시지 삭제 중 오류 발생:", error);
+        throw error; // 오류가 발생하면 throw하여 catch로 넘어가도록 함
     }
 };
 
