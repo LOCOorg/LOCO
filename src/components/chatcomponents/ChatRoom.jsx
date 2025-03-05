@@ -1,9 +1,10 @@
 import {useEffect, useState} from "react";
 import {useSocket} from "../../hooks/useSocket.js";
-import {fetchMessages, deleteMessage, leaveChatRoom} from "../../api/chatAPI.js";
+import {fetchMessages, deleteMessage, leaveChatRoom, getChatRoomInfo} from "../../api/chatAPI.js";
 import PropTypes from "prop-types";
 import {useNavigate} from "react-router-dom";
 import {getUserInfo} from "../../api/userAPI.js";
+import CommonModal from "../../common/CommonModal.jsx";
 
 const ChatRoom = ({roomId, userId}) => {
     const [messages, setMessages] = useState([]);
@@ -11,6 +12,8 @@ const ChatRoom = ({roomId, userId}) => {
     const [userName, setUserName] = useState(""); // 사용자 이름 상태 추가
     const socket = useSocket();
     const navigate = useNavigate();
+    const [isModalOpen, setIsModalOpen] = useState(false); // 모달 상태
+    const [isLoading, setIsLoading] = useState(true); // 로딩 상태 추가
 
     // 유저 이름 가져오기
     const getUserName = async () => {
@@ -54,9 +57,12 @@ const ChatRoom = ({roomId, userId}) => {
         }
     };
 
-
     // 채팅방 나가기 처리
-    const handleLeaveRoom = async () => {
+    const handleLeaveRoom = () => {
+        setIsModalOpen(true); // 모달 열기
+    };
+
+    const confirmLeaveRoom = async () => {
         if (socket) {
             try {
                 const response = await leaveChatRoom(roomId, userId);
@@ -69,6 +75,11 @@ const ChatRoom = ({roomId, userId}) => {
                 console.error("채팅방 나가기 중 오류 발생:", error);
             }
         }
+        setIsModalOpen(false); // 모달 닫기
+    };
+
+    const cancelLeaveRoom = () => {
+        setIsModalOpen(false); // 모달 닫기
     };
 
     // 메시지 전송 처리
@@ -104,10 +115,7 @@ const ChatRoom = ({roomId, userId}) => {
         });
     };
 
-
-
-
-// 메시지 삭제 처리
+    // 메시지 삭제 처리
     const handleDeleteMessage = async (messageId) => {
         try {
             await deleteMessage(messageId);
@@ -128,6 +136,27 @@ const ChatRoom = ({roomId, userId}) => {
         }
     };
 
+    // 채팅방 정보 가져오기
+    const getChatRoomDetails = async () => {
+        try {
+            const roomInfo = await getChatRoomInfo(roomId);
+            if (roomInfo) {
+                // 채팅방에 사용자가 다 찼는지 체크
+                if (roomInfo.chatUsers.length >= roomInfo.capacity) {
+                    setIsLoading(false); // 인원수가 채워지면 로딩 종료
+                }
+            }
+        } catch (error) {
+            console.error("채팅방 정보 가져오기 오류:", error);
+        }
+    };
+
+    // 소켓을 통해 채팅방에 사용자가 추가되었을 때 상태 변경 처리
+    const handleUserJoined = (roomInfo) => {
+        if (roomInfo.chatUsers.length >= roomInfo.capacity) {
+            setIsLoading(false); // 인원수가 채워지면 로딩 종료
+        }
+    };
 
 
     useEffect(() => {
@@ -136,9 +165,12 @@ const ChatRoom = ({roomId, userId}) => {
             setMessages(fetchedMessages);
         });
 
+        getChatRoomDetails();
+
         if (socket) {
             socket.emit("joinRoom", roomId);
             socket.on("receiveMessage", handleReceiveMessage);
+            socket.on("roomJoined", handleUserJoined);  // 사용자가 채팅방에 들어올 때 이벤트 리스너 추가
             socket.on("userLeft", ({userId}) => {
                 console.log(`🚪 사용자 ${userId}가 채팅방을 떠났습니다.`);
             });
@@ -156,6 +188,7 @@ const ChatRoom = ({roomId, userId}) => {
                 socket.off("receiveMessage", handleReceiveMessage);
                 socket.off("messageDeleted");
                 socket.off("userLeft");
+                socket.off("roomJoined"); // 소켓 리스너 정리
             };
         }
 
@@ -167,54 +200,71 @@ const ChatRoom = ({roomId, userId}) => {
         <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg">
             <h2 className="text-2xl font-semibold mb-4 text-center">채팅방 {roomId}</h2>
 
-            <div className="space-y-4 mb-4">
-                {messages.map((msg) => (
-                    <div
-                        key={msg._id}
-                        className={`flex items-center space-x-2 p-3 rounded-lg shadow-sm ${
-                            msg.sender._id === userId ? "justify-end bg-blue-100" : "bg-gray-200"
-                        }`}
-                    >
-                        <div className="flex items-center space-x-2">
-                            <strong className="text-blue-600">{msg.sender.name}</strong>
-                            <span>{msg.isDeleted ? "삭제된 메시지입니다." : msg.text}</span>
-                        </div>
-
-                        {!msg.isDeleted && msg.sender._id === userId && (
-                            <button
-                                onClick={() => handleDeleteMessage(msg._id)}
-                                className="ml-4 text-red-600 hover:text-red-800 focus:outline-none"
+            {/* 로딩 상태 */}
+            {isLoading ? (
+                <div className="flex justify-center items-center h-32">
+                    <span className="text-xl">다른 사용자 기다리는중...</span>
+                </div>
+            ) : (
+                <>
+                    <div className="space-y-4 mb-4">
+                        {messages.map((msg) => (
+                            <div
+                                key={msg._id}
+                                className={`flex items-center space-x-2 p-3 rounded-lg shadow-sm ${
+                                    msg.sender._id === userId ? "justify-end bg-blue-100" : "bg-gray-200"
+                                }`}
                             >
-                                삭제
-                            </button>
-                        )}
+                                <div className="flex items-center space-x-2">
+                                    <strong className="text-blue-600">{msg.sender.name}</strong>
+                                    <span>{msg.isDeleted ? "삭제된 메시지입니다." : msg.text}</span>
+                                </div>
+
+                                {!msg.isDeleted && msg.sender._id === userId && (
+                                    <button
+                                        onClick={() => handleDeleteMessage(msg._id)}
+                                        className="ml-4 text-red-600 hover:text-red-800 focus:outline-none"
+                                    >
+                                        삭제
+                                    </button>
+                                )}
+                            </div>
+                        ))}
                     </div>
-                ))}
 
-            </div>
-
-            <div className="flex space-x-2">
-                <input
-                    type="text"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder="메시지를 입력하세요..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                    onClick={handleSendMessage}
-                    className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none"
-                >
-                    전송
-                </button>
-            </div>
-
+                    <div className="flex space-x-2">
+                        <input
+                            type="text"
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder="메시지를 입력하세요..."
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                            onClick={handleSendMessage}
+                            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none"
+                        >
+                            전송
+                        </button>
+                    </div>
+                </>
+            )}
             <button
                 onClick={handleLeaveRoom}
                 className="mt-4 px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none"
             >
                 채팅방 나가기
             </button>
+
+            {/* CommonModal 사용 */}
+            <CommonModal
+                isOpen={isModalOpen}
+                onClose={cancelLeaveRoom}
+                title="채팅방을 나가시겠습니까?"
+                onConfirm={confirmLeaveRoom}
+            >
+                채팅방을 나가면 현재 채팅 내용이 사라집니다.
+            </CommonModal>
         </div>
     );
 };
