@@ -3,7 +3,7 @@ import axios from "axios";
 const host = `${import.meta.env.VITE_API_HOST}/api/chat`;
 
 //채팅방 생성
-export const createChatRoom = async (roomType, capacity,matchedGender) => {
+export const createChatRoom = async (roomType, capacity, matchedGender) => {
     try {
         const response = await axios.post(`${host}/rooms`, { roomType, capacity, matchedGender });
         return response.data;
@@ -11,6 +11,16 @@ export const createChatRoom = async (roomType, capacity,matchedGender) => {
         console.error("채팅방 생성 중 오류 발생:", error);
     }
 };
+
+// 친구와 채팅방 생성
+export const createFriendRoom = async (roomType, capacity) => {
+    try {
+        const response = await axios.post(`${host}/friend/rooms`, { roomType, capacity });
+        return response.data;
+    } catch (error) {
+        console.log("친구와 채팅방 생성 중 오류 발생", error);
+    }
+}
 
 //채팅 리스트
 export const fetchChatRooms = async () => {
@@ -22,6 +32,17 @@ export const fetchChatRooms = async () => {
         return [];
     }
 };
+
+//특정 채팅방 정보 가져오기
+export const getChatRoomInfo = async (roomId) => {
+    try {
+        const response = await axios.get(`${host}/rooms/${roomId}`);
+        return response.data;
+    } catch (error) {
+        console.error("해당 채팅방 정보 불러오는 중 오류 발생:", error);
+        return [];
+    }
+}
 
 //채팅 메세지 불러오기
 export const fetchMessages = async (roomId) => {
