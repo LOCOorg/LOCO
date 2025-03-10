@@ -10,12 +10,13 @@ function MainComponent() {
     const [selectedFriend, setSelectedFriend] = useState(null);
     const [loading, setLoading] = useState(true); // 로딩 상태
 
+    // 사용자 ID 상수로 정의
+    const userId = "67bc2846c9d62c1110715d89"; // 실제 사용자 ID를 설정하세요.
+
     // 유저와 친구 목록 가져오기
-// 유저와 친구 목록 가져오는 코드 내부
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const userId = "67bc2846c9d62c1110715d89"; // 실제 사용자 ID를 설정하세요.
                 const userData = await getUserInfo(userId);
                 setUser(userData);
 
@@ -38,12 +39,11 @@ function MainComponent() {
         fetchUserData();
     }, []);
 
-// 친구 선택 시 friend 객체 콘솔 출력
+    // 친구 선택 시 friend 객체 콘솔 출력
     const handleFriendSelect = async (friend) => {
         console.log("선택된 친구:", friend); // 선택된 친구 객체 콘솔 출력
         setSelectedFriend(friend);
         try {
-            const myId = "67bc2846c9d62c1110715d89"; // 내 사용자 ID
             const friendId = friend._id; // 친구의 사용자 ID
 
             // 이미 친구와 참여 중인 채팅방이 있는지 확인
@@ -58,7 +58,7 @@ function MainComponent() {
                 if (!room.chatUsers) return false; // chatUsers가 없으면 제외
 
                 const userIds = room.chatUsers.map(user => user._id);
-                return userIds.includes(myId) && userIds.includes(friendId);
+                return userIds.includes(userId) && userIds.includes(friendId);
             });
 
             if (existingRoom) {
@@ -68,9 +68,9 @@ function MainComponent() {
                 const roomType = "friend";
                 const capacity = 2;
                 let room = await createFriendRoom(roomType, capacity);
-                room = { ...room, chatUsers: [myId, friendId] };
+                room = { ...room, chatUsers: [userId, friendId] };
 
-                await joinChatRoom(room._id, myId);
+                await joinChatRoom(room._id, userId);
                 await joinChatRoom(room._id, friendId);
 
                 console.log("새로 생성된 채팅방 정보:", room);
@@ -80,7 +80,6 @@ function MainComponent() {
             console.error("채팅방 처리 실패:", error);
         }
     };
-
 
     const handleNavigate = () => {
         navigate("/chat");
@@ -111,7 +110,6 @@ function MainComponent() {
                                 <p className="text-gray-500">친구가 없습니다.</p>
                             )}
                         </ul>
-
                     </div>
                 )
             )}
