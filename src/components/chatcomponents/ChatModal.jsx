@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useSocket } from "../../hooks/useSocket.js";
-import { fetchMessages, sendMessage } from "../../api/chatAPI.js";
+import { fetchMessages } from "../../api/chatAPI.js";
 import { getUserInfo } from "../../api/userAPI.js";
 
 function ChatRoomComponent() {
@@ -11,11 +11,13 @@ function ChatRoomComponent() {
     const [userName, setUserName] = useState(""); // 유저 이름 상태
     const socket = useSocket();
 
+    const senderId = "67bc2846c9d62c1110715d89"; // senderId를 상수로 정의
+
+    // 유저 정보를 가져오는 함수
     useEffect(() => {
         const fetchUserInfo = async () => {
             try {
-                const senderId = "67bc2846c9d62c1110715d89"; // 실제 사용자 ID
-                const user = await getUserInfo(senderId);
+                const user = await getUserInfo(senderId); // senderId 사용
                 setUserName(user.name); // 유저 이름 상태에 저장
             } catch (error) {
                 console.error("유저 정보 불러오기 실패:", error);
@@ -23,23 +25,37 @@ function ChatRoomComponent() {
         };
 
         fetchUserInfo();
-    }, []);
+    }, [senderId]);
 
+    // 서버로부터 받은 메시지 처리 (receiveMessage)
     useEffect(() => {
         if (socket) {
-            socket.emit("join_room", roomId);
+            socket.emit("joinRoom", roomId);
 
-            socket.on("receive_message", (message) => {
-                // 메시지 수신 시, 새 메시지 추가
-                setMessages((prevMessages) => [...prevMessages, message]);
+            socket.on("receiveMessage", (message) => {
+                // sender가 id와 name을 포함하는 경우, 이를 객체로 변환
+                const normalizedMessage = {
+                    ...message,
+                    sender: message.sender.id ? { _id: message.sender.id, name: message.sender.name } : message.sender,
+                };
+
+                setMessages((prevMessages) => {
+                    // 메시지의 _id를 Set에 저장하여 중복 체크
+                    const messageSet = new Set(prevMessages.map(msg => msg._id));
+                    if (!messageSet.has(normalizedMessage._id)) {
+                        return [...prevMessages, normalizedMessage];
+                    }
+                    return prevMessages;
+                });
             });
 
             return () => {
-                socket.off("receive_message");
+                socket.off("receiveMessage");
             };
         }
     }, [socket, roomId]);
 
+    // 채팅방 메시지 불러오기
     useEffect(() => {
         const loadMessages = async () => {
             try {
@@ -57,23 +73,39 @@ function ChatRoomComponent() {
         setNewMessage(e.target.value);
     };
 
+    // 메시지 전송 함수 (sendMessage)
     const handleSendMessage = async (e) => {
         e.preventDefault();
 
         if (newMessage.trim() && socket) {
             try {
-                const sender = "67bc2846c9d62c1110715d89"; // 실제 사용자 ID
-                const messageData = { roomId, sender: { id: sender, name: userName }, text: newMessage };
+                const messageData = {
+                    chatRoom: roomId,
+                    sender: senderId, // senderId를 사용
+                    text: newMessage,
+                };
 
-                // 로컬 상태에서 메시지 바로 추가
-                setMessages((prevMessages) => [...prevMessages, messageData]);
+                // 서버로 메시지 전송 후, 서버에서 받은 메시지를 상태에 추가
+                socket.emit("sendMessage", messageData, (response) => {
+                    if (response.success) {
+                        const normalizedMessage = {
+                            ...response.message,
+                            sender: response.message.sender.id ? { _id: response.message.sender.id, name: response.message.sender.name } : response.message.sender,
+                        };
 
-                // 서버로 메시지 전송
-                await sendMessage(roomId, sender, newMessage);
+                        setMessages((prevMessages) => {
+                            const messageSet = new Set(prevMessages.map(msg => msg._id));
+                            if (!messageSet.has(normalizedMessage._id)) {
+                                return [...prevMessages, normalizedMessage];
+                            }
+                            return prevMessages;
+                        });
 
-                // 소켓을 통해 실시간 메시지 전송
-                socket.emit("send_message", messageData);
-                console.log("전송된 메시지:", messageData);
+                        console.log("서버로 메시지 전송 성공:", response.message);
+                    } else {
+                        console.error("메시지 전송 실패:", response.error);
+                    }
+                });
 
                 setNewMessage(""); // 메시지 입력란 비우기
             } catch (error) {
@@ -88,11 +120,25 @@ function ChatRoomComponent() {
             <div className="w-full max-w-xl p-4 bg-white shadow-md rounded-lg">
                 <div className="overflow-y-auto h-72 mb-4">
                     <ul className="space-y-4">
-                        {messages.map((message, index) => (
-                            <li key={index} className="text-gray-700">
-                                <strong>{message.sender.name}: </strong>{message.text}
-                            </li>
-                        ))}
+                        {messages.map((message) => {
+                            const isMyMessage = message.sender._id === senderId; // senderId로 비교
+
+                            return (
+                                <li
+                                    key={message._id}
+                                    className={`flex ${isMyMessage ? "justify-end" : "justify-start"}`}
+                                >
+                                    <div
+                                        className={`p-3 rounded-lg max-w-xs ${isMyMessage ? "bg-blue-500 text-white self-end" : "bg-gray-200 text-gray-800 self-start"}`}
+                                    >
+                                        <strong className="block text-sm">
+                                            {message.sender.name}
+                                        </strong>
+                                        <p>{message.text}</p>
+                                    </div>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </div>
 
