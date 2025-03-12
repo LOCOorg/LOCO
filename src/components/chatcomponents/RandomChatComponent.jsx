@@ -16,27 +16,39 @@ const RandomChatComponent = () => {
     const [modalTitle, setModalTitle] = useState(""); // 모달 제목
     const [modalButtons, setModalButtons] = useState([]); // 모달 버튼 상태
     const navigate = useNavigate();
-    const userId = "67bc2846c9d62c1110715d89"; // 실제로 로그인된 사용자 ID로 설정
+    const userId = "67bc2846c9d62c1110715d89"; // 실제 로그인된 사용자 ID
+
+    // 생년월일을 이용한 나이 계산 함수
+    const calculateAge = (birthdate) => {
+        const today = new Date();
+        const birth = new Date(birthdate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        return age;
+    };
 
     // 유저 정보 호출 함수
     const fetchUserInfo = async (userId) => {
         try {
-            const data = await getUserInfo(userId); // getUserInfo API 호출
-            setUserInfo(data); // 유저 정보 상태에 저장
-            setLoading(false); // 로딩 완료
+            const data = await getUserInfo(userId);
+            setUserInfo(data);
+            setLoading(false);
         } catch (err) {
-            setError(err.message); // 에러 발생 시 에러 상태 업데이트
-            setLoading(false); // 로딩 완료
+            setError(err.message);
+            setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchUserInfo(userId); // 컴포넌트 마운트 시 유저 정보 호출
+        fetchUserInfo(userId);
     }, [userId]);
 
     // 랜덤 채팅방 찾기 및 생성 함수
     const findOrCreateRandomRoom = async (userId, capacity, matchedGender) => {
-        setLoading(true); // 로딩 시작
+        setLoading(true);
         try {
             if (capacity < 2 || capacity > 5) {
                 setModalTitle("경고");
@@ -56,12 +68,15 @@ const RandomChatComponent = () => {
                 return;
             }
 
+            // 생년월일을 이용해 현재 나이와 ageGroup 결정
+            const age = calculateAge(userInfo.birthdate);
+            const ageGroup = age >= 18 ? 'adult' : 'minor';
+
             // 현재 존재하는 랜덤 채팅방 중에서 조건에 맞는 채팅방 찾기
             const rooms = await fetchChatRooms();
             console.log("현재 채팅방 목록:", rooms);
 
             const availableRooms = rooms.filter((room) => {
-                // 채팅방 필터링 조건
                 if (room.roomType !== "random") return false;
                 if (room.capacity !== capacity) return false;
                 if (room.chatUsers.length >= room.capacity) return false;
@@ -69,23 +84,22 @@ const RandomChatComponent = () => {
 
                 // 성별 매칭 조건
                 if (matchedGender === "same") {
-                    return room.matchedGender === "same" &&
-                        room.chatUsers.every(user => user.gender === userInfo.gender);
+                    if (room.matchedGender !== "same" || room.chatUsers.some(user => user.gender !== userInfo.gender)) return false;
                 }
                 if (matchedGender === "opposite") {
-                    return room.matchedGender === "opposite" &&
-                        room.chatUsers.every(user => user.gender !== userInfo.gender);
+                    if (room.matchedGender !== "opposite" || room.chatUsers.some(user => user.gender === userInfo.gender)) return false;
                 }
-                if (matchedGender === "any") {
-                    return room.matchedGender === "any";
-                }
+                if (matchedGender === "any" && room.matchedGender !== "any") return false;
 
-                return false;
+                // 나이 매칭 조건: 채팅방의 ageGroup과 사용자의 ageGroup이 일치해야 함
+                if (room.ageGroup !== ageGroup) return false;
+
+                return true;
             });
 
             let room;
 
-            // 이미 참여 중인 채팅방이 있는지 확인
+            // 이미 참여 중인 채팅방 확인
             const existingRoom = rooms.find(
                 (room) =>
                     room.roomType === "random" &&
@@ -94,30 +108,28 @@ const RandomChatComponent = () => {
 
             if (existingRoom) {
                 setModalTitle("알림");
-                setModalMessage(`이미 참여중인 채팅방으로 이동`);
+                setModalMessage("이미 참여중인 채팅방으로 이동합니다.");
                 setModalButtons([{ text: "확인", action: () => navigate(`/chat/${existingRoom._id}/${userId}`) }]);
                 setModalOpen(true);
                 setLoading(false);
                 return;
             }
 
-            // 정원이 다 차지 않은 랜덤 채팅방이 있으면 랜덤으로 배정
+            // 조건에 맞는 채팅방이 있으면 참가, 없으면 새로 생성
             if (availableRooms.length > 0) {
                 room = availableRooms[Math.floor(Math.random() * availableRooms.length)];
                 setModalTitle("알림");
-                setModalMessage(`랜덤 채팅방(${capacity}명, ${matchedGender} 매칭)에 참가했습니다.`);
+                setModalMessage(`랜덤 채팅방(${capacity}명, ${matchedGender} 매칭, ${ageGroup})에 참가했습니다.`);
                 setModalButtons([{ text: "확인", action: () => navigate(`/chat/${room._id}/${userId}`) }]);
                 setModalOpen(true);
             } else {
-                // 없으면 새로운 랜덤 채팅방 생성
-                room = await createChatRoom("random", capacity, matchedGender);
+                room = await createChatRoom("random", capacity, matchedGender, ageGroup);
                 setModalTitle("알림");
-                setModalMessage(`새로운 랜덤 채팅방(${capacity}명, ${matchedGender} 매칭)을 생성했습니다.`);
+                setModalMessage(`새로운 랜덤 채팅방(${capacity}명, ${matchedGender} 매칭, ${ageGroup})을 생성했습니다.`);
                 setModalButtons([{ text: "확인", action: () => navigate(`/chat/${room._id}/${userId}`) }]);
                 setModalOpen(true);
             }
 
-            // 채팅방 참가 요청
             await joinChatRoom(room._id, userId);
             console.log("채팅방에 참가했습니다.");
         } catch (error) {
@@ -131,9 +143,8 @@ const RandomChatComponent = () => {
         }
     };
 
-    // 로딩 중 또는 에러 발생 시 처리
     if (loading) {
-        return <LoadingComponent message="대기 중입니다... 채팅방을 찾고 있습니다." />; // 로딩 상태일 때 로딩 컴포넌트 표시
+        return <LoadingComponent message="대기 중입니다... 채팅방을 찾고 있습니다." />;
     }
 
     if (error) {
@@ -151,6 +162,7 @@ const RandomChatComponent = () => {
                 <p>닉네임: {userInfo.nickname}</p>
                 <p>성별: {userInfo.gender}</p>
                 <p>전화번호: {userInfo.phone}</p>
+                <p>생년월일: {userInfo.birthdate}</p>
             </div>
 
             {/* 랜덤 채팅방 참가 폼 */}
@@ -190,7 +202,6 @@ const RandomChatComponent = () => {
                 랜덤 채팅 시작
             </button>
 
-            {/* 모달 컴포넌트 */}
             <CommonModal
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}

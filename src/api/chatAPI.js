@@ -3,9 +3,9 @@ import axios from "axios";
 const host = `${import.meta.env.VITE_API_HOST}/api/chat`;
 
 //채팅방 생성
-export const createChatRoom = async (roomType, capacity, matchedGender) => {
+export const createChatRoom = async (roomType, capacity, matchedGender, ageGroup) => {
     try {
-        const response = await axios.post(`${host}/rooms`, { roomType, capacity, matchedGender });
+        const response = await axios.post(`${host}/rooms`, { roomType, capacity, matchedGender, ageGroup });
         return response.data;
     } catch (error) {
         console.error("채팅방 생성 중 오류 발생:", error);
