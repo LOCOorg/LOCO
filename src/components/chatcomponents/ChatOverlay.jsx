@@ -1,13 +1,13 @@
 // ChatOverlay.jsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useSocket } from "../../hooks/useSocket.js";
 import { fetchMessages } from "../../api/chatAPI.js";
 import { getUserInfo } from "../../api/userAPI.js";
 
 // eslint-disable-next-line react/prop-types
-function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose }) {
+function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) {
     const { roomId: routeRoomId } = useParams();
     const roomId = propRoomId || routeRoomId; // prop으로 전달된 roomId 우선 사용
     const [messages, setMessages] = useState([]);
@@ -15,6 +15,9 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose }) {
     const [userName, setUserName] = useState("");
     const socket = useSocket();
     const senderId = "67bc2846c9d62c1110715d89";
+
+    // 메시지 스크롤 영역 ref
+    const messagesContainerRef = useRef(null);
 
     // 사용자 정보 불러오기
     useEffect(() => {
@@ -72,6 +75,13 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose }) {
             loadMessages();
         }
     }, [roomId]);
+
+    // messages 배열이 변경될 때마다 스크롤을 최신 메시지 위치(맨 아래)로 이동
+    useEffect(() => {
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+    }, [messages]);
 
     const handleMessageChange = (e) => {
         setNewMessage(e.target.value);
@@ -153,7 +163,8 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose }) {
                     alignItems: "center",
                 }}
             >
-                <span>채팅</span>
+                {/* eslint-disable-next-line react/prop-types */}
+                <span>{friend ? (friend.nickname || friend.name) : "채팅"}</span>
                 <button
                     onClick={handleClose}
                     style={{
@@ -168,11 +179,14 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose }) {
                 </button>
             </div>
             <div
+                ref={messagesContainerRef}
                 style={{
                     flex: "1",
                     padding: "10px",
                     overflowY: "auto",
                     backgroundColor: "#f0f0f0",
+                    minHeight: "300px", // 채팅창이 비어있어도 최소 높이 유지
+                    maxHeight: "300px",
                 }}
             >
                 <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>

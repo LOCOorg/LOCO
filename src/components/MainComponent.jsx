@@ -87,12 +87,41 @@ function MainComponent() {
         setShowMore((prev) => !prev);
     };
 
+    // visible: 최대 MAX_CHAT_WINDOWS개의 채팅창, hidden: 나머지 채팅
     const visibleChatRooms = chatRooms.slice(0, MAX_CHAT_WINDOWS);
     const hiddenChatRooms = chatRooms.slice(MAX_CHAT_WINDOWS);
 
     // onClose 콜백: 해당 roomId의 채팅창 제거
     const handleCloseChat = (roomId) => {
         setChatRooms((prevRooms) => prevRooms.filter(room => room.roomId !== roomId));
+    };
+
+    // hidden 영역의 채팅 아이콘 클릭 시, visible 영역의 가장 왼쪽 채팅을 제거하고
+    // 선택한 hidden 채팅을 visible 영역의 마지막 자리에 넣어 순환 교환합니다.
+    const handleSwapChat = (selectedRoomId) => {
+        setChatRooms((prevRooms) => {
+            // 순환 교환은 hidden 채팅이 존재할 때만 처리
+            if (prevRooms.length <= MAX_CHAT_WINDOWS) return prevRooms;
+            const newRooms = [...prevRooms];
+            // visible 영역의 가장 왼쪽 채팅 제거
+            const removedVisible = newRooms.shift();
+
+            // 기존 배열에서 선택한 hidden 채팅의 인덱스 찾기
+            const selectedIndex = newRooms.findIndex(room => room.roomId === selectedRoomId);
+            if (selectedIndex === -1) return prevRooms;
+
+            // 선택한 hidden 채팅 제거
+            const [selectedRoom] = newRooms.splice(selectedIndex, 1);
+
+            // visible 영역은 newRooms[0 ~ MAX_CHAT_WINDOWS-1] (현재 newRooms의 길이는 MAX_CHAT_WINDOWS-1)
+            // 선택한 hidden 채팅을 visible의 마지막 자리에 삽입
+            newRooms.splice(MAX_CHAT_WINDOWS - 1, 0, selectedRoom);
+
+            // 제거된 visible 채팅을 hidden 영역의 마지막에 추가
+            newRooms.push(removedVisible);
+
+            return newRooms;
+        });
     };
 
     return (
@@ -126,15 +155,18 @@ function MainComponent() {
                 )
             )}
 
+            {/* 현재 보이는 채팅창 */}
             {visibleChatRooms.map((room, index) => (
                 <ChatOverlay
                     key={room.roomId}
                     roomId={room.roomId}
                     customStyle={{ right: 20 + index * 360 + "px" }}
                     onClose={handleCloseChat}
+                    friend={room.friend} // friend 정보를 전달
                 />
             ))}
 
+            {/* 더 보기 영역: 아이콘 목록으로 표시 */}
             {hiddenChatRooms.length > 0 && (
                 <div
                     style={{
@@ -158,20 +190,32 @@ function MainComponent() {
                     >
                         {showMore
                             ? "채팅 숨기기"
-                            : `+${hiddenChatRooms.length}개의 채팅 더 보기`}
+                            : `+${hiddenChatRooms.length}개의 채팅`}
                     </button>
 
                     {showMore &&
-                        hiddenChatRooms.map((room, idx) => (
-                            <ChatOverlay
+                        hiddenChatRooms.map((room) => (
+                            <button
                                 key={room.roomId}
-                                roomId={room.roomId}
-                                customStyle={{
-                                    bottom: 60 + idx * 520 + "px",
-                                    right: 20 + MAX_CHAT_WINDOWS * 360 + "px",
+                                onClick={() => handleSwapChat(room.roomId)}
+                                style={{
+                                    display: "block",
+                                    margin: "5px 0",
+                                    padding: "5px",
+                                    backgroundColor: "#eee",
+                                    border: "1px solid #ccc",
+                                    borderRadius: "50%",
+                                    width: "40px",
+                                    height: "40px",
+                                    textAlign: "center",
+                                    cursor: "pointer",
                                 }}
-                                onClose={handleCloseChat}
-                            />
+                                title={room.friend ? room.friend.nickname || room.friend.name : "채팅"}
+                            >
+                                {room.friend && room.friend.nickname
+                                    ? room.friend.nickname[0]
+                                    : "채팅"}
+                            </button>
                         ))}
                 </div>
             )}
