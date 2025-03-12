@@ -1,69 +1,61 @@
+// MainComponent.jsx
+
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { getUserInfo } from "../api/userAPI";
 import { createFriendRoom, fetchChatRooms, joinChatRoom } from "../api/chatAPI";
+import ChatOverlay from "./chatcomponents/ChatOverlay.jsx";
+import { useNavigate } from "react-router-dom";
 
 function MainComponent() {
-    const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [friends, setFriends] = useState([]);
-    const [selectedFriend, setSelectedFriend] = useState(null);
-    const [loading, setLoading] = useState(true); // 로딩 상태
+    const [loading, setLoading] = useState(true);
+    const [chatRooms, setChatRooms] = useState([]);
+    const [showMore, setShowMore] = useState(false);
+    const navigate = useNavigate();
+    const userId = "67bc2846c9d62c1110715d89";
 
-    // 사용자 ID 상수로 정의
-    const userId = "67bc2846c9d62c1110715d89"; // 실제 사용자 ID를 설정하세요.
+    const MAX_CHAT_WINDOWS = 3;
 
-    // 유저와 친구 목록 가져오기
     useEffect(() => {
         const fetchUserData = async () => {
             try {
                 const userData = await getUserInfo(userId);
                 setUser(userData);
 
-                // 친구 ID를 기반으로 친구 정보 가져오기
                 const friendsData = await Promise.all(
                     userData.friends.map(async (friendId) => {
                         const friendInfo = await getUserInfo(friendId);
                         return friendInfo;
                     })
                 );
-                console.log("친구 데이터:", friendsData); // 친구 데이터 콘솔 출력
                 setFriends(friendsData);
             } catch (error) {
                 console.error("유저 정보를 불러오는 데 실패했습니다.", error);
             } finally {
-                setLoading(false); // 로딩 상태 종료
+                setLoading(false);
             }
         };
 
         fetchUserData();
     }, []);
 
-    // 친구 선택 시 friend 객체 콘솔 출력
     const handleFriendSelect = async (friend) => {
-        console.log("선택된 친구:", friend); // 선택된 친구 객체 콘솔 출력
-        setSelectedFriend(friend);
         try {
-            const friendId = friend._id; // 친구의 사용자 ID
-
-            // 이미 친구와 참여 중인 채팅방이 있는지 확인
-            const chatRooms = await fetchChatRooms();
-            console.log("채팅방 목록:", chatRooms);
-
-            // roomType이 'friend'인 채팅방만 필터링
-            const friendChatRooms = chatRooms.filter((room) => room.roomType === "friend");
-
-            // 친구와 내가 이미 포함된 'friend' 타입 채팅방을 찾음
+            const friendId = friend._id;
+            const chatRoomsData = await fetchChatRooms();
+            const friendChatRooms = chatRoomsData.filter(
+                (room) => room.roomType === "friend"
+            );
             const existingRoom = friendChatRooms.find((room) => {
-                if (!room.chatUsers) return false; // chatUsers가 없으면 제외
-
-                const userIds = room.chatUsers.map(user => user._id);
+                if (!room.chatUsers) return false;
+                const userIds = room.chatUsers.map((user) => user._id);
                 return userIds.includes(userId) && userIds.includes(friendId);
             });
 
+            let newRoom;
             if (existingRoom) {
-                console.log("기존 채팅방으로 이동:", existingRoom);
-                navigate(`/chat/${existingRoom._id}`);
+                newRoom = existingRoom;
             } else {
                 const roomType = "friend";
                 const capacity = 2;
@@ -73,9 +65,14 @@ function MainComponent() {
                 await joinChatRoom(room._id, userId);
                 await joinChatRoom(room._id, friendId);
 
-                console.log("새로 생성된 채팅방 정보:", room);
-                navigate(`/chat/${room._id}`);
+                newRoom = room;
             }
+            setChatRooms((prevRooms) => {
+                if (!prevRooms.some((room) => room.roomId === newRoom._id)) {
+                    return [...prevRooms, { roomId: newRoom._id, friend }];
+                }
+                return prevRooms;
+            });
         } catch (error) {
             console.error("채팅방 처리 실패:", error);
         }
@@ -83,6 +80,19 @@ function MainComponent() {
 
     const handleNavigate = () => {
         navigate("/chat");
+    };
+
+    // "더 보기" 버튼 토글
+    const toggleShowMore = () => {
+        setShowMore((prev) => !prev);
+    };
+
+    const visibleChatRooms = chatRooms.slice(0, MAX_CHAT_WINDOWS);
+    const hiddenChatRooms = chatRooms.slice(MAX_CHAT_WINDOWS);
+
+    // onClose 콜백: 해당 roomId의 채팅창 제거
+    const handleCloseChat = (roomId) => {
+        setChatRooms((prevRooms) => prevRooms.filter(room => room.roomId !== roomId));
     };
 
     return (
@@ -93,7 +103,9 @@ function MainComponent() {
             ) : (
                 user && (
                     <div className="mb-6 p-4 bg-white shadow-md rounded-lg w-80">
-                        <h2 className="text-2xl font-semibold text-gray-700">{user.nickname} 님</h2>
+                        <h2 className="text-2xl font-semibold text-gray-700">
+                            {user.nickname} 님
+                        </h2>
                         <p className="text-gray-600">친구 목록:</p>
                         <ul className="list-disc pl-5 text-gray-700">
                             {friends.length > 0 ? (
@@ -103,7 +115,7 @@ function MainComponent() {
                                         className="cursor-pointer text-blue-500 hover:text-blue-700"
                                         onClick={() => handleFriendSelect(friend)}
                                     >
-                                        {friend.nickname} {friend.name} {/* 객체의 속성으로 접근 */}
+                                        {friend.nickname} {friend.name}
                                     </li>
                                 ))
                             ) : (
@@ -113,6 +125,57 @@ function MainComponent() {
                     </div>
                 )
             )}
+
+            {visibleChatRooms.map((room, index) => (
+                <ChatOverlay
+                    key={room.roomId}
+                    roomId={room.roomId}
+                    customStyle={{ right: 20 + index * 360 + "px" }}
+                    onClose={handleCloseChat}
+                />
+            ))}
+
+            {hiddenChatRooms.length > 0 && (
+                <div
+                    style={{
+                        position: "fixed",
+                        bottom: "20px",
+                        right: 20 + MAX_CHAT_WINDOWS * 360 + "px",
+                        zIndex: 1100,
+                    }}
+                >
+                    <button
+                        onClick={toggleShowMore}
+                        style={{
+                            padding: "10px 15px",
+                            backgroundColor: "#0084ff",
+                            color: "white",
+                            border: "none",
+                            cursor: "pointer",
+                            borderRadius: "8px",
+                            marginBottom: "5px",
+                        }}
+                    >
+                        {showMore
+                            ? "채팅 숨기기"
+                            : `+${hiddenChatRooms.length}개의 채팅 더 보기`}
+                    </button>
+
+                    {showMore &&
+                        hiddenChatRooms.map((room, idx) => (
+                            <ChatOverlay
+                                key={room.roomId}
+                                roomId={room.roomId}
+                                customStyle={{
+                                    bottom: 60 + idx * 520 + "px",
+                                    right: 20 + MAX_CHAT_WINDOWS * 360 + "px",
+                                }}
+                                onClose={handleCloseChat}
+                            />
+                        ))}
+                </div>
+            )}
+
             <button
                 onClick={handleNavigate}
                 className="px-6 py-3 bg-blue-500 text-white text-lg rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"

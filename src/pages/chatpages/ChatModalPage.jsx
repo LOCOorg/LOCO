@@ -1,10 +1,10 @@
-import ChatModal from "../../components/chatcomponents/ChatModal.jsx";
+import ChatOverlay from "../../components/chatcomponents/ChatOverlay.jsx";
 
 
 function ChatModalPage() {
     return (
         <>
-            <ChatModal/>
+            <ChatOverlay/>
         </>
     );
 }
