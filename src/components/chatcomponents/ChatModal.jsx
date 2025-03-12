@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate  } from "react-router-dom";
 import { useSocket } from "../../hooks/useSocket.js";
 import { fetchMessages } from "../../api/chatAPI.js";
 import { getUserInfo } from "../../api/userAPI.js";
+import Modal from "react-modal"; // react-modal import
 
-function ChatRoomComponent() {
+Modal.setAppElement("#root"); // 또는 "body"
+
+function ChatModal() {
     const { roomId } = useParams();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
     const [userName, setUserName] = useState(""); // 유저 이름 상태
     const socket = useSocket();
-
+    const navigate = useNavigate(); // 네비게이션 훅 추가
     const senderId = "67bc2846c9d62c1110715d89"; // senderId를 상수로 정의
+    const [isModalOpen, setIsModalOpen] = useState(true); // 모달 상태
 
     // 유저 정보를 가져오는 함수
     useEffect(() => {
@@ -114,11 +118,23 @@ function ChatRoomComponent() {
         }
     };
 
+    // 모달을 닫는 함수
+    const closeModal = () => {
+        setIsModalOpen(false);
+        navigate("/");
+    };
+
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
-            <h1 className="text-4xl font-bold text-gray-800 mb-6">채팅방</h1>
-            <div className="w-full max-w-xl p-4 bg-white shadow-md rounded-lg">
-                <div className="overflow-y-auto h-72 mb-4">
+        <Modal
+            isOpen={isModalOpen}
+            onRequestClose={closeModal}
+            contentLabel="Chat Room"
+            className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50"
+            overlayClassName="fixed inset-0 bg-black bg-opacity-50"
+        >
+            <div className="flex flex-col items-center justify-center bg-white p-6 w-full max-w-xl rounded-lg shadow-lg">
+                <h1 className="text-4xl font-bold text-gray-800 mb-6">채팅방</h1>
+                <div className="overflow-y-auto h-72 mb-4 w-full">
                     <ul className="space-y-4">
                         {messages.map((message) => {
                             const isMyMessage = message.sender._id === senderId; // senderId로 비교
@@ -142,7 +158,7 @@ function ChatRoomComponent() {
                     </ul>
                 </div>
 
-                <form onSubmit={handleSendMessage} className="flex">
+                <form onSubmit={handleSendMessage} className="flex w-full">
                     <input
                         type="text"
                         value={newMessage}
@@ -157,9 +173,15 @@ function ChatRoomComponent() {
                         전송
                     </button>
                 </form>
+                <button
+                    onClick={closeModal}
+                    className="mt-4 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none"
+                >
+                    닫기
+                </button>
             </div>
-        </div>
+        </Modal>
     );
 }
 
-export default ChatRoomComponent;
+export default ChatModal;
