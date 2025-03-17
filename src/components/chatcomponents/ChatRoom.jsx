@@ -3,7 +3,7 @@ import { useSocket } from "../../hooks/useSocket.js";
 import { fetchMessages, deleteMessage, leaveChatRoom, getChatRoomInfo } from "../../api/chatAPI.js";
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
-import { getUserInfo } from "../../api/userAPI.js";
+import { getUserInfo, rateUser } from "../../api/userAPI.js";
 import CommonModal from "../../common/CommonModal.jsx";
 
 const ChatRoom = ({ roomId, userId }) => {
@@ -15,8 +15,12 @@ const ChatRoom = ({ roomId, userId }) => {
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    // 현재 참가자 목록(실시간 업데이트용)과 평가를 위한 따봉 상태
+    const [ratings, setRatings] = useState({});
+    // 초기 참가자 정보를 useRef로 보존 (채팅 입장 시 한번 저장되고 이후 갱신되지 않음)
+    const initialParticipantsRef = useRef([]);
 
-    const messagesContainerRef = useRef(null); // 채팅창의 스크롤 컨테이너
+    const messagesContainerRef = useRef(null);
 
     const getUserName = async () => {
         try {
@@ -53,22 +57,70 @@ const ChatRoom = ({ roomId, userId }) => {
         }
     };
 
+    // 컴포넌트 마운트 시, 한 번만 초기 참가자 정보를 받아서 보존
+    useEffect(() => {
+        const fetchInitialParticipants = async () => {
+            try {
+                const roomInfo = await getChatRoomInfo(roomId);
+                if (roomInfo && roomInfo.chatUsers) {
+                    // 필요한 정보만 추출 (_id와 name)
+                    const cachedParticipants = roomInfo.chatUsers.map((user) => {
+                        return typeof user === "object"
+                            ? { _id: user._id, name: user.name }
+                            : { _id: user, name: user };
+                    });
+                    console.log("초기 참가자:", cachedParticipants);
+                    initialParticipantsRef.current = cachedParticipants;
+                }
+            } catch (error) {
+                console.error("채팅방 초기 참가자 정보 가져오기 오류:", error);
+            }
+        };
+        fetchInitialParticipants();
+    }, [roomId]);
+
+    // 채팅 종료 버튼 클릭 시, useRef에 보존된 초기 참가자 정보를 사용해 따봉 상태 초기화
     const handleLeaveRoom = () => {
+        const initialParticipants = initialParticipantsRef.current;
+        if (initialParticipants.length > 0) {
+            const initialRatings = {};
+            initialParticipants.forEach((user) => {
+                const participantId = user._id;
+                if (participantId !== userId) {
+                    initialRatings[participantId] = 0;
+                }
+            });
+            setRatings(initialRatings);
+        }
         setIsModalOpen(true);
     };
 
+    // 각 참가자에 대한 따봉(매너 점수) 토글: 0이면 1, 1이면 0으로 변경
+    const handleRatingToggle = (participantId) => {
+        setRatings((prev) => ({
+            ...prev,
+            [participantId]: prev[participantId] === 1 ? 0 : 1,
+        }));
+    };
+
     const confirmLeaveRoom = async () => {
-        if (socket) {
-            try {
-                const response = await leaveChatRoom(roomId, userId);
-                if (response.success) {
-                    navigate("/chat", { replace: true }); // 뒤로가기 방지를 위해 replace: true 사용
-                } else {
-                    console.error("채팅방 나가기 실패:", response.message);
-                }
-            } catch (error) {
-                console.error("채팅방 나가기 중 오류 발생:", error);
+        try {
+            // 따봉(1점) 표시된 경우에만 해당 참가자에 대해 rateUser 호출
+            await Promise.all(
+                Object.keys(ratings).map(async (participantId) => {
+                    if (ratings[participantId] === 1) {
+                        await rateUser(participantId, 1);
+                    }
+                })
+            );
+            const response = await leaveChatRoom(roomId, userId);
+            if (response.success) {
+                navigate("/chat", { replace: true });
+            } else {
+                console.error("채팅방 나가기 실패:", response.message);
             }
+        } catch (error) {
+            console.error("채팅방 나가기 중 오류 발생:", error);
         }
         setIsModalOpen(false);
     };
@@ -78,7 +130,7 @@ const ChatRoom = ({ roomId, userId }) => {
     };
 
     const handleSendMessage = async (e) => {
-        e.preventDefault(); // 엔터로 전송 시 페이지 새로고침 방지
+        e.preventDefault();
 
         if (!text.trim() || !socket || !userName) {
             return;
@@ -166,7 +218,6 @@ const ChatRoom = ({ roomId, userId }) => {
     }, [roomId, socket, userId]);
 
     useEffect(() => {
-        // 새로운 메시지가 도착할 때마다 채팅창의 끝으로 스크롤
         if (messagesContainerRef.current) {
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
@@ -188,7 +239,6 @@ const ChatRoom = ({ roomId, userId }) => {
                     >
                         {messages.map((msg) => {
                             const uniqueKey = `${msg.sender._id}-${msg._id}-${msg.text}-${msg.timestamp}`;
-
                             return (
                                 <div
                                     key={uniqueKey}
@@ -238,16 +288,36 @@ const ChatRoom = ({ roomId, userId }) => {
                 onClick={handleLeaveRoom}
                 className="mt-6 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none"
             >
-                채팅방 나가기
+                채팅 종료
             </button>
 
             <CommonModal
                 isOpen={isModalOpen}
                 onClose={cancelLeaveRoom}
-                title="채팅방을 나가시겠습니까?"
+                title="채팅방 종료 및 매너 평가"
                 onConfirm={confirmLeaveRoom}
             >
-                채팅방을 나가면 현재 채팅 내용이 사라집니다.
+                <div>
+                    <p className="mb-4">채팅 종료 전, 다른 참가자들의 매너를 평가해주세요.</p>
+                    {initialParticipantsRef.current
+                        .filter((user) => user._id !== userId)
+                        .map((user) => {
+                            const isRated = ratings[user._id] === 1;
+                            return (
+                                <div key={user._id} className="my-2 flex items-center space-x-2">
+                                    <span className="block font-medium">{user.name}</span>
+                                    <button
+                                        onClick={() => handleRatingToggle(user._id)}
+                                        className={`border rounded px-2 py-1 focus:outline-none ${
+                                            isRated ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
+                                        }`}
+                                    >
+                                        👍
+                                    </button>
+                                </div>
+                            );
+                        })}
+                </div>
             </CommonModal>
         </div>
     );

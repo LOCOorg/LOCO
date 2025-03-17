@@ -70,7 +70,7 @@ const RandomChatComponent = () => {
 
             // 생년월일을 이용해 현재 나이와 ageGroup 결정
             const age = calculateAge(userInfo.birthdate);
-            const ageGroup = age >= 18 ? 'adult' : 'minor';
+            const ageGroup = age >= 19 ? 'adult' : 'minor';
 
             // 현재 존재하는 랜덤 채팅방 중에서 조건에 맞는 채팅방 찾기
             const rooms = await fetchChatRooms();
@@ -87,7 +87,7 @@ const RandomChatComponent = () => {
                     if (room.matchedGender !== "same" || room.chatUsers.some(user => user.gender !== userInfo.gender)) return false;
                 }
                 if (matchedGender === "opposite") {
-                    if (room.matchedGender !== "opposite" || room.chatUsers.some(user => user.gender === userInfo.gender)) return false;
+                    if (room.matchedGender !== "opposite" || room.chatUsers.every(user => user.gender === userInfo.gender)) return false;
                 }
                 if (matchedGender === "any" && room.matchedGender !== "any") return false;
 

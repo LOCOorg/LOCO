@@ -12,3 +12,26 @@ export const getUserInfo = async (userId) => {
         throw new Error("유저 정보를 불러오는 데 실패했습니다."); // 에러 발생 시 에러 메시지
     }
 };
+
+export const rateUser = async (userId, rating) => {
+    try {
+        const response = await fetch(`${host}/${userId}/rate`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ rating }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "별점 업데이트 실패");
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("rateUser API 호출 중 오류:", error);
+        throw error;
+    }
+};
+
