@@ -15,10 +15,10 @@ const ChatRoom = ({ roomId, userId }) => {
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    // 현재 참가자 목록(실시간 업데이트용)과 평가를 위한 따봉 상태
     const [ratings, setRatings] = useState({});
-    // 초기 참가자 정보를 useRef로 보존 (채팅 입장 시 한번 저장되고 이후 갱신되지 않음)
-    const initialParticipantsRef = useRef([]);
+
+    // 채팅 참가자 정보와 각 참가자에 대한 따봉(매너 점수) 상태 (0: 평가 안함, 1: 따봉)
+    const [participants, setParticipants] = useState([]);
 
     const messagesContainerRef = useRef(null);
 
@@ -57,40 +57,23 @@ const ChatRoom = ({ roomId, userId }) => {
         }
     };
 
-    // 컴포넌트 마운트 시, 한 번만 초기 참가자 정보를 받아서 보존
-    useEffect(() => {
-        const fetchInitialParticipants = async () => {
-            try {
-                const roomInfo = await getChatRoomInfo(roomId);
-                if (roomInfo && roomInfo.chatUsers) {
-                    // 필요한 정보만 추출 (_id와 name)
-                    const cachedParticipants = roomInfo.chatUsers.map((user) => {
-                        return typeof user === "object"
-                            ? { _id: user._id, name: user.name }
-                            : { _id: user, name: user };
-                    });
-                    console.log("초기 참가자:", cachedParticipants);
-                    initialParticipantsRef.current = cachedParticipants;
-                }
-            } catch (error) {
-                console.error("채팅방 초기 참가자 정보 가져오기 오류:", error);
+    // 채팅 종료 버튼 클릭 시 채팅방 정보를 불러와 참가자와 초기 따봉 상태(0)를 세팅
+    const handleLeaveRoom = async () => {
+        try {
+            const roomInfo = await getChatRoomInfo(roomId);
+            if (roomInfo && roomInfo.chatUsers) {
+                setParticipants(roomInfo.chatUsers);
+                const initialRatings = {};
+                roomInfo.chatUsers.forEach((user) => {
+                    const participantId = typeof user === "object" ? user._id : user;
+                    if (participantId !== userId) {
+                        initialRatings[participantId] = 0;
+                    }
+                });
+                setRatings(initialRatings);
             }
-        };
-        fetchInitialParticipants();
-    }, [roomId]);
-
-    // 채팅 종료 버튼 클릭 시, useRef에 보존된 초기 참가자 정보를 사용해 따봉 상태 초기화
-    const handleLeaveRoom = () => {
-        const initialParticipants = initialParticipantsRef.current;
-        if (initialParticipants.length > 0) {
-            const initialRatings = {};
-            initialParticipants.forEach((user) => {
-                const participantId = user._id;
-                if (participantId !== userId) {
-                    initialRatings[participantId] = 0;
-                }
-            });
-            setRatings(initialRatings);
+        } catch (error) {
+            console.error("채팅방 정보 가져오기 오류:", error);
         }
         setIsModalOpen(true);
     };
@@ -299,20 +282,25 @@ const ChatRoom = ({ roomId, userId }) => {
             >
                 <div>
                     <p className="mb-4">채팅 종료 전, 다른 참가자들의 매너를 평가해주세요.</p>
-                    {initialParticipantsRef.current
-                        .filter((user) => user._id !== userId)
+                    {participants
+                        .filter((user) => {
+                            const participantId = typeof user === "object" ? user._id : user;
+                            return participantId !== userId;
+                        })
                         .map((user) => {
-                            const isRated = ratings[user._id] === 1;
+                            const participantId = typeof user === "object" ? user._id : user;
+                            const participantName = typeof user === "object" ? user.name : user;
+                            const isRated = ratings[participantId] === 1;
                             return (
-                                <div key={user._id} className="my-2 flex items-center space-x-2">
-                                    <span className="block font-medium">{user.name}</span>
+                                <div key={participantId} className="my-2 flex items-center space-x-2">
+                                    <span className="block font-medium">{participantName}</span>
                                     <button
-                                        onClick={() => handleRatingToggle(user._id)}
+                                        onClick={() => handleRatingToggle(participantId)}
                                         className={`border rounded px-2 py-1 focus:outline-none ${
                                             isRated ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
                                         }`}
                                     >
-                                        👍
+                                        {isRated ? "👍" : "👍"}
                                     </button>
                                 </div>
                             );
