@@ -121,6 +121,15 @@ export const leaveChatRoom = async (roomId, userId) => {
     }
 };
 
+//사용자가 종료한 채팅방 ID 목록을 가져오는 함수
+export const fetchUserLeftRooms = async (userId) => {
+    // API 엔드포인트 예시: /api/chat/leftRooms/:userId
+    const response = await fetch(`${host}/leftRooms/${userId}`);
+    const data = await response.json();
+    return data.leftRooms; // 예를 들어, [roomId1, roomId2, ...]
+};
+
+
 
 
 

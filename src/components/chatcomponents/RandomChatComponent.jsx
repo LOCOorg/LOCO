@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUserInfo } from "../../api/userAPI"; // 유저 정보 호출 API
-import { createChatRoom, joinChatRoom, fetchChatRooms } from "../../api/chatAPI";
+import {createChatRoom, joinChatRoom, fetchChatRooms, fetchUserLeftRooms} from "../../api/chatAPI";
 import LoadingComponent from "../../common/LoadingComponent.jsx"; // 로딩 컴포넌트 import
 import CommonModal from "../../common/CommonModal"; // CommonModal import
 
@@ -99,12 +99,15 @@ const RandomChatComponent = () => {
 
             let room;
 
-            // 이미 참여 중인 채팅방 확인
+            // 기존 참여 중인 방 체크 시 exit 기록이 있는지 함께 확인
+            const leftRooms = await fetchUserLeftRooms(userId);
             const existingRoom = rooms.find(
                 (room) =>
                     room.roomType === "random" &&
-                    room.chatUsers.some(user => user._id === userId)
+                    room.chatUsers.some(user => user._id === userId) &&
+                    !leftRooms.includes(room._id)  // 이미 종료한 방은 제외
             );
+
 
             if (existingRoom) {
                 setModalTitle("알림");
