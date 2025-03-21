@@ -5,6 +5,8 @@ import { getUserInfo } from "../api/userAPI";
 import { createFriendRoom, fetchChatRooms, joinChatRoom } from "../api/chatAPI";
 import ChatOverlay from "./chatcomponents/ChatOverlay.jsx";
 import { useNavigate } from "react-router-dom";
+import useAuthStore from "../stores/authStore.js";
+import PlanButton from "./product/PlanButton.jsx";
 
 function MainComponent() {
     const [user, setUser] = useState(null);
@@ -13,6 +15,8 @@ function MainComponent() {
     const [chatRooms, setChatRooms] = useState([]);
     const [showMore, setShowMore] = useState(false);
     const navigate = useNavigate();
+    const user = useAuthStore((state) => state.user);
+    const logout = useAuthStore((state) => state.logout);
     const userId = "67bc2846c9d62c1110715d89";
 
     const MAX_CHAT_WINDOWS = 3;
@@ -80,6 +84,20 @@ function MainComponent() {
 
     const handleNavigate = () => {
         navigate("/chat");
+    };
+
+    const handleNavigateLogin = () => {
+        if (user) {
+            // 로그인 상태이면 로그아웃 처리 후 로그인 페이지로 이동
+            logout();
+            navigate("/loginPage");
+        } else {
+            // 로그인 상태가 아니면 로그인 페이지로 이동
+            navigate("/loginPage");
+        }
+    };
+    const handleProductRegistration = () => {
+        navigate("/adminproducts");
     };
 
     // "더 보기" 버튼 토글
@@ -226,6 +244,20 @@ function MainComponent() {
             >
                 채팅하러 가기
             </button>
+            <button
+                onClick={handleNavigateLogin}
+                className="mt-4 px-6 py-3 bg-purple-500 text-white text-lg rounded-lg shadow-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+                {user ? "로그아웃" : "로그인"}
+            </button>
+            <button
+                onClick={handleProductRegistration}
+                className="mt-4 px-6 py-3 bg-green-500 text-white text-lg rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+                상품등록
+            </button>
+            <PlanButton />  {/* productShowcase 플랜 버튼 추가 */}
+
         </div>
     );
 }
