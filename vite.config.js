@@ -14,6 +14,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       }
-    }
+    },
+    historyApiFallback: true // 추가: 클라이언트 사이드 라우팅을 위한 fallback 설정
   }
 })
