@@ -15,7 +15,7 @@ function MainComponent() {
     const [chatRooms, setChatRooms] = useState([]);
     const [showMore, setShowMore] = useState(false);
     const navigate = useNavigate();
-    const user = useAuthStore((state) => state.user);
+    // const user = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
     const userId = "67bc2846c9d62c1110715d89";
 
@@ -100,6 +100,10 @@ function MainComponent() {
         navigate("/adminproducts");
     };
 
+    const handleCommunity = () => {
+        navigate("/community");
+    }
+
     // "더 보기" 버튼 토글
     const toggleShowMore = () => {
         setShowMore((prev) => !prev);
@@ -178,7 +182,7 @@ function MainComponent() {
                 <ChatOverlay
                     key={room.roomId}
                     roomId={room.roomId}
-                    customStyle={{ right: 20 + index * 360 + "px" }}
+                    customStyle={{right: 20 + index * 360 + "px"}}
                     onClose={handleCloseChat}
                     friend={room.friend} // friend 정보를 전달
                 />
@@ -243,6 +247,12 @@ function MainComponent() {
                 className="px-6 py-3 bg-blue-500 text-white text-lg rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
                 채팅하러 가기
+            </button>
+            <button
+                onClick={handleCommunity}
+                className="px-6 py-3 bg-green-500 text-white text-lg rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+                커뮤니티
             </button>
             <button
                 onClick={handleNavigateLogin}

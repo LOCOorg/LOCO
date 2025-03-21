@@ -1,6 +1,7 @@
 import {createBrowserRouter} from "react-router-dom";
 import IndexPage from "../pages/IndexPage.jsx";
 import ChatRouter from "./ChatRouter.jsx";
+import CommunityRouter from "./CommunityRouter.jsx";
 import SignupPage from "../pages/signupPage/SignupPage.jsx";  // SignupPage 페이지 추가
 import LoginHandler from "../components/authComponent/LoginHandler.jsx";
 import NaverLoginHandler from "../components/authComponent/NaverLoginHandler.jsx";
@@ -14,6 +15,8 @@ const MainRouter = createBrowserRouter([
         path: "/",
         element: <IndexPage/>
     },
+    ChatRouter,
+    CommunityRouter,
     {
         path: "/signupPage",
         element: <SignupPage/>
