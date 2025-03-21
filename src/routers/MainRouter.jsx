@@ -16,7 +16,7 @@ const MainRouter = createBrowserRouter([
         element: <IndexPage/>
     },
     ChatRouter,
-    CommunityRouter
+    CommunityRouter,
     {
         path: "/signupPage",
         element: <SignupPage/>

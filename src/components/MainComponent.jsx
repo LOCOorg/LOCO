@@ -15,7 +15,7 @@ function MainComponent() {
     const [chatRooms, setChatRooms] = useState([]);
     const [showMore, setShowMore] = useState(false);
     const navigate = useNavigate();
-    const user = useAuthStore((state) => state.user);
+    // const user = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
     const userId = "67bc2846c9d62c1110715d89";
 
