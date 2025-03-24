@@ -1,27 +1,26 @@
-// ChatOverlay.jsx
-
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useSocket } from "../../hooks/useSocket.js";
 import { fetchMessages } from "../../api/chatAPI.js";
 import { getUserInfo } from "../../api/userAPI.js";
+import useAuthStore from "../../stores/authStore.js";
 
-// eslint-disable-next-line react/prop-types
 function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) {
     const { roomId: routeRoomId } = useParams();
-    const roomId = propRoomId || routeRoomId; // prop으로 전달된 roomId 우선 사용
+    const roomId = propRoomId || routeRoomId;
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
     const [userName, setUserName] = useState("");
     const socket = useSocket();
-    const senderId = "67bc2846c9d62c1110715d89";
+    const authUser = useAuthStore((state) => state.user);
+    const senderId = authUser?._id; // authStore에서 받아온 사용자 ID
 
-    // 메시지 스크롤 영역 ref
     const messagesContainerRef = useRef(null);
 
     // 사용자 정보 불러오기
     useEffect(() => {
-        const fetchUserInfo = async () => {
+        if (!senderId) return;
+        const fetchUserInfoAsync = async () => {
             try {
                 const user = await getUserInfo(senderId);
                 setUserName(user.name);
@@ -30,7 +29,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
             }
         };
 
-        fetchUserInfo();
+        fetchUserInfoAsync();
     }, [senderId]);
 
     // 채팅방 참여 및 메시지 수신 처리
@@ -76,7 +75,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
         }
     }, [roomId]);
 
-    // messages 배열이 변경될 때마다 스크롤을 최신 메시지 위치(맨 아래)로 이동
+    // 스크롤 최신화
     useEffect(() => {
         if (messagesContainerRef.current) {
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -91,7 +90,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
     const handleSendMessage = async (e) => {
         e.preventDefault();
 
-        if (newMessage.trim() && socket && roomId) {
+        if (newMessage.trim() && socket && roomId && senderId) {
             try {
                 const messageData = {
                     chatRoom: roomId,
@@ -127,7 +126,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
         }
     };
 
-    // 닫기 버튼 클릭 시 onClose 콜백 호출
+    // 닫기 버튼 처리
     const handleClose = () => {
         if (onClose) {
             onClose(roomId);
@@ -163,7 +162,6 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                     alignItems: "center",
                 }}
             >
-                {/* eslint-disable-next-line react/prop-types */}
                 <span>{friend ? (friend.nickname || friend.name) : "채팅"}</span>
                 <button
                     onClick={handleClose}
@@ -185,7 +183,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                     padding: "10px",
                     overflowY: "auto",
                     backgroundColor: "#f0f0f0",
-                    minHeight: "300px", // 채팅창이 비어있어도 최소 높이 유지
+                    minHeight: "300px",
                     maxHeight: "300px",
                 }}
             >
@@ -210,9 +208,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                                         maxWidth: "70%",
                                     }}
                                 >
-                                    <strong style={{ fontSize: "12px" }}>
-                                        {message.sender.name}
-                                    </strong>
+                                    <strong style={{ fontSize: "12px" }}>{message.sender.name}</strong>
                                     <div style={{ fontSize: "14px", marginTop: "4px" }}>
                                         {message.text}
                                     </div>
@@ -222,10 +218,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                     })}
                 </ul>
             </div>
-            <form
-                onSubmit={handleSendMessage}
-                style={{ display: "flex", borderTop: "1px solid #ddd" }}
-            >
+            <form onSubmit={handleSendMessage} style={{ display: "flex", borderTop: "1px solid #ddd" }}>
                 <input
                     type="text"
                     value={newMessage}

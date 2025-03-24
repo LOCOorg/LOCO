@@ -1,51 +1,54 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate  } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useSocket } from "../../hooks/useSocket.js";
 import { fetchMessages } from "../../api/chatAPI.js";
 import { getUserInfo } from "../../api/userAPI.js";
-import Modal from "react-modal"; // react-modal import
+import Modal from "react-modal";
+import useAuthStore from "../../stores/authStore.js";
 
-Modal.setAppElement("#root"); // 또는 "body"
+Modal.setAppElement("#root");
 
 function ChatModal() {
     const { roomId } = useParams();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
-    const [userName, setUserName] = useState(""); // 유저 이름 상태
+    const [userName, setUserName] = useState("");
     const socket = useSocket();
-    const navigate = useNavigate(); // 네비게이션 훅 추가
-    const senderId = "67bc2846c9d62c1110715d89"; // senderId를 상수로 정의
-    const [isModalOpen, setIsModalOpen] = useState(true); // 모달 상태
+    const navigate = useNavigate();
+    const authUser = useAuthStore((state) => state.user);
+    const senderId = authUser?._id; // authStore에서 받아온 사용자 ID
+    const [isModalOpen, setIsModalOpen] = useState(true);
 
     // 유저 정보를 가져오는 함수
     useEffect(() => {
-        const fetchUserInfo = async () => {
+        if (!senderId) return;
+        const fetchUserInfoAsync = async () => {
             try {
-                const user = await getUserInfo(senderId); // senderId 사용
-                setUserName(user.name); // 유저 이름 상태에 저장
+                const user = await getUserInfo(senderId);
+                setUserName(user.name);
             } catch (error) {
                 console.error("유저 정보 불러오기 실패:", error);
             }
         };
 
-        fetchUserInfo();
+        fetchUserInfoAsync();
     }, [senderId]);
 
-    // 서버로부터 받은 메시지 처리 (receiveMessage)
+    // 서버로부터 받은 메시지 처리
     useEffect(() => {
-        if (socket) {
+        if (socket && roomId) {
             socket.emit("joinRoom", roomId);
 
             socket.on("receiveMessage", (message) => {
-                // sender가 id와 name을 포함하는 경우, 이를 객체로 변환
                 const normalizedMessage = {
                     ...message,
-                    sender: message.sender.id ? { _id: message.sender.id, name: message.sender.name } : message.sender,
+                    sender: message.sender.id
+                        ? { _id: message.sender.id, name: message.sender.name }
+                        : message.sender,
                 };
 
                 setMessages((prevMessages) => {
-                    // 메시지의 _id를 Set에 저장하여 중복 체크
-                    const messageSet = new Set(prevMessages.map(msg => msg._id));
+                    const messageSet = new Set(prevMessages.map((msg) => msg._id));
                     if (!messageSet.has(normalizedMessage._id)) {
                         return [...prevMessages, normalizedMessage];
                     }
@@ -77,28 +80,29 @@ function ChatModal() {
         setNewMessage(e.target.value);
     };
 
-    // 메시지 전송 함수 (sendMessage)
+    // 메시지 전송 함수
     const handleSendMessage = async (e) => {
         e.preventDefault();
 
-        if (newMessage.trim() && socket) {
+        if (newMessage.trim() && socket && roomId && senderId) {
             try {
                 const messageData = {
                     chatRoom: roomId,
-                    sender: senderId, // senderId를 사용
+                    sender: senderId,
                     text: newMessage,
                 };
 
-                // 서버로 메시지 전송 후, 서버에서 받은 메시지를 상태에 추가
                 socket.emit("sendMessage", messageData, (response) => {
                     if (response.success) {
                         const normalizedMessage = {
                             ...response.message,
-                            sender: response.message.sender.id ? { _id: response.message.sender.id, name: response.message.sender.name } : response.message.sender,
+                            sender: response.message.sender.id
+                                ? { _id: response.message.sender.id, name: response.message.sender.name }
+                                : response.message.sender,
                         };
 
                         setMessages((prevMessages) => {
-                            const messageSet = new Set(prevMessages.map(msg => msg._id));
+                            const messageSet = new Set(prevMessages.map((msg) => msg._id));
                             if (!messageSet.has(normalizedMessage._id)) {
                                 return [...prevMessages, normalizedMessage];
                             }
@@ -111,14 +115,14 @@ function ChatModal() {
                     }
                 });
 
-                setNewMessage(""); // 메시지 입력란 비우기
+                setNewMessage("");
             } catch (error) {
                 console.error("메시지 전송 실패:", error);
             }
         }
     };
 
-    // 모달을 닫는 함수
+    // 모달 닫기 함수
     const closeModal = () => {
         setIsModalOpen(false);
         navigate("/");
@@ -137,8 +141,7 @@ function ChatModal() {
                 <div className="overflow-y-auto h-72 mb-4 w-full">
                     <ul className="space-y-4">
                         {messages.map((message) => {
-                            const isMyMessage = message.sender._id === senderId; // senderId로 비교
-
+                            const isMyMessage = message.sender._id === senderId;
                             return (
                                 <li
                                     key={message._id}
@@ -147,9 +150,7 @@ function ChatModal() {
                                     <div
                                         className={`p-3 rounded-lg max-w-xs ${isMyMessage ? "bg-blue-500 text-white self-end" : "bg-gray-200 text-gray-800 self-start"}`}
                                     >
-                                        <strong className="block text-sm">
-                                            {message.sender.name}
-                                        </strong>
+                                        <strong className="block text-sm">{message.sender.name}</strong>
                                         <p>{message.text}</p>
                                     </div>
                                 </li>

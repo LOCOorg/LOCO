@@ -1,5 +1,3 @@
-// MainComponent.jsx
-
 import { useEffect, useState } from "react";
 import { getUserInfo } from "../api/userAPI";
 import { createFriendRoom, fetchChatRooms, joinChatRoom } from "../api/chatAPI";
@@ -15,16 +13,16 @@ function MainComponent() {
     const [chatRooms, setChatRooms] = useState([]);
     const [showMore, setShowMore] = useState(false);
     const navigate = useNavigate();
-    // const user = useAuthStore((state) => state.user);
+    const authUser = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
-    const userId = "67bc2846c9d62c1110715d89";
-
     const MAX_CHAT_WINDOWS = 3;
 
     useEffect(() => {
+        if (!authUser) return;
         const fetchUserData = async () => {
             try {
-                const userData = await getUserInfo(userId);
+                // authStore에서 받아온 authUser의 _id로 상세 유저 정보를 불러옵니다.
+                const userData = await getUserInfo(authUser._id);
                 setUser(userData);
 
                 const friendsData = await Promise.all(
@@ -42,10 +40,11 @@ function MainComponent() {
         };
 
         fetchUserData();
-    }, []);
+    }, [authUser]);
 
     const handleFriendSelect = async (friend) => {
         try {
+            if (!user) return;
             const friendId = friend._id;
             const chatRoomsData = await fetchChatRooms();
             const friendChatRooms = chatRoomsData.filter(
@@ -54,7 +53,7 @@ function MainComponent() {
             const existingRoom = friendChatRooms.find((room) => {
                 if (!room.chatUsers) return false;
                 const userIds = room.chatUsers.map((user) => user._id);
-                return userIds.includes(userId) && userIds.includes(friendId);
+                return userIds.includes(user._id) && userIds.includes(friendId);
             });
 
             let newRoom;
@@ -64,9 +63,9 @@ function MainComponent() {
                 const roomType = "friend";
                 const capacity = 2;
                 let room = await createFriendRoom(roomType, capacity);
-                room = { ...room, chatUsers: [userId, friendId] };
+                room = { ...room, chatUsers: [user._id, friendId] };
 
-                await joinChatRoom(room._id, userId);
+                await joinChatRoom(room._id, user._id);
                 await joinChatRoom(room._id, friendId);
 
                 newRoom = room;
@@ -92,17 +91,17 @@ function MainComponent() {
             logout();
             navigate("/loginPage");
         } else {
-            // 로그인 상태가 아니면 로그인 페이지로 이동
             navigate("/loginPage");
         }
     };
+
     const handleProductRegistration = () => {
         navigate("/adminproducts");
     };
 
     const handleCommunity = () => {
         navigate("/community");
-    }
+    };
 
     // "더 보기" 버튼 토글
     const toggleShowMore = () => {
@@ -122,26 +121,14 @@ function MainComponent() {
     // 선택한 hidden 채팅을 visible 영역의 마지막 자리에 넣어 순환 교환합니다.
     const handleSwapChat = (selectedRoomId) => {
         setChatRooms((prevRooms) => {
-            // 순환 교환은 hidden 채팅이 존재할 때만 처리
             if (prevRooms.length <= MAX_CHAT_WINDOWS) return prevRooms;
             const newRooms = [...prevRooms];
-            // visible 영역의 가장 왼쪽 채팅 제거
             const removedVisible = newRooms.shift();
-
-            // 기존 배열에서 선택한 hidden 채팅의 인덱스 찾기
             const selectedIndex = newRooms.findIndex(room => room.roomId === selectedRoomId);
             if (selectedIndex === -1) return prevRooms;
-
-            // 선택한 hidden 채팅 제거
             const [selectedRoom] = newRooms.splice(selectedIndex, 1);
-
-            // visible 영역은 newRooms[0 ~ MAX_CHAT_WINDOWS-1] (현재 newRooms의 길이는 MAX_CHAT_WINDOWS-1)
-            // 선택한 hidden 채팅을 visible의 마지막 자리에 삽입
             newRooms.splice(MAX_CHAT_WINDOWS - 1, 0, selectedRoom);
-
-            // 제거된 visible 채팅을 hidden 영역의 마지막에 추가
             newRooms.push(removedVisible);
-
             return newRooms;
         });
     };
@@ -182,9 +169,9 @@ function MainComponent() {
                 <ChatOverlay
                     key={room.roomId}
                     roomId={room.roomId}
-                    customStyle={{right: 20 + index * 360 + "px"}}
+                    customStyle={{ right: 20 + index * 360 + "px" }}
                     onClose={handleCloseChat}
-                    friend={room.friend} // friend 정보를 전달
+                    friend={room.friend}
                 />
             ))}
 
@@ -266,8 +253,7 @@ function MainComponent() {
             >
                 상품등록
             </button>
-            <PlanButton />  {/* productShowcase 플랜 버튼 추가 */}
-
+            <PlanButton />
         </div>
     );
 }

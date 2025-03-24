@@ -116,3 +116,36 @@ export const addSubReply = async (communityId, commentId, replyId, subReplyData)
         throw error;
     }
 };
+
+// 댓글 삭제 API 호출 함수
+export const deleteComment = async (communityId, commentId) => {
+    try {
+        const response = await axios.delete(`${host}/${communityId}/comments/${commentId}`);
+        return response.data;
+    } catch (error) {
+        console.error("deleteComment error:", error);
+        throw error;
+    }
+};
+
+// 대댓글 삭제 API 호출 함수
+export const deleteReply = async (communityId, commentId, replyId) => {
+    try {
+        const response = await axios.delete(`${host}/${communityId}/comments/${commentId}/replies/${replyId}`);
+        return response.data;
+    } catch (error) {
+        console.error("deleteReply error:", error);
+        throw error;
+    }
+};
+
+// 대대댓글 삭제 API 호출 함수
+export const deleteSubReply = async (communityId, commentId, replyId, subReplyId) => {
+    try {
+        const response = await axios.delete(`${host}/${communityId}/comments/${commentId}/replies/${replyId}/subreplies/${subReplyId}`);
+        return response.data;
+    } catch (error) {
+        console.error("deleteSubReply error:", error);
+        throw error;
+    }
+};

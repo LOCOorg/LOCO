@@ -1,9 +1,12 @@
 import {Outlet} from "react-router-dom";
+import BasicLayout from "../../layout/BasicLayout.jsx";
 
 function ChatIndexPage() {
     return (
         <>
-            <Outlet/>
+            <BasicLayout>
+                <Outlet/>
+            </BasicLayout>
         </>
     );
 }
