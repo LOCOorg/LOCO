@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createCommunity } from '../../api/communityAPI.js';
+import useAuthStore from '../../stores/authStore.js';  // 추가
 
 const CommunityForm = () => {
     const [title, setTitle] = useState('');
@@ -12,6 +13,8 @@ const CommunityForm = () => {
     const [imageFile, setImageFile] = useState(null);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const currentUser = useAuthStore((state) => state.user);  // 추가
+    const userId = currentUser?._id;
 
     const handleFileChange = (e) => {
         setImageFile(e.target.files[0]);
@@ -21,26 +24,22 @@ const CommunityForm = () => {
         e.preventDefault();
 
         const formData = new FormData();
-        formData.append('userId', '67bc2846c9d62c1110715d89'); // 임시 userId (로그인 정보 대체)
+        formData.append('userId', userId); // useAuthStore에서 받아온 값 사용
         formData.append('communityTitle', title);
         formData.append('communityContents', contents);
         formData.append('communityCategory', category);
 
-        // 업로드 방식에 따라 이미지 값 처리:
-        // 파일이 선택되어 있다면 파일 우선, 없으면 이미지 URL을 전송
         if (uploadMethod === 'file' && imageFile) {
             formData.append('communityImage', imageFile);
         } else if (uploadMethod === 'url' && imageUrl.trim()) {
             formData.append('communityImage', imageUrl.trim());
         } else {
-            // 이미지 입력이 없으면 null
             formData.append('communityImage', '');
         }
 
         try {
             await createCommunity(formData);
             navigate('/community');
-            // eslint-disable-next-line no-unused-vars
         } catch (err) {
             setError('게시글 생성에 실패했습니다.');
         }
@@ -95,11 +94,10 @@ const CommunityForm = () => {
                             <option value="전적인증">전적인증</option>
                         </select>
                     </div>
-                    {/* 이미지 업로드 방식 선택 */}
                     <div>
-            <span className="block text-gray-700 font-medium mb-2">
-              이미지 업로드 방식:
-            </span>
+                        <span className="block text-gray-700 font-medium mb-2">
+                          이미지 업로드 방식:
+                        </span>
                         <div className="flex items-center space-x-4">
                             <label className="inline-flex items-center">
                                 <input
@@ -123,7 +121,6 @@ const CommunityForm = () => {
                             </label>
                         </div>
                     </div>
-                    {/* 조건부 렌더링: 업로드 방식에 따라 입력 필드 표시 */}
                     {uploadMethod === 'url' ? (
                         <div>
                             <label className="block text-gray-700 font-medium mb-2">
