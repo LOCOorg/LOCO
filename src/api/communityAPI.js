@@ -3,9 +3,9 @@ import axios from 'axios';
 
 const host = `${import.meta.env.VITE_API_HOST}/api/communities`;
 
-export const fetchCommunities = async () => {
+export const fetchCommunities = async (page = 1, size = 10) => {
     try {
-        const response = await axios.get(host);
+        const response = await axios.get(`${host}?page=${page}&size=${size}`);
         return response.data;
     } catch (error) {
         console.error("fetchCommunities error:", error);
