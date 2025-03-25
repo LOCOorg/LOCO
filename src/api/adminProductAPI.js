@@ -3,7 +3,7 @@ import axios from 'axios';
 const host = `${import.meta.env.VITE_API_HOST}/api/product`;
 
 const instance = axios.create({
-    host,
+    baseURL: host,
     withCredentials: true,
 });
 

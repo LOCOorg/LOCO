@@ -1,8 +1,9 @@
 // src/components/CommunityList.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchCommunities } from '../../api/communityApi.js';
+import { fetchCommunities, fetchTopViewed, fetchTopCommented } from '../../api/communityApi.js';
 import { getUserInfo } from '../../api/userAPI.js';
+import PageComponent from '../../common/pageComponent.jsx';
 
 // 카테고리 목록
 const categories = ['전체', '자유', '유머', '질문', '사건사고', '전적인증'];
@@ -30,62 +31,87 @@ const formatRelativeTime = (dateString) => {
 };
 
 const CommunityList = () => {
-    const [communities, setCommunities] = useState([]);
+    // 페이지네이션 관련 상태
+    const [pageResponse, setPageResponse] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 5;
+
+    // 필터링/정렬 등 나머지 상태
     const [filteredCommunities, setFilteredCommunities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('전체');
     const [selectedSort, setSelectedSort] = useState('최신순');
+    const [userMap, setUserMap] = useState({});
 
-    // 오른쪽 사이드바용 (최다 조회, 최다 댓글)
+    // 사이드바용 (전체 기준으로 고정)
     const [topViewed, setTopViewed] = useState([]);
     const [topCommented, setTopCommented] = useState([]);
-    // 사이드바에서 "최다 조회" vs "최다 댓글" 토글 상태
     const [sideTab, setSideTab] = useState('viewed');
-
-    // 작성자 정보를 저장할 맵: { [userId]: nickname }
-    const [userMap, setUserMap] = useState({});
 
     const navigate = useNavigate();
 
+    // API를 호출하여 현재 페이지 데이터 로드 (목록과 페이징용)
+    const loadCommunities = async (page) => {
+        setLoading(true);
+        try {
+            // 선택한 카테고리를 함께 전달 (백엔드에서 필터링)
+            const data = await fetchCommunities(page, pageSize, selectedCategory);
+            setPageResponse(data);
+
+            let list = data.dtoList || [];
+            // 클라이언트에서 정렬만 적용 (카테고리 필터는 백엔드 처리)
+            if (selectedSort === '최신순') {
+                list.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || a.communityRegDate);
+                    const dateB = new Date(b.createdAt || b.communityRegDate);
+                    return dateB.getTime() - dateA.getTime();
+                });
+            } else if (selectedSort === '인기순') {
+                list.sort((a, b) => b.recommended - a.recommended);
+            }
+            setFilteredCommunities(list);
+        } catch (err) {
+            setError('커뮤니티 목록을 불러오는 데 실패했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+// 전체 데이터를 기준으로 최다 조회/최다 댓글을 가져오기 (컴포넌트 마운트 시 한 번 호출)
     useEffect(() => {
-        const loadCommunities = async () => {
+        const fetchGlobalTop = async () => {
             try {
-                const data = await fetchCommunities();
-                setCommunities(data);
-                setFilteredCommunities(data);
-
-                // 사이드바용 상위 5개 추출 (조회수 기준)
-                const viewed = [...data]
-                    .sort((a, b) => b.communityViews - a.communityViews)
-                    .slice(0, 5);
-                setTopViewed(viewed);
-
-                // 최다 댓글 계산: 댓글 배열의 길이를 기준으로 정렬
-                const commented = [...data]
-                    .sort((a, b) => {
-                        const aCount = a.comments ? a.comments.length : 0;
-                        const bCount = b.comments ? b.comments.length : 0;
-                        return bCount - aCount;
-                    })
-                    .slice(0, 5);
-                setTopCommented(commented);
-            } catch (err) {
-                setError('커뮤니티 목록을 불러오는 데 실패했습니다.');
-            } finally {
-                setLoading(false);
+                const topViewedData = await fetchTopViewed();
+                setTopViewed(topViewedData);
+            } catch (error) {
+                console.error('최다 조회 데이터를 불러오지 못했습니다.', error);
+                setTopViewed([]); // 오류 발생 시 빈 배열로 대체
+            }
+            try {
+                const topCommentedData = await fetchTopCommented();
+                setTopCommented(topCommentedData);
+            } catch (error) {
+                console.error('최다 댓글 데이터를 불러오지 못했습니다.', error);
+                setTopCommented([]);
             }
         };
 
-        loadCommunities();
+        fetchGlobalTop();
     }, []);
 
-    // 커뮤니티 목록이 업데이트되면, 각 게시글의 작성자 정보를 가져와 userMap에 저장
+    // 페이지, 필터, 정렬 변경 시 목록 데이터 재로드
+    useEffect(() => {
+        loadCommunities(currentPage);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage, selectedCategory, selectedSort]);
+
+    // 현재 페이지의 게시글 작성자 정보 로드 (userMap 업데이트)
     useEffect(() => {
         const fetchUserNames = async () => {
-            if (communities.length === 0) return;
+            if (!pageResponse || !pageResponse.dtoList) return;
             const userIds = new Set();
-            communities.forEach((comm) => {
+            pageResponse.dtoList.forEach((comm) => {
                 userIds.add(comm.userId);
             });
             const newUserMap = {};
@@ -102,36 +128,22 @@ const CommunityList = () => {
         };
 
         fetchUserNames();
-    }, [communities]);
+    }, [pageResponse]);
 
-    // 카테고리 클릭 시 필터링
+    // 카테고리 클릭 시 필터링 상태 업데이트 + 페이지 리셋
     const handleCategoryClick = (category) => {
         setSelectedCategory(category);
-        if (category === '전체') {
-            setFilteredCommunities(communities);
-        } else {
-            const filtered = communities.filter(
-                (c) => c.communityCategory === category
-            );
-            setFilteredCommunities(filtered);
-        }
+        setCurrentPage(1);
     };
 
-    // 정렬 변경
+    // 정렬 옵션 변경 시 상태 업데이트
     const handleSortChange = (sortOption) => {
         setSelectedSort(sortOption);
-        let sorted = [...filteredCommunities];
+    };
 
-        if (sortOption === '최신순') {
-            sorted.sort((a, b) => {
-                const dateA = new Date(a.createdAt || a.communityRegDate);
-                const dateB = new Date(b.createdAt || b.communityRegDate);
-                return dateB.getTime() - dateA.getTime();
-            });
-        } else if (sortOption === '인기순') {
-            sorted.sort((a, b) => b.recommended - a.recommended);
-        }
-        setFilteredCommunities(sorted);
+    // 페이지 변경 시 호출되는 콜백
+    const changePage = (page) => {
+        setCurrentPage(page);
     };
 
     if (loading) {
@@ -217,10 +229,13 @@ const CommunityList = () => {
                                 )}
                                 <div className="flex-1">
                                     <button
-                                        onClick={() => navigate(`/community/${community._id}`)}
+                                        onClick={() =>
+                                            navigate(`/community/${community._id}`)
+                                        }
                                         className="text-blue-500 font-medium hover:underline"
                                     >
-                                        {community.communityTitle} ({community.communityCategory})
+                                        {community.communityTitle} (
+                                        {community.communityCategory})
                                     </button>
                                     <p className="mt-2 text-sm text-gray-600">
                                         작성일:{' '}
@@ -238,7 +253,9 @@ const CommunityList = () => {
                                         | 댓글:{' '}
                                         <span className="font-semibold">
                                             {community.commentCount ||
-                                                (community.comments ? community.comments.length : 0)}
+                                                (community.comments
+                                                    ? community.comments.length
+                                                    : 0)}
                                         </span>
                                     </p>
                                     <p className="text-sm text-gray-600">
@@ -261,9 +278,14 @@ const CommunityList = () => {
                         새 게시글 작성
                     </button>
                 </div>
+
+                {/* PageComponent를 통한 페이지 네비게이션 */}
+                {pageResponse && (
+                    <PageComponent pageResponse={pageResponse} changePage={changePage} />
+                )}
             </main>
 
-            {/* 오른쪽 사이드바 - 버튼 토글로 최다 조회 / 최다 댓글 */}
+            {/* 오른쪽 사이드바 - 최다 조회 / 최다 댓글 (전체 기준 고정) */}
             <aside className="w-64">
                 <div className="flex space-x-2 mb-4">
                     <button
