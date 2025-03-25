@@ -3,9 +3,13 @@ import axios from 'axios';
 
 const host = `${import.meta.env.VITE_API_HOST}/api/communities`;
 
-export const fetchCommunities = async (page = 1, size = 10) => {
+export const fetchCommunities = async (page = 1, size = 10, category = '전체') => {
     try {
-        const response = await axios.get(`${host}?page=${page}&size=${size}`);
+        let url = `${host}?page=${page}&size=${size}`;
+        if (category && category !== '전체') {
+            url += `&category=${encodeURIComponent(category)}`;
+        }
+        const response = await axios.get(url);
         return response.data;
     } catch (error) {
         console.error("fetchCommunities error:", error);
@@ -149,3 +153,26 @@ export const deleteSubReply = async (communityId, commentId, replyId, subReplyId
         throw error;
     }
 };
+
+//커뮤니티 최다 조회
+export const fetchTopViewed = async () => {
+    try {
+        const response = await axios.get(`${host}/top-viewed`);
+        return response.data;
+    } catch (error) {
+        console.error("fetchTopViewed error:", error);
+        throw error;
+    }
+};
+
+//커뮤니티 최다 댓글
+export const fetchTopCommented = async () => {
+    try {
+        const response = await axios.get(`${host}/top-commented`);
+        return response.data;
+    } catch (error) {
+        console.error("fetchTopCommented error:", error);
+        throw error;
+    }
+};
+

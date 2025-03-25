@@ -1,7 +1,7 @@
 // src/components/CommunityList.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchCommunities } from '../../api/communityApi.js';
+import { fetchCommunities, fetchTopViewed, fetchTopCommented } from '../../api/communityApi.js';
 import { getUserInfo } from '../../api/userAPI.js';
 import PageComponent from '../../common/pageComponent.jsx';
 
@@ -44,31 +44,23 @@ const CommunityList = () => {
     const [selectedSort, setSelectedSort] = useState('최신순');
     const [userMap, setUserMap] = useState({});
 
-    // 사이드바용 (현재 페이지 내 데이터 기준)
+    // 사이드바용 (전체 기준으로 고정)
     const [topViewed, setTopViewed] = useState([]);
     const [topCommented, setTopCommented] = useState([]);
     const [sideTab, setSideTab] = useState('viewed');
 
     const navigate = useNavigate();
 
-    // API를 호출하여 paginated 데이터 로드
+    // API를 호출하여 현재 페이지 데이터 로드 (목록과 페이징용)
     const loadCommunities = async (page) => {
         setLoading(true);
         try {
-            const data = await fetchCommunities(page, pageSize);
+            // 선택한 카테고리를 함께 전달 (백엔드에서 필터링)
+            const data = await fetchCommunities(page, pageSize, selectedCategory);
             setPageResponse(data);
 
-            // 백엔드에서 받은 페이지 데이터(dtoList)를 기준으로 필터링/정렬 적용
             let list = data.dtoList || [];
-
-            // 카테고리 필터 적용 (전체 제외)
-            if (selectedCategory !== '전체') {
-                list = list.filter(
-                    (c) => c.communityCategory === selectedCategory
-                );
-            }
-
-            // 정렬 적용
+            // 클라이언트에서 정렬만 적용 (카테고리 필터는 백엔드 처리)
             if (selectedSort === '최신순') {
                 list.sort((a, b) => {
                     const dateA = new Date(a.createdAt || a.communityRegDate);
@@ -79,21 +71,6 @@ const CommunityList = () => {
                 list.sort((a, b) => b.recommended - a.recommended);
             }
             setFilteredCommunities(list);
-
-            // 사이드바: 현재 페이지 데이터 기준 상위 5개 추출
-            const viewed = [...list]
-                .sort((a, b) => b.communityViews - a.communityViews)
-                .slice(0, 5);
-            setTopViewed(viewed);
-
-            const commented = [...list]
-                .sort((a, b) => {
-                    const aCount = a.comments ? a.comments.length : 0;
-                    const bCount = b.comments ? b.comments.length : 0;
-                    return bCount - aCount;
-                })
-                .slice(0, 5);
-            setTopCommented(commented);
         } catch (err) {
             setError('커뮤니티 목록을 불러오는 데 실패했습니다.');
         } finally {
@@ -101,7 +78,29 @@ const CommunityList = () => {
         }
     };
 
-    // 페이지, 필터, 정렬 변경 시 데이터를 재로드
+// 전체 데이터를 기준으로 최다 조회/최다 댓글을 가져오기 (컴포넌트 마운트 시 한 번 호출)
+    useEffect(() => {
+        const fetchGlobalTop = async () => {
+            try {
+                const topViewedData = await fetchTopViewed();
+                setTopViewed(topViewedData);
+            } catch (error) {
+                console.error('최다 조회 데이터를 불러오지 못했습니다.', error);
+                setTopViewed([]); // 오류 발생 시 빈 배열로 대체
+            }
+            try {
+                const topCommentedData = await fetchTopCommented();
+                setTopCommented(topCommentedData);
+            } catch (error) {
+                console.error('최다 댓글 데이터를 불러오지 못했습니다.', error);
+                setTopCommented([]);
+            }
+        };
+
+        fetchGlobalTop();
+    }, []);
+
+    // 페이지, 필터, 정렬 변경 시 목록 데이터 재로드
     useEffect(() => {
         loadCommunities(currentPage);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -131,9 +130,10 @@ const CommunityList = () => {
         fetchUserNames();
     }, [pageResponse]);
 
-    // 카테고리 클릭 시 필터링 상태 업데이트
+    // 카테고리 클릭 시 필터링 상태 업데이트 + 페이지 리셋
     const handleCategoryClick = (category) => {
         setSelectedCategory(category);
+        setCurrentPage(1);
     };
 
     // 정렬 옵션 변경 시 상태 업데이트
@@ -285,7 +285,7 @@ const CommunityList = () => {
                 )}
             </main>
 
-            {/* 오른쪽 사이드바 - 최다 조회 / 최다 댓글 (현재 페이지 데이터 기준) */}
+            {/* 오른쪽 사이드바 - 최다 조회 / 최다 댓글 (전체 기준 고정) */}
             <aside className="w-64">
                 <div className="flex space-x-2 mb-4">
                     <button
