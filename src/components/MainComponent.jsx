@@ -1,10 +1,14 @@
+// src/components/MainComponent
+
 import { useEffect, useState } from "react";
+import { fetchCurrentUser } from "../api/authAPI";
 import { getUserInfo } from "../api/userAPI";
 import { createFriendRoom, fetchChatRooms, joinChatRoom } from "../api/chatAPI";
 import ChatOverlay from "./chatcomponents/ChatOverlay.jsx";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/authStore.js";
 import PlanButton from "./product/PlanButton.jsx";
+
 
 function MainComponent() {
     const [user, setUser] = useState(null);
@@ -13,9 +17,23 @@ function MainComponent() {
     const [chatRooms, setChatRooms] = useState([]);
     const [showMore, setShowMore] = useState(false);
     const navigate = useNavigate();
+    const setStoreUser = useAuthStore((state) => state.setUser); //로그인 새로고침
     const authUser = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
     const MAX_CHAT_WINDOWS = 3;
+
+    useEffect(() => {
+        // 이미 로그인 상태라면 다시 호출하지 않음
+        if (authUser) return;
+
+        const initUser = async () => {
+            const currentUser = await fetchCurrentUser(); // /api/auth/me 호출
+            if (currentUser) {
+                setStoreUser(currentUser);
+            }
+        };
+        initUser();
+    }, [authUser, setStoreUser]);
 
     useEffect(() => {
         if (!authUser) return;
@@ -121,14 +139,26 @@ function MainComponent() {
     // 선택한 hidden 채팅을 visible 영역의 마지막 자리에 넣어 순환 교환합니다.
     const handleSwapChat = (selectedRoomId) => {
         setChatRooms((prevRooms) => {
+            // 순환 교환은 hidden 채팅이 존재할 때만 처리
             if (prevRooms.length <= MAX_CHAT_WINDOWS) return prevRooms;
             const newRooms = [...prevRooms];
+            // visible 영역의 가장 왼쪽 채팅 제거
             const removedVisible = newRooms.shift();
+
+            // 기존 배열에서 선택한 hidden 채팅의 인덱스 찾기
             const selectedIndex = newRooms.findIndex(room => room.roomId === selectedRoomId);
             if (selectedIndex === -1) return prevRooms;
+
+            // 선택한 hidden 채팅 제거
             const [selectedRoom] = newRooms.splice(selectedIndex, 1);
+
+            // visible 영역은 newRooms[0 ~ MAX_CHAT_WINDOWS-1] (현재 newRooms의 길이는 MAX_CHAT_WINDOWS-1)
+            // 선택한 hidden 채팅을 visible의 마지막 자리에 삽입
             newRooms.splice(MAX_CHAT_WINDOWS - 1, 0, selectedRoom);
+
+            // 제거된 visible 채팅을 hidden 영역의 마지막에 추가
             newRooms.push(removedVisible);
+
             return newRooms;
         });
     };
@@ -253,7 +283,8 @@ function MainComponent() {
             >
                 상품등록
             </button>
-            <PlanButton />
+            <PlanButton />  {/* productShowcase 플랜 버튼 추가 */}
+
         </div>
     );
 }
