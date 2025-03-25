@@ -13,6 +13,9 @@ const LoginHandler = () => {                              // 함수 컴포넌트
     const [searchParams] = useSearchParams();              // URL 쿼리 파라미터 접근 (수정)
     const code = searchParams.get("code");                  // 인가코드 추출 (수정)
 
+    // 인가 코드가 제대로 받아지는지 확인
+    console.log("카카오 code:", code);
+
     // Zustand의 상태 업데이트 함수를 가져옴
     const setToken = useAuthStore((state) => state.setToken);
     const setUser = useAuthStore((state) => state.setUser);
@@ -32,7 +35,7 @@ const LoginHandler = () => {                              // 함수 컴포넌트
                     } else if (data.status === "success") {          // 로그인 성공 응답인 경우
                         // localStorage.setItem("token", data.token);     // JWT 토큰을 localStorage에 저장 (수정)
                         // 로그인 성공 시 Zustand store 업데이트
-                        setToken(data.token);
+                        // setToken(data.token);
                         setUser(data.user);
                         navigate("/");                                 // 메인 페이지로 이동 (수정)
                     }
