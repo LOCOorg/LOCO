@@ -73,6 +73,7 @@ const CommunityList = () => {
             setFilteredCommunities(list);
         } catch (err) {
             setError('커뮤니티 목록을 불러오는 데 실패했습니다.');
+            console.log(err);
         } finally {
             setLoading(false);
         }
@@ -121,6 +122,7 @@ const CommunityList = () => {
                     newUserMap[uid] = userInfo.nickname || userInfo.name || uid;
                 } catch (err) {
                     newUserMap[uid] = uid;
+                    console.log(err);
                 }
             });
             await Promise.all(promises);
