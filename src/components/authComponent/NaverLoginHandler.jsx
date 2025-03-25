@@ -28,7 +28,7 @@ const NaverLoginHandler = () => {
                         navigate('/signupPage');
                     } else if (data.status === "success") {
                         // 로그인 성공 시 토큰 저장 후 메인 페이지로 이동
-                        setToken(data.token);
+                        // setToken(data.token);
                         setUser(data.user);
                         navigate('/');
                     }
