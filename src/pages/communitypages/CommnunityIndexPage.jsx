@@ -1,7 +1,7 @@
 import {Outlet} from "react-router-dom";
 import BasicLayout from "../../layout/BasicLayout.jsx";
 
-function ChatIndexPage() {
+function CommnunityIndexPage() {
     return (
         <>
             <BasicLayout>
@@ -11,4 +11,4 @@ function ChatIndexPage() {
     );
 }
 
-export default ChatIndexPage;
+export default CommnunityIndexPage;
