@@ -5,6 +5,7 @@ import { fetchMessages } from "../../api/chatAPI.js";
 import { getUserInfo } from "../../api/userAPI.js";
 import useAuthStore from "../../stores/authStore.js";
 
+// eslint-disable-next-line react/prop-types
 function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) {
     const { roomId: routeRoomId } = useParams();
     const roomId = propRoomId || routeRoomId;
@@ -162,6 +163,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                     alignItems: "center",
                 }}
             >
+                {/* eslint-disable-next-line react/prop-types */}
                 <span>{friend ? (friend.nickname || friend.name) : "채팅"}</span>
                 <button
                     onClick={handleClose}
