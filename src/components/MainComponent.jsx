@@ -22,18 +22,6 @@ function MainComponent() {
     const logout = useAuthStore((state) => state.logout);
     const MAX_CHAT_WINDOWS = 3;
 
-    useEffect(() => {
-        // 이미 로그인 상태라면 다시 호출하지 않음
-        if (authUser) return;
-
-        const initUser = async () => {
-            const currentUser = await fetchCurrentUser(); // /api/auth/me 호출
-            if (currentUser) {
-                setStoreUser(currentUser);
-            }
-        };
-        initUser();
-    }, [authUser, setStoreUser]);
 
     useEffect(() => {
         if (!authUser) return;

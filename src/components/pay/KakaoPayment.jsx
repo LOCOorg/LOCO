@@ -1,11 +1,11 @@
 import React from 'react';
 import axios from 'axios';
-import useAuthStore from "../../stores/authStore.js"; // zustand를 통해 사용자 정보 가져오기
+// import useAuthStore from "../../stores/authStore.js"; // zustand를 통해 사용자 정보 가져오기
 
 const KakaoPayment = ({ product }) => {
-    const { user } = useAuthStore();
-    // 로그인한 사용자의 ID (없으면 'unknown')
-    const partnerUserId = user?._id || 'unknown';
+    // const { user } = useAuthStore();
+    // // 로그인한 사용자의 ID (없으면 'unknown')
+    // const partnerUserId = user?._id || 'unknown';
 
     // 결제 준비 응답을 받고 사용자의 환경에 맞는 리다이렉트 URL로 이동하는 함수
     const handlePaymentRedirect = (responseData) => {
@@ -24,7 +24,7 @@ const KakaoPayment = ({ product }) => {
                 productId: product._id,
                 productName: product.productName, // 추가
                 amount: product.productPrice,
-                partnerUserId,
+                // partnerUserId,
             });
             console.log("Kakao Pay 초기 정기 결제 준비 응답:", response.data);
             // 결제 준비 응답을 받은 후, handlePaymentRedirect 함수를 호출하여 리다이렉트 처리
