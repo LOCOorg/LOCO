@@ -68,10 +68,27 @@ function QnaListComponent() {
         setShowModal(true);
     };
 
+    // 모달을 닫을 때, 답변이 등록되어 상태가 "답변완료"라면 waitingQnas 상태를 로컬에서 직접 업데이트합니다.
     const handleCloseModal = () => {
+        if (selectedQna && selectedQna.qnaStatus === "답변완료") {
+            // 답변대기 목록에서 해당 QnA 항목 제거
+            setWaitingQnas(prevWaiting => prevWaiting.filter(qna => qna._id !== selectedQna._id));
+            // 답변완료 목록에 이미 존재하는지 확인 후 추가 또는 업데이트
+            setAnsweredQnas(prevAnswered => {
+                const exists = prevAnswered.some(qna => qna._id === selectedQna._id);
+                if (exists) {
+                    return prevAnswered.map(qna => qna._id === selectedQna._id ? selectedQna : qna);
+                } else {
+                    // 배열의 끝에 추가하여 순서대로 유지
+                    return [...prevAnswered, selectedQna];
+                }
+            });
+        }
         setSelectedQna(null);
         setShowModal(false);
     };
+
+
 
     // 삭제 요청 시 대상 ID 저장 후 모달 오픈
     const requestDelete = (id) => {
@@ -190,9 +207,7 @@ function QnaListComponent() {
                                 <button
                                     key={page}
                                     onClick={() => setWaitingPage(page)}
-                                    className={`px-3 py-1 border rounded hover:bg-gray-200 ${
-                                        page === waitingPage ? 'bg-blue-500 text-white' : ''
-                                    }`}
+                                    className={`px-3 py-1 border rounded hover:bg-gray-200 ${page === waitingPage ? 'bg-blue-500 text-white' : ''}`}
                                 >
                                     {page}
                                 </button>
@@ -264,9 +279,7 @@ function QnaListComponent() {
                                 <button
                                     key={page}
                                     onClick={() => setAnsweredPage(page)}
-                                    className={`px-3 py-1 border rounded hover:bg-gray-200 ${
-                                        page === answeredPage ? 'bg-blue-500 text-white' : ''
-                                    }`}
+                                    className={`px-3 py-1 border rounded hover:bg-gray-200 ${page === answeredPage ? 'bg-blue-500 text-white' : ''}`}
                                 >
                                     {page}
                                 </button>

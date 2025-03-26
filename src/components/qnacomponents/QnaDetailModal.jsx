@@ -1,5 +1,5 @@
 // QnaDetailModal.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import useAuthStore from '../../stores/authStore';
 import { updateQna } from '../../api/qnaAPI';
 
