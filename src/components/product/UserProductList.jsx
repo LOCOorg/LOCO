@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { productAPI } from '../../api/adminProductAPI.js';
 import ProductCard from './ProductCard.jsx';
+import PaymentFailureModal from "../pay/PaymentFailureModal.jsx";
 
 const ProductList = ({ onProductSelect }) => {
     const [products, setProducts] = useState([]);
@@ -36,6 +37,7 @@ const ProductList = ({ onProductSelect }) => {
     return (
         <div>
             <div>
+                <PaymentFailureModal />
                 <h2 className="text-2xl font-bold mb-4">구독 상품</h2>
                 {subscriptionProducts.length === 0 ? (
                     <p>등록된 구독 상품이 없습니다.</p>
