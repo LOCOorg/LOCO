@@ -9,7 +9,6 @@ import LeftSidebar from '../../layout/CommunityLayout/LeftSidebar.jsx';
 import RightSidebar from '../../layout/CommunityLayout/RightSidebar.jsx';
 import useAuthStore from '../../stores/authStore.js';
 
-// 상대 시간 포맷 함수
 const formatRelativeTime = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -35,12 +34,10 @@ const CommunityList = () => {
     const currentUser = useAuthStore((state) => state.user);
     const currentUserId = currentUser?._id;
 
-    // 페이지네이션 관련 상태
     const [pageResponse, setPageResponse] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 5;
 
-    // 필터링/정렬 등 기타 상태
     const [filteredCommunities, setFilteredCommunities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -48,17 +45,13 @@ const CommunityList = () => {
     const [selectedSort, setSelectedSort] = useState('최신순');
     const [userMap, setUserMap] = useState({});
 
-    // 사이드바용 (전체 기준)
     const [topViewed, setTopViewed] = useState([]);
     const [topCommented, setTopCommented] = useState([]);
     const [sideTab, setSideTab] = useState('viewed');
 
-    // API 호출: 현재 페이지 데이터 로드 (서버에서 필터링 및 페이징 처리)
     const loadCommunities = async (page) => {
         setLoading(true);
         try {
-            // "내 글"과 "내 댓글"은 백엔드에서 처리하므로, category를 그대로 전달하고
-            // 해당 카테고리일 때 currentUserId도 함께 전달합니다.
             const data = await fetchCommunities(
                 page,
                 pageSize,
@@ -66,9 +59,7 @@ const CommunityList = () => {
                 (selectedCategory === '내 글' || selectedCategory === '내 댓글') ? currentUserId : null
             );
             setPageResponse(data);
-
             let list = data.dtoList || [];
-            // 추가 정렬: '인기순'은 클라이언트에서 처리 (최신순은 기본 정렬)
             if (selectedSort === '인기순') {
                 list.sort((a, b) => b.recommended - a.recommended);
             }
@@ -81,7 +72,6 @@ const CommunityList = () => {
         }
     };
 
-    // 최다 조회/댓글 데이터 로드
     useEffect(() => {
         const fetchGlobalTop = async () => {
             try {
@@ -102,13 +92,14 @@ const CommunityList = () => {
         fetchGlobalTop();
     }, []);
 
-    // 페이지, 필터, 정렬 변경 시 데이터 재로드
+    // 현재 사용자가 필요한 카테고리일 때 userId가 로드되지 않았다면 호출하지 않음
     useEffect(() => {
+        if ((selectedCategory === '내 글' || selectedCategory === '내 댓글') && !currentUserId) {
+            return;
+        }
         loadCommunities(currentPage);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, selectedCategory, selectedSort]);
+    }, [currentPage, selectedCategory, selectedSort, currentUserId]);
 
-    // 게시글 작성자 정보 로드
     useEffect(() => {
         const fetchUserNames = async () => {
             if (!pageResponse || !pageResponse.dtoList) return;
@@ -132,19 +123,16 @@ const CommunityList = () => {
         fetchUserNames();
     }, [pageResponse]);
 
-    // 카테고리 클릭 시 상태 업데이트 및 URL 반영
     const handleCategoryClick = (category) => {
         setSelectedCategory(category);
         setCurrentPage(1);
         navigate(`?category=${category}`);
     };
 
-    // 정렬 옵션 변경
     const handleSortChange = (sortOption) => {
         setSelectedSort(sortOption);
     };
 
-    // 페이지 변경 콜백
     const changePage = (page) => {
         setCurrentPage(page);
     };
