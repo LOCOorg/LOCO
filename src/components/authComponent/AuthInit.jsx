@@ -1,3 +1,5 @@
+//새로고침 로그인 유지
+
 import { useEffect } from 'react';
 import { fetchCurrentUser } from '../../api/authAPI.js';
 import useAuthStore from '../../stores/authStore.js';
