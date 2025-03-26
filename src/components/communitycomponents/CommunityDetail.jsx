@@ -9,11 +9,14 @@ import {
     addSubReply,
     deleteComment,
     deleteReply,
-    deleteSubReply,
+    deleteSubReply, fetchTopViewed, fetchTopCommented,
 } from '../../api/communityApi.js';
 import { getUserInfo } from '../../api/userAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import useAuthStore from '../../stores/authStore.js';
+import CommunityLayout from "../../layout/CommunityLayout/CommunityLayout.jsx";
+import LeftSidebar from "../../layout/CommunityLayout/LeftSidebar.jsx";
+import RightSidebar from "../../layout/CommunityLayout/RightSidebar.jsx";
 
 // 상대 시간 포맷 함수
 const formatRelativeTime = (dateString) => {
@@ -73,6 +76,14 @@ const CommunityDetail = () => {
     // 사용자 정보 맵
     const [userMap, setUserMap] = useState({});
 
+    // Detail 페이지에서도 사이드바 기능을 위해 필요한 상태 추가
+    const [selectedCategory, setSelectedCategory] = useState('전체');
+    const handleCategoryClick = (category) => setSelectedCategory(category);
+
+    const [sideTab, setSideTab] = useState('viewed');
+    const [topViewed, setTopViewed] = useState([]);
+    const [topCommented, setTopCommented] = useState([]);
+
     // 커뮤니티 데이터 로드
     useEffect(() => {
         const loadCommunity = async () => {
@@ -81,6 +92,7 @@ const CommunityDetail = () => {
                 setCommunity(data);
             } catch (err) {
                 setError('게시글을 불러오는 데 실패했습니다.');
+                console.log(err);
             } finally {
                 setLoading(false);
             }
@@ -115,6 +127,7 @@ const CommunityDetail = () => {
                         newUserMap[uid] = userInfo.nickname || userInfo.name || uid;
                     } catch (error) {
                         newUserMap[uid] = uid;
+                        console.log(error);
                     }
                 }
             });
@@ -141,6 +154,7 @@ const CommunityDetail = () => {
             setModalTitle('삭제 실패');
             setModalContent('게시글 삭제에 실패했습니다.');
             setRecommendModalOpen(true);
+            console.log(err);
         }
     };
 
@@ -180,6 +194,7 @@ const CommunityDetail = () => {
             setCommentError('');
         } catch (err) {
             setCommentError('댓글 작성에 실패했습니다.');
+            console.log(err);
         }
     };
 
@@ -234,7 +249,7 @@ const CommunityDetail = () => {
                 [commentId]: { open: false, text: '', file: null },
             }));
         } catch (err) {
-            alert('대댓글 작성에 실패했습니다.');
+            console.log(err);
         }
     };
 
@@ -246,27 +261,6 @@ const CommunityDetail = () => {
                 open: !prev[replyId]?.open,
                 text: !prev[replyId]?.open ? `@${mentionNickname} ` : '',
                 file: null,
-            },
-        }));
-    };
-
-    const handleSubReplyTextChange = (replyId, text) => {
-        if (text.length > 1000) return;
-        setSubReplyState((prev) => ({
-            ...prev,
-            [replyId]: {
-                ...prev[replyId],
-                text,
-            },
-        }));
-    };
-
-    const handleSubReplyFileChange = (replyId, file) => {
-        setSubReplyState((prev) => ({
-            ...prev,
-            [replyId]: {
-                ...prev[replyId],
-                file,
             },
         }));
     };
@@ -289,7 +283,7 @@ const CommunityDetail = () => {
                 [replyId]: { open: false, text: '', file: null },
             }));
         } catch (err) {
-            alert('대대댓글 작성에 실패했습니다.');
+            console.log(err);
         }
     };
 
@@ -306,7 +300,7 @@ const CommunityDetail = () => {
             setCommentDeleteModalOpen(false);
             setCommentToDelete(null);
         } catch (err) {
-            alert("댓글 삭제에 실패했습니다.");
+            console.log(err);
             setCommentDeleteModalOpen(false);
         }
     };
@@ -324,7 +318,7 @@ const CommunityDetail = () => {
             setReplyDeleteModalOpen(false);
             setReplyToDelete({ commentId: null, replyId: null });
         } catch (err) {
-            alert("대댓글 삭제에 실패했습니다.");
+            console.log(err);
             setReplyDeleteModalOpen(false);
         }
     };
@@ -347,10 +341,38 @@ const CommunityDetail = () => {
             setSubReplyDeleteModalOpen(false);
             setSubReplyToDelete({ commentId: null, replyId: null, subReplyId: null });
         } catch (err) {
-            alert("대대댓글 삭제에 실패했습니다.");
+            console.log(err);
             setSubReplyDeleteModalOpen(false);
         }
     };
+
+    // 예시: API 호출로 최다 조회, 최다 댓글 데이터 fetch
+    useEffect(() => {
+        const fetchGlobalTop = async () => {
+            try {
+                const viewedData = await fetchTopViewed(); // 커뮤니티 리스트와 동일 API
+                setTopViewed(viewedData);
+            } catch (error) {
+                setTopViewed([]);
+                console.log(error);
+            }
+            try {
+                const commentedData = await fetchTopCommented();
+                setTopCommented(commentedData);
+            } catch (error) {
+                setTopCommented([]);
+                console.log(error);
+            }
+        };
+        fetchGlobalTop();
+    }, []);
+
+
+
+    const handleCategoryNav = (category) => {
+        navigate(`/community?category=${category}`);
+    };
+
 
     if (loading) {
         return (
@@ -373,6 +395,22 @@ const CommunityDetail = () => {
     const postWriterNickname = userMap[community.userId] || community.userId;
 
     return (
+        <CommunityLayout
+            leftSidebar={
+                <LeftSidebar
+                    selectedCategory={selectedCategory}
+                    handleCategoryClick={handleCategoryNav}
+                />
+            }
+            rightSidebar={
+                <RightSidebar
+                    sideTab={sideTab}
+                    setSideTab={setSideTab}
+                    topViewed={topViewed}
+                    topCommented={topCommented}
+                />
+            }
+        >
         <div className="container mx-auto p-6">
             {/* 게시글 삭제 확인 모달 */}
             <CommonModal
@@ -846,6 +884,7 @@ const CommunityDetail = () => {
                 </div>
             </div>
         </div>
+        </CommunityLayout>
     );
 };
 
