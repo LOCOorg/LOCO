@@ -1,14 +1,13 @@
 // src/components/MainComponent
 
 import { useEffect, useState } from "react";
-import { fetchCurrentUser } from "../api/authAPI";
 import { getUserInfo } from "../api/userAPI";
 import { createFriendRoom, fetchChatRooms, joinChatRoom } from "../api/chatAPI";
 import ChatOverlay from "./chatcomponents/ChatOverlay.jsx";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/authStore.js";
 import PlanButton from "./product/PlanButton.jsx";
-
+import PaymentStatusModal from "./pay/PaymentStatusModal.jsx";
 
 function MainComponent() {
     const [user, setUser] = useState(null);
@@ -152,128 +151,133 @@ function MainComponent() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
-            <h1 className="text-4xl font-bold text-gray-800 mb-6">홈</h1>
-            {loading ? (
-                <p className="text-gray-500">로딩 중...</p>
-            ) : (
-                user && (
-                    <div className="mb-6 p-4 bg-white shadow-md rounded-lg w-80">
-                        <h2 className="text-2xl font-semibold text-gray-700">
-                            {user.nickname} 님
-                        </h2>
-                        <p className="text-gray-600">친구 목록:</p>
-                        <ul className="list-disc pl-5 text-gray-700">
-                            {friends.length > 0 ? (
-                                friends.map((friend, index) => (
-                                    <li
-                                        key={index}
-                                        className="cursor-pointer text-blue-500 hover:text-blue-700"
-                                        onClick={() => handleFriendSelect(friend)}
-                                    >
-                                        {friend.nickname} {friend.name}
-                                    </li>
-                                ))
-                            ) : (
-                                <p className="text-gray-500">친구가 없습니다.</p>
-                            )}
-                        </ul>
-                    </div>
-                )
-            )}
+        <>
+            {/* PaymentStatusModal을 반환문 최상위에 포함하여 렌더링 */}
+            <PaymentStatusModal/>
 
-            {/* 현재 보이는 채팅창 */}
-            {visibleChatRooms.map((room, index) => (
-                <ChatOverlay
-                    key={room.roomId}
-                    roomId={room.roomId}
-                    customStyle={{ right: 20 + index * 360 + "px" }}
-                    onClose={handleCloseChat}
-                    friend={room.friend}
-                />
-            ))}
+            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
+                <h1 className="text-4xl font-bold text-gray-800 mb-6">홈</h1>
+                {loading ? (
+                    <p className="text-gray-500">로딩 중...</p>
+                ) : (
+                    user && (
+                        <div className="mb-6 p-4 bg-white shadow-md rounded-lg w-80">
+                            <h2 className="text-2xl font-semibold text-gray-700">
+                                {user.nickname} 님
+                            </h2>
+                            <p className="text-gray-600">친구 목록:</p>
+                            <ul className="list-disc pl-5 text-gray-700">
+                                {friends.length > 0 ? (
+                                    friends.map((friend, index) => (
+                                        <li
+                                            key={index}
+                                            className="cursor-pointer text-blue-500 hover:text-blue-700"
+                                            onClick={() => handleFriendSelect(friend)}
+                                        >
+                                            {friend.nickname} {friend.name}
+                                        </li>
+                                    ))
+                                ) : (
+                                    <p className="text-gray-500">친구가 없습니다.</p>
+                                )}
+                            </ul>
+                        </div>
+                    )
+                )}
 
-            {/* 더 보기 영역: 아이콘 목록으로 표시 */}
-            {hiddenChatRooms.length > 0 && (
-                <div
-                    style={{
-                        position: "fixed",
-                        bottom: "20px",
-                        right: 20 + MAX_CHAT_WINDOWS * 360 + "px",
-                        zIndex: 1100,
-                    }}
-                >
-                    <button
-                        onClick={toggleShowMore}
+                {/* 현재 보이는 채팅창 */}
+                {visibleChatRooms.map((room, index) => (
+                    <ChatOverlay
+                        key={room.roomId}
+                        roomId={room.roomId}
+                        customStyle={{right: 20 + index * 360 + "px"}}
+                        onClose={handleCloseChat}
+                        friend={room.friend}
+                    />
+                ))}
+
+                {/* 더 보기 영역: 아이콘 목록으로 표시 */}
+                {hiddenChatRooms.length > 0 && (
+                    <div
                         style={{
-                            padding: "10px 15px",
-                            backgroundColor: "#0084ff",
-                            color: "white",
-                            border: "none",
-                            cursor: "pointer",
-                            borderRadius: "8px",
-                            marginBottom: "5px",
+                            position: "fixed",
+                            bottom: "20px",
+                            right: 20 + MAX_CHAT_WINDOWS * 360 + "px",
+                            zIndex: 1100,
                         }}
                     >
-                        {showMore
-                            ? "채팅 숨기기"
-                            : `+${hiddenChatRooms.length}개의 채팅`}
-                    </button>
+                        <button
+                            onClick={toggleShowMore}
+                            style={{
+                                padding: "10px 15px",
+                                backgroundColor: "#0084ff",
+                                color: "white",
+                                border: "none",
+                                cursor: "pointer",
+                                borderRadius: "8px",
+                                marginBottom: "5px",
+                            }}
+                        >
+                            {showMore
+                                ? "채팅 숨기기"
+                                : `+${hiddenChatRooms.length}개의 채팅`}
+                        </button>
 
-                    {showMore &&
-                        hiddenChatRooms.map((room) => (
-                            <button
-                                key={room.roomId}
-                                onClick={() => handleSwapChat(room.roomId)}
-                                style={{
-                                    display: "block",
-                                    margin: "5px 0",
-                                    padding: "5px",
-                                    backgroundColor: "#eee",
-                                    border: "1px solid #ccc",
-                                    borderRadius: "50%",
-                                    width: "40px",
-                                    height: "40px",
-                                    textAlign: "center",
-                                    cursor: "pointer",
-                                }}
-                                title={room.friend ? room.friend.nickname || room.friend.name : "채팅"}
-                            >
-                                {room.friend && room.friend.nickname
-                                    ? room.friend.nickname[0]
-                                    : "채팅"}
-                            </button>
-                        ))}
-                </div>
-            )}
+                        {showMore &&
+                            hiddenChatRooms.map((room) => (
+                                <button
+                                    key={room.roomId}
+                                    onClick={() => handleSwapChat(room.roomId)}
+                                    style={{
+                                        display: "block",
+                                        margin: "5px 0",
+                                        padding: "5px",
+                                        backgroundColor: "#eee",
+                                        border: "1px solid #ccc",
+                                        borderRadius: "50%",
+                                        width: "40px",
+                                        height: "40px",
+                                        textAlign: "center",
+                                        cursor: "pointer",
+                                    }}
+                                    title={room.friend ? room.friend.nickname || room.friend.name : "채팅"}
+                                >
+                                    {room.friend && room.friend.nickname
+                                        ? room.friend.nickname[0]
+                                        : "채팅"}
+                                </button>
+                            ))}
+                    </div>
+                )}
 
-            <button
-                onClick={handleNavigate}
-                className="px-6 py-3 bg-blue-500 text-white text-lg rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-                채팅하러 가기
-            </button>
-            <button
-                onClick={handleCommunity}
-                className="px-6 py-3 bg-green-500 text-white text-lg rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-                커뮤니티
-            </button>
-            <button
-                onClick={handleNavigateLogin}
-                className="mt-4 px-6 py-3 bg-purple-500 text-white text-lg rounded-lg shadow-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-                {user ? "로그아웃" : "로그인"}
-            </button>
-            <button
-                onClick={handleProductRegistration}
-                className="mt-4 px-6 py-3 bg-green-500 text-white text-lg rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-                상품등록
-            </button>
-            <PlanButton />  {/* productShowcase 플랜 버튼 추가 */}
+                <button
+                    onClick={handleNavigate}
+                    className="px-6 py-3 bg-blue-500 text-white text-lg rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    채팅하러 가기
+                </button>
+                <button
+                    onClick={handleCommunity}
+                    className="px-6 py-3 bg-green-500 text-white text-lg rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    커뮤니티
+                </button>
+                <button
+                    onClick={handleNavigateLogin}
+                    className="mt-4 px-6 py-3 bg-purple-500 text-white text-lg rounded-lg shadow-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                    {user ? "로그아웃" : "로그인"}
+                </button>
+                <button
+                    onClick={handleProductRegistration}
+                    className="mt-4 px-6 py-3 bg-green-500 text-white text-lg rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                    상품등록
+                </button>
+                <PlanButton/> {/* productShowcase 플랜 버튼 추가 */}
 
-        </div>
+            </div>
+        </>
     );
 }
 
