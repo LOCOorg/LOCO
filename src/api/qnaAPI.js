@@ -17,6 +17,22 @@ export async function getQnas() {
 }
 
 /**
+ * 페이지네이션을 적용하여 qnaStatus에 따른 QnA 목록을 가져옵니다.
+ * @param {number} page - 요청할 페이지 번호
+ * @param {number} size - 페이지당 데이터 수
+ * @param {string} status - QnA 상태 ("답변대기" 또는 "답변완료")
+ * @returns {Promise<Object>} 페이지네이션된 QnA 데이터와 페이징 정보
+ */
+export async function getQnaPageByStatus(page, size, status) {
+    try {
+        const response = await axios.get(host, { params: { page, size, qnaStatus: status } });
+        return response.data;
+    } catch (error) {
+        throw new Error('Failed to fetch QnA page by status');
+    }
+}
+
+/**
  * 새로운 QnA를 생성합니다.
  * @param {Object} qnaData - 생성할 QnA 데이터 (qnaTitle, qnaContents 등)
  * @returns {Promise<Object>} 생성된 QnA 객체
