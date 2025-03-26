@@ -8,6 +8,7 @@ import NaverLoginHandler from "../components/authComponent/NaverLoginHandler.jsx
 import LoginRouter from "./LoginRouter.jsx";
 import AdminProductRouter from "./ProductRouter.jsx";
 import ProductShowcaseRouter from "./ProductShowcaseRouter.jsx";
+import QnaRouter from "./QnaRouter.jsx";
 
 
 const MainRouter = createBrowserRouter([
@@ -33,7 +34,8 @@ const MainRouter = createBrowserRouter([
     ChatRouter,
     LoginRouter,
     AdminProductRouter,
-    ProductShowcaseRouter
+    ProductShowcaseRouter,
+    QnaRouter
 ])
 
 export default MainRouter;
