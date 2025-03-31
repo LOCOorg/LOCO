@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
+import useAuthStore from '../stores/authStore';
 
 const BasicLayout = ({ children }) => {
+    const { user } = useAuthStore();
+
     return (
         <div className="flex flex-col min-h-screen">
             <header className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
@@ -13,14 +16,19 @@ const BasicLayout = ({ children }) => {
                             <Link to="/chat" className="hover:text-gray-300">랜덤채팅</Link>
                         </li>
                         <li>
-                            <Link to="/community" className="hover:text-gray-300">커뮤니티</Link>
+                            <Link to="/products" className="hover:text-gray-300">플랜보기</Link>
                         </li>
                         <li>
-                            <Link to="/products" className="hover:text-gray-300">플랜보기</Link>
+                            <Link to="/community" className="hover:text-gray-300">커뮤니티</Link>
                         </li>
                         <li>
                             <Link to="/qna" className="hover:text-gray-300">QNA</Link>
                         </li>
+                        {user && user.userLv >= 2 && (
+                            <li>
+                                <Link to="/report/list" className="hover:text-gray-300">관리자</Link>
+                            </li>
+                        )}
                     </ul>
                 </nav>
             </header>

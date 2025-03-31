@@ -9,6 +9,7 @@ import LoginRouter from "./LoginRouter.jsx";
 import AdminProductRouter from "./ProductRouter.jsx";
 import ProductShowcaseRouter from "./ProductShowcaseRouter.jsx";
 import QnaRouter from "./QnaRouter.jsx";
+import ReportRouter from "./ReportRouter.jsx";
 
 
 const MainRouter = createBrowserRouter([
@@ -35,7 +36,8 @@ const MainRouter = createBrowserRouter([
     LoginRouter,
     AdminProductRouter,
     ProductShowcaseRouter,
-    QnaRouter
+    QnaRouter,
+    ReportRouter
 ])
 
 export default MainRouter;
