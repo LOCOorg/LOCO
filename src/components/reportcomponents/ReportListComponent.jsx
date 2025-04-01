@@ -1,3 +1,4 @@
+// ReportListComponent.jsx
 import { useState, useEffect } from 'react';
 import { fetchReports, deleteReport } from '../../api/reportAPI.js';
 import ReportForm from './ReportForm';
@@ -12,29 +13,37 @@ const ReportListComponent = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [reportToDelete, setReportToDelete] = useState(null);
+    const [filterArea, setFilterArea] = useState("all"); // "all"이면 전체 조회
+    const [filterCategory, setFilterCategory] = useState("all"); // "all"이면 전체 카테고리
     const pageSize = 5;
 
-    // 신고 목록 불러오기
+    // 신고 목록 불러오기 (필터 적용)
     const loadReports = async (page) => {
         try {
-            const data = await fetchReports(page, pageSize);
+            const filters = {};
+            if (filterArea && filterArea !== "all") {
+                filters.reportArea = filterArea;
+            }
+            if (filterCategory && filterCategory !== "all") {
+                filters.reportCategory = filterCategory;
+            }
+            const data = await fetchReports(page, pageSize, filters);
             setPageData(data);
         } catch (err) {
             setError(err.message);
         }
     };
 
+    // currentPage, filterArea, filterCategory가 바뀔 때마다 목록을 다시 불러옴
     useEffect(() => {
         loadReports(currentPage);
-    }, [currentPage]);
+    }, [currentPage, filterArea, filterCategory]);
 
-    // 삭제 버튼 클릭 시 삭제 모달을 띄우도록 함
     const handleDeleteClick = (id) => {
         setReportToDelete(id);
         setShowDeleteModal(true);
     };
 
-    // 모달의 확인 버튼 클릭 시 실제 삭제 수행
     const confirmDelete = async () => {
         try {
             await deleteReport(reportToDelete);
@@ -59,8 +68,30 @@ const ReportListComponent = () => {
         setShowCreateModal(false);
     };
 
+    // ReportDetailModal에서 업데이트된 report 정보를 리스트 상태에 반영하는 함수
+    const handleReportUpdated = (updatedReport) => {
+        if (pageData) {
+            const updatedDtoList = pageData.dtoList.map((report) =>
+                report._id === updatedReport._id ? updatedReport : report
+            );
+            setPageData({ ...pageData, dtoList: updatedDtoList });
+        }
+    };
+
     const handleOpenDetail = (report) => setSelectedReport(report);
     const handleCloseDetail = () => setSelectedReport(null);
+
+    // 신고 구역 필터 버튼 클릭 시 실행
+    const handleAreaFilterChange = (area) => {
+        setFilterArea(area);
+        setCurrentPage(1); // 필터 변경 시 첫 페이지로 리셋
+    };
+
+    // 신고 카테고리 필터 버튼 클릭 시 실행
+    const handleCategoryFilterChange = (category) => {
+        setFilterCategory(category);
+        setCurrentPage(1); // 필터 변경 시 첫 페이지로 리셋
+    };
 
     return (
         <div className="max-w-4xl mx-auto p-6">
@@ -73,30 +104,81 @@ const ReportListComponent = () => {
                     신고 작성
                 </button>
             </div>
+
+            {/* 신고 구역 필터 버튼 */}
+            <div className="mb-4 flex space-x-2">
+                <button
+                    onClick={() => handleAreaFilterChange("all")}
+                    className={`px-3 py-1 rounded ${filterArea === "all" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    전체 구역
+                </button>
+                <button
+                    onClick={() => handleAreaFilterChange("friendChat")}
+                    className={`px-3 py-1 rounded ${filterArea === "friendChat" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    친구 채팅
+                </button>
+                <button
+                    onClick={() => handleAreaFilterChange("randomChat")}
+                    className={`px-3 py-1 rounded ${filterArea === "randomChat" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    랜덤 채팅
+                </button>
+                <button
+                    onClick={() => handleAreaFilterChange("community")}
+                    className={`px-3 py-1 rounded ${filterArea === "community" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    커뮤니티
+                </button>
+            </div>
+
+            {/* 신고 카테고리 필터 버튼 */}
+            <div className="mb-4 flex space-x-2">
+                <button
+                    onClick={() => handleCategoryFilterChange("all")}
+                    className={`px-3 py-1 rounded ${filterCategory === "all" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    전체 카테고리
+                </button>
+                <button
+                    onClick={() => handleCategoryFilterChange("욕설, 모욕, 혐오발언")}
+                    className={`px-3 py-1 rounded ${filterCategory === "욕설, 모욕, 혐오발언" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    욕설/모욕
+                </button>
+                <button
+                    onClick={() => handleCategoryFilterChange("스팸, 도배, 거짓정보")}
+                    className={`px-3 py-1 rounded ${filterCategory === "스팸, 도배, 거짓정보" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    스팸
+                </button>
+                <button
+                    onClick={() => handleCategoryFilterChange("부적절한 메세지(성인/도박/마약 등)")}
+                    className={`px-3 py-1 rounded ${filterCategory === "부적절한 메세지(성인/도박/마약 등)" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    부적절 메시지
+                </button>
+                <button
+                    onClick={() => handleCategoryFilterChange("규칙에 위반되는 프로필/모욕성 닉네임")}
+                    className={`px-3 py-1 rounded ${filterCategory === "규칙에 위반되는 프로필/모욕성 닉네임" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    프로필
+                </button>
+            </div>
+
             {error && <p className="text-red-500 mb-4">{error}</p>}
             {pageData && (
                 <>
                     <ul>
                         {pageData.dtoList.map((report) => (
                             <li key={report._id} className="bg-white shadow rounded mb-4 p-4">
-                                <h3 className="text-xl font-bold mb-2">{report.reportTitle}</h3>
-                                <p className="mb-1">
-                                    <span className="font-semibold">구역:</span> {report.reportArea}
-                                </p>
-                                <p className="mb-1">
-                                    <span className="font-semibold">카테고리:</span> {report.reportCategory}
-                                </p>
+                                <h3 className="text-xl font-bold mb-2">제목: {report.reportTitle}</h3>
                                 <p className="mb-1">
                                     <span className="font-semibold">내용:</span> {report.reportContants}
                                 </p>
                                 <p className="mb-1">
                                     <span className="font-semibold">신고일:</span> {new Date(report.reportDate).toLocaleString()}
-                                </p>
-                                <p className="mb-1">
-                                    <span className="font-semibold">신고자:</span> {report.reportErId?.nickname || report.reportErId}
-                                </p>
-                                <p className="mb-1">
-                                    <span className="font-semibold">가해자:</span> {report.offenderId?.nickname || report.offenderId}
                                 </p>
                                 <div className="flex justify-end space-x-2 mt-2">
                                     <button
@@ -158,7 +240,11 @@ const ReportListComponent = () => {
                 </div>
             )}
             {selectedReport && (
-                <ReportDetailModal report={selectedReport} onClose={handleCloseDetail} />
+                <ReportDetailModal
+                    report={selectedReport}
+                    onClose={handleCloseDetail}
+                    onUpdateReport={handleReportUpdated} // 업데이트된 정보를 리스트에 반영
+                />
             )}
             {showDeleteModal && (
                 <CommonModal
