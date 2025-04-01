@@ -13,8 +13,9 @@ const ReportListComponent = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [reportToDelete, setReportToDelete] = useState(null);
-    const [filterArea, setFilterArea] = useState("all"); // "all"이면 전체 조회
-    const [filterCategory, setFilterCategory] = useState("all"); // "all"이면 전체 카테고리
+    const [filterArea, setFilterArea] = useState("all"); // 전체 구역일 경우 "all"
+    const [filterCategory, setFilterCategory] = useState("all"); // 전체 카테고리일 경우 "all"
+    const [filterStatus, setFilterStatus] = useState("all"); // 전체 상태일 경우 "all"
     const pageSize = 5;
 
     // 신고 목록 불러오기 (필터 적용)
@@ -27,6 +28,9 @@ const ReportListComponent = () => {
             if (filterCategory && filterCategory !== "all") {
                 filters.reportCategory = filterCategory;
             }
+            if (filterStatus && filterStatus !== "all") {
+                filters.reportStatus = filterStatus;
+            }
             const data = await fetchReports(page, pageSize, filters);
             setPageData(data);
         } catch (err) {
@@ -34,10 +38,10 @@ const ReportListComponent = () => {
         }
     };
 
-    // currentPage, filterArea, filterCategory가 바뀔 때마다 목록을 다시 불러옴
+    // currentPage, filterArea, filterCategory, filterStatus가 바뀔 때마다 목록을 다시 불러옴
     useEffect(() => {
         loadReports(currentPage);
-    }, [currentPage, filterArea, filterCategory]);
+    }, [currentPage, filterArea, filterCategory, filterStatus]);
 
     const handleDeleteClick = (id) => {
         setReportToDelete(id);
@@ -90,6 +94,12 @@ const ReportListComponent = () => {
     // 신고 카테고리 필터 버튼 클릭 시 실행
     const handleCategoryFilterChange = (category) => {
         setFilterCategory(category);
+        setCurrentPage(1); // 필터 변경 시 첫 페이지로 리셋
+    };
+
+    // 신고 상태 필터 버튼 클릭 시 실행
+    const handleStatusFilterChange = (status) => {
+        setFilterStatus(status);
         setCurrentPage(1); // 필터 변경 시 첫 페이지로 리셋
     };
 
@@ -164,6 +174,40 @@ const ReportListComponent = () => {
                     className={`px-3 py-1 rounded ${filterCategory === "규칙에 위반되는 프로필/모욕성 닉네임" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
                     프로필
+                </button>
+            </div>
+
+            {/* 신고 상태 필터 버튼 */}
+            <div className="mb-4 flex space-x-2">
+                <button
+                    onClick={() => handleStatusFilterChange("all")}
+                    className={`px-3 py-1 rounded ${filterStatus === "all" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    전체 상태
+                </button>
+                <button
+                    onClick={() => handleStatusFilterChange("pending")}
+                    className={`px-3 py-1 rounded ${filterStatus === "pending" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    대기중
+                </button>
+                <button
+                    onClick={() => handleStatusFilterChange("reviewed")}
+                    className={`px-3 py-1 rounded ${filterStatus === "reviewed" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    검토됨
+                </button>
+                <button
+                    onClick={() => handleStatusFilterChange("resolved")}
+                    className={`px-3 py-1 rounded ${filterStatus === "resolved" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    해결됨
+                </button>
+                <button
+                    onClick={() => handleStatusFilterChange("dismissed")}
+                    className={`px-3 py-1 rounded ${filterStatus === "dismissed" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    기각됨
                 </button>
             </div>
 
@@ -243,7 +287,7 @@ const ReportListComponent = () => {
                 <ReportDetailModal
                     report={selectedReport}
                     onClose={handleCloseDetail}
-                    onUpdateReport={handleReportUpdated} // 업데이트된 정보를 리스트에 반영
+                    onUpdateReport={handleReportUpdated}
                 />
             )}
             {showDeleteModal && (
