@@ -1,12 +1,13 @@
-import { useEffect, useState, useRef } from "react";
-import { useSocket } from "../../hooks/useSocket.js";
-import { fetchMessages, deleteMessage, leaveChatRoom, getChatRoomInfo } from "../../api/chatAPI.js";
+import {useEffect, useState, useRef} from "react";
+import {useSocket} from "../../hooks/useSocket.js";
+import {fetchMessages, deleteMessage, leaveChatRoom, getChatRoomInfo} from "../../api/chatAPI.js";
 import PropTypes from "prop-types";
-import { useNavigate } from "react-router-dom";
-import { getUserInfo, rateUser } from "../../api/userAPI.js";
+import {useNavigate} from "react-router-dom";
+import {getUserInfo, rateUser} from "../../api/userAPI.js";
 import CommonModal from "../../common/CommonModal.jsx";
+import ReportForm from "../../components/reportcomponents/ReportForm.jsx";
 
-const ChatRoom = ({ roomId, userId }) => {
+const ChatRoom = ({roomId, userId}) => {
     const [messages, setMessages] = useState([]);
     const [messageIds, setMessageIds] = useState(new Set());
     const [text, setText] = useState("");
@@ -16,22 +17,24 @@ const ChatRoom = ({ roomId, userId }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [ratings, setRatings] = useState({});
-
-    // 채팅 참가자 정보와 각 참가자에 대한 따봉(매너 점수) 상태 (0: 평가 안함, 1: 따봉)
     const [participants, setParticipants] = useState([]);
+
+    // 신고 모달 관련 상태
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportedParticipant, setReportedParticipant] = useState(null);
 
     const messagesContainerRef = useRef(null);
 
     const getUserName = async () => {
         try {
             const response = await getUserInfo(userId);
-            if (response && response.name) {
-                setUserName(response.name);
+            if (response && response.nickname) {
+                setUserName(response.nickname);
             } else {
-                console.error("유저 이름 가져오기 실패: 이름이 존재하지 않습니다.");
+                console.error("유저 닉네임 가져오기 실패: 닉네임이 존재하지 않습니다.");
             }
         } catch (error) {
-            console.error("유저 이름 가져오기 중 오류:", error);
+            console.error("유저 닉네임 가져오기 중 오류:", error);
         }
     };
 
@@ -39,8 +42,8 @@ const ChatRoom = ({ roomId, userId }) => {
         if (typeof message.sender === "string") {
             try {
                 const user = await getUserInfo(message.sender);
-                if (user && user.name) {
-                    message.sender = { _id: message.sender, name: user.name };
+                if (user && user.nickname) {
+                    message.sender = {_id: message.sender, nickname: user.nickname};
                 } else {
                     console.error("수신 메시지의 sender 정보 조회 실패");
                     return;
@@ -78,12 +81,28 @@ const ChatRoom = ({ roomId, userId }) => {
         setIsModalOpen(true);
     };
 
-    // 각 참가자에 대한 따봉(매너 점수) 토글: 0이면 1, 1이면 0으로 변경
+    // 매너 평가 토글 함수
     const handleRatingToggle = (participantId) => {
         setRatings((prev) => ({
             ...prev,
             [participantId]: prev[participantId] === 1 ? 0 : 1,
         }));
+    };
+
+    // 신고 모달 열기/닫기 함수
+    const openReportModal = (participant) => {
+        setReportedParticipant(participant);
+        setShowReportModal(true);
+    };
+
+    const closeReportModal = () => {
+        setReportedParticipant(null);
+        setShowReportModal(false);
+    };
+
+    const handleReportCreated = (createdReport) => {
+        // 신고 작성 후 추가 동작이 필요하면 여기에 작성 (예: 알림 표시)
+        closeReportModal();
     };
 
     const confirmLeaveRoom = async () => {
@@ -98,7 +117,7 @@ const ChatRoom = ({ roomId, userId }) => {
             );
             const response = await leaveChatRoom(roomId, userId);
             if (response.success) {
-                navigate("/chat", { replace: true });
+                navigate("/chat", {replace: true});
             } else {
                 console.error("채팅방 나가기 실패:", response.message);
             }
@@ -119,10 +138,10 @@ const ChatRoom = ({ roomId, userId }) => {
             return;
         }
 
-        const message = { chatRoom: roomId, sender: { _id: userId, name: userName }, text };
+        const message = {chatRoom: roomId, sender: {_id: userId, nickname: userName}, text};
         socket.emit("sendMessage", message, (response) => {
             if (response.success) {
-                const sentMessage = { ...message, _id: response.message._id };
+                const sentMessage = {...message, _id: response.message._id};
                 setMessages((prevMessages) => [
                     ...prevMessages.filter((msg) => msg._id !== sentMessage._id),
                     sentMessage,
@@ -138,11 +157,11 @@ const ChatRoom = ({ roomId, userId }) => {
         try {
             await deleteMessage(messageId);
             setMessages((prevMessages) =>
-                prevMessages.map((msg) => (msg._id === messageId ? { ...msg, isDeleted: true } : msg))
+                prevMessages.map((msg) => (msg._id === messageId ? {...msg, isDeleted: true} : msg))
             );
 
             if (socket) {
-                socket.emit("deleteMessage", { messageId, roomId });
+                socket.emit("deleteMessage", {messageId, roomId});
             }
         } catch (error) {
             console.error("메시지 삭제 중 오류 발생:", error);
@@ -177,14 +196,14 @@ const ChatRoom = ({ roomId, userId }) => {
             socket.emit("joinRoom", roomId);
             socket.on("receiveMessage", handleReceiveMessage);
             socket.on("roomJoined", handleUserJoined);
-            socket.on("userLeft", ({ userId }) => {
+            socket.on("userLeft", ({userId}) => {
                 console.log(`사용자 ${userId}가 채팅방을 떠났습니다.`);
             });
 
-            socket.on("messageDeleted", ({ messageId }) => {
+            socket.on("messageDeleted", ({messageId}) => {
                 setMessages((prevMessages) =>
                     prevMessages.map((msg) =>
-                        msg._id === messageId ? { ...msg, isDeleted: true } : msg
+                        msg._id === messageId ? {...msg, isDeleted: true} : msg
                     )
                 );
             });
@@ -230,7 +249,7 @@ const ChatRoom = ({ roomId, userId }) => {
                                     }`}
                                 >
                                     <div className="flex flex-col space-y-1">
-                                        <span className="text-blue-700">{msg.sender.name}</span>
+                                        <span className="text-blue-700">{msg.sender.nickname}</span>
                                         <strong>{msg.isDeleted ? "삭제된 메시지입니다." : msg.text}</strong>
                                     </div>
 
@@ -277,36 +296,83 @@ const ChatRoom = ({ roomId, userId }) => {
             <CommonModal
                 isOpen={isModalOpen}
                 onClose={cancelLeaveRoom}
-                title="채팅방 종료 및 매너 평가"
+                title={
+                    participants.filter((user) => {
+                        const participantId = typeof user === "object" ? user._id : user;
+                        return participantId !== userId;
+                    }).length > 0
+                        ? "채팅방 종료 및 매너 평가"
+                        : "채팅 종료"
+                }
                 onConfirm={confirmLeaveRoom}
             >
-                <div>
-                    <p className="mb-4">채팅 종료 전, 다른 참가자들의 매너를 평가해주세요.</p>
-                    {participants
-                        .filter((user) => {
-                            const participantId = typeof user === "object" ? user._id : user;
-                            return participantId !== userId;
-                        })
-                        .map((user) => {
-                            const participantId = typeof user === "object" ? user._id : user;
-                            const participantName = typeof user === "object" ? user.name : user;
-                            const isRated = ratings[participantId] === 1;
-                            return (
-                                <div key={participantId} className="my-2 flex items-center space-x-2">
-                                    <span className="block font-medium">{participantName}</span>
-                                    <button
-                                        onClick={() => handleRatingToggle(participantId)}
-                                        className={`border rounded px-2 py-1 focus:outline-none ${
-                                            isRated ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
-                                        }`}
-                                    >
-                                        {isRated ? "👍" : "👍"}
-                                    </button>
-                                </div>
-                            );
-                        })}
-                </div>
+                {participants.filter((user) => {
+                    const participantId = typeof user === "object" ? user._id : user;
+                    return participantId !== userId;
+                }).length > 0 ? (
+                    <div>
+                        <p className="mb-4">
+                            채팅 종료 전, 다른 참가자들의 매너를 평가 및 신고해주세요.
+                        </p>
+                        {participants
+                            .filter((user) => {
+                                const participantId = typeof user === "object" ? user._id : user;
+                                return participantId !== userId;
+                            })
+                            .map((user) => {
+                                const participantId =
+                                    typeof user === "object" ? user._id : user;
+                                const participantNickname =
+                                    typeof user === "object" ? user.nickname : user;
+                                const isRated = ratings[participantId] === 1;
+                                return (
+                                    <div key={participantId} className="my-2 flex items-center space-x-2">
+              <span className="block font-medium">
+                {participantNickname}
+              </span>
+                                        <button
+                                            onClick={() => handleRatingToggle(participantId)}
+                                            className={`border rounded px-2 py-1 focus:outline-none ${
+                                                isRated ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
+                                            }`}
+                                        >
+                                            👍
+                                        </button>
+                                        <button
+                                            onClick={() => openReportModal(user)}
+                                            className="border rounded px-2 py-1 focus:outline-none bg-red-500 text-white"
+                                        >
+                                            신고
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                    </div>
+                ) : (
+                    <div>
+                        <p className="mb-4">채팅을 종료 하시겠습니까?</p>
+                    </div>
+                )}
             </CommonModal>
+
+
+            {showReportModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg relative">
+                        <button
+                            onClick={closeReportModal}
+                            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl font-bold"
+                        >
+                            ×
+                        </button>
+                        <ReportForm
+                            onReportCreated={handleReportCreated}
+                            onClose={closeReportModal}
+                            reportedUser={reportedParticipant}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

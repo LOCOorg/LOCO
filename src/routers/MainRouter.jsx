@@ -17,8 +17,6 @@ const MainRouter = createBrowserRouter([
         path: "/",
         element: <IndexPage/>
     },
-    ChatRouter,
-    CommunityRouter,
     {
         path: "/signupPage",
         element: <SignupPage/>
@@ -31,7 +29,7 @@ const MainRouter = createBrowserRouter([
         path: "/auth/naver/callback",
         element: <NaverLoginHandler/>  // 네이버 로그인 콜백 처리
     },
-
+    CommunityRouter,
     ChatRouter,
     LoginRouter,
     AdminProductRouter,

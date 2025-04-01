@@ -1,8 +1,11 @@
+// ReportDetailModal.jsx
 import { useState, useEffect } from 'react';
 import { replyToReport } from '../../api/reportAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
+import useAuthStore from '../../stores/authStore.js';
 
-const ReportDetailModal = ({ report, onClose }) => {
+const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
+    const { user } = useAuthStore();
     const [replyContent, setReplyContent] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [localReport, setLocalReport] = useState(report);
@@ -17,7 +20,10 @@ const ReportDetailModal = ({ report, onClose }) => {
 
     const handleReplySubmit = async () => {
         try {
-            const updatedReport = await replyToReport(localReport._id, { reportAnswer: replyContent });
+            const updatedReport = await replyToReport(localReport._id, {
+                reportAnswer: replyContent,
+                adminId: user?._id,
+            });
             setLocalReport(updatedReport);
             setIsEditing(false);
             setModalInfo({
@@ -25,6 +31,10 @@ const ReportDetailModal = ({ report, onClose }) => {
                 title: '성공',
                 message: '답변이 성공적으로 저장되었습니다.',
             });
+            // 부모 컴포넌트에 업데이트된 report 정보를 전달
+            if (onUpdateReport) {
+                onUpdateReport(updatedReport);
+            }
         } catch (error) {
             setModalInfo({
                 isOpen: true,
@@ -84,13 +94,13 @@ const ReportDetailModal = ({ report, onClose }) => {
 
                     {(!localReport.reportAnswer || isEditing) && (
                         <div className="mt-4">
-                            <textarea
-                                placeholder="답변 내용을 입력하세요"
-                                value={replyContent}
-                                onChange={(e) => setReplyContent(e.target.value)}
-                                className="w-full border rounded p-2 mb-4"
-                                rows={4}
-                            />
+              <textarea
+                  placeholder="답변 내용을 입력하세요"
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  className="w-full border rounded p-2 mb-4"
+                  rows={4}
+              />
                             <button
                                 onClick={handleReplySubmit}
                                 className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded"
