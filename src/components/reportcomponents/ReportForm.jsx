@@ -4,17 +4,17 @@ import { getUserByNickname } from '../../api/userAPI.js';
 import useAuthStore from '../../stores/authStore.js';
 import CommonModal from '../../common/CommonModal.jsx';
 
-const ReportForm = ({ onReportCreated, onClose }) => {
+const ReportForm = ({ onReportCreated, onClose, reportedUser }) => {
     // authStore에서 로그인한 사용자 정보 가져오기
     const { user } = useAuthStore();
 
-    // 초기 신고 상태: 신고자 ID는 로그인한 사용자, 가해자는 별칭 입력
+    // 초기 신고 상태: 신고자 ID는 로그인한 사용자, 가해자는 reportedUser가 있을 경우 기본값 설정
     const [newReport, setNewReport] = useState({
         reportTitle: '',
         reportArea: 'friendChat',
         reportCategory: '욕설, 모욕, 혐오발언',
         reportContants: '',
-        offenderNickname: '',      // 가해자 별칭 입력란
+        offenderNickname: reportedUser ? (reportedUser.nickname || reportedUser.name || '') : '',
         reportErId: user ? user._id : ''
     });
     const [error, setError] = useState(null);
@@ -27,6 +27,16 @@ const ReportForm = ({ onReportCreated, onClose }) => {
             setNewReport(prev => ({ ...prev, reportErId: user._id }));
         }
     }, [user]);
+
+    // reportedUser prop이 변경되면 offenderNickname 필드를 업데이트
+    useEffect(() => {
+        if (reportedUser) {
+            setNewReport(prev => ({
+                ...prev,
+                offenderNickname: reportedUser.nickname || reportedUser.name || ''
+            }));
+        }
+    }, [reportedUser]);
 
     // 입력 값 변경 시 상태 업데이트
     const handleChange = (e) => {
@@ -56,13 +66,13 @@ const ReportForm = ({ onReportCreated, onClose }) => {
             const created = await createReport(reportData);
             setCreatedReport(created);
             setError(null);
-            // 폼 초기화 (신고자 ID는 다시 authStore의 값으로 설정)
+            // 폼 초기화 (신고자 ID는 다시 authStore의 값으로 설정하고, reportedUser가 있다면 해당 별칭으로 재설정)
             setNewReport({
                 reportTitle: '',
                 reportArea: 'friendChat',
                 reportCategory: '욕설, 모욕, 혐오발언',
                 reportContants: '',
-                offenderNickname: '',
+                offenderNickname: reportedUser ? (reportedUser.nickname || reportedUser.name || '') : '',
                 reportErId: user ? user._id : ''
             });
             // 신고 완료 모달 표시
@@ -170,7 +180,7 @@ const ReportForm = ({ onReportCreated, onClose }) => {
                     onClose={() => setShowCompleteModal(false)}
                     onConfirm={handleConfirmComplete}
                     title="신고 완료"
-                    showCancel={false}  // 취소 버튼 숨김
+                    showCancel={false}
                 >
                     <p>신고가 성공적으로 등록되었습니다.</p>
                 </CommonModal>
