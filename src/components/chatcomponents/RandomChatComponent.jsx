@@ -50,7 +50,7 @@ const RandomChatComponent = () => {
         }
     }, [userId]);
 
-    // 랜덤 채팅방 찾기 및 생성 함수 (userId는 authStore에서 받아온 값을 사용)
+    // 랜덤 채팅방 찾기 및 생성 함수
     const findOrCreateRandomRoom = async (capacity, matchedGender) => {
         if (!userId) return;
         setLoading(true);
@@ -67,6 +67,16 @@ const RandomChatComponent = () => {
             if (!userInfo) {
                 setModalTitle("경고");
                 setModalMessage("유저 정보를 불러오는 중입니다.");
+                setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
+                setModalOpen(true);
+                setLoading(false);
+                return;
+            }
+
+            // 채팅횟수가 0인 경우 랜덤 채팅 이용 제한
+            if (userInfo.numOfChat === 0) {
+                setModalTitle("경고");
+                setModalMessage("채팅횟수가 부족하여 랜덤 채팅을 이용할 수 없습니다.");
                 setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
                 setModalOpen(true);
                 setLoading(false);

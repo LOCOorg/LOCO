@@ -8,6 +8,7 @@ export const getUserInfo = async (userId) => {
     try {
         const response = await axios.get(`${host}/${userId}`); // API 호출
         return response.data.data; // 성공적으로 데이터 받으면 반환
+        // eslint-disable-next-line no-unused-vars
     } catch (error) {
         throw new Error("유저 정보를 불러오는 데 실패했습니다."); // 에러 발생 시 에러 메시지
     }
@@ -15,23 +16,23 @@ export const getUserInfo = async (userId) => {
 
 export const rateUser = async (userId, rating) => {
     try {
-        const response = await fetch(`${host}/${userId}/rate`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ rating }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "별점 업데이트 실패");
-        }
-
-        return await response.json();
+        const response = await axios.post(
+            `${host}/${userId}/rate`,
+            { rating },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+        return response.data;
     } catch (error) {
         console.error("rateUser API 호출 중 오류:", error);
-        throw error;
+        // axios의 error 객체는 response를 포함할 수 있음
+        if (error.response && error.response.data && error.response.data.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw new Error("별점 업데이트 실패");
     }
 };
 
@@ -53,8 +54,26 @@ export const getUserByNickname = async (nickname) => {
         } else {
             return data;
         }
+        // eslint-disable-next-line no-unused-vars
     } catch (error) {
         throw new Error("유저 정보를 불러오는 데 실패했습니다.");
     }
 };
 
+export const decrementChatCount = async (userId) => {
+    try {
+        const response = await axios.post(
+            `${host}/${userId}/decrementChatCount`,
+            { userId },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error("채팅 횟수 감소 중 오류 발생:", error);
+        throw error;
+    }
+};
