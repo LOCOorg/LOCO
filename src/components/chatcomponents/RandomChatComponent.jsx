@@ -82,6 +82,15 @@ const RandomChatComponent = () => {
                 setLoading(false);
                 return;
             }
+            // 신고로 인한 제한: reportStatus가 active가 아니고, reportTimer가 현재 시간보다 미래인 경우
+            if (userInfo.reportStatus !== "active" && userInfo.reportTimer && new Date(userInfo.reportTimer) > new Date()) {
+                setModalTitle("채팅 제한");
+                setModalMessage("신고로 인해 현재 랜덤 채팅 이용이 제한되어 있습니다.");
+                setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
+                setModalOpen(true);
+                setLoading(false);
+                return;
+            }
 
             const age = calculateAge(userInfo.birthdate);
             const ageGroup = age >= 19 ? 'adult' : 'minor';
