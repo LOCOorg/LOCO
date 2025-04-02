@@ -126,12 +126,14 @@ function QnaListComponent() {
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">QnA 목록</h2>
-                <button
-                    onClick={handleNewQna}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-                >
-                    새 QnA 문의
-                </button>
+                {user && user.userLv === 1 && (
+                    <button
+                        onClick={handleNewQna}
+                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+                    >
+                        새 QnA 문의
+                    </button>
+                )}
             </div>
 
             {/* 탭 전환 버튼 */}

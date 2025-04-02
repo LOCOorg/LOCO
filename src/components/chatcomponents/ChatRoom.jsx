@@ -3,7 +3,7 @@ import {useSocket} from "../../hooks/useSocket.js";
 import {fetchMessages, deleteMessage, leaveChatRoom, getChatRoomInfo} from "../../api/chatAPI.js";
 import PropTypes from "prop-types";
 import {useNavigate} from "react-router-dom";
-import {getUserInfo, rateUser} from "../../api/userAPI.js";
+import {decrementChatCount, getUserInfo, rateUser} from "../../api/userAPI.js";
 import CommonModal from "../../common/CommonModal.jsx";
 import ReportForm from "../../components/reportcomponents/ReportForm.jsx";
 
@@ -100,14 +100,14 @@ const ChatRoom = ({roomId, userId}) => {
         setShowReportModal(false);
     };
 
-    const handleReportCreated = (createdReport) => {
+    const handleReportCreated = () => {
         // 신고 작성 후 추가 동작이 필요하면 여기에 작성 (예: 알림 표시)
         closeReportModal();
     };
 
     const confirmLeaveRoom = async () => {
         try {
-            // 따봉(1점) 표시된 경우에만 해당 참가자에 대해 rateUser 호출
+            // 매너 평가 점수 전송
             await Promise.all(
                 Object.keys(ratings).map(async (participantId) => {
                     if (ratings[participantId] === 1) {
@@ -115,8 +115,11 @@ const ChatRoom = ({roomId, userId}) => {
                     }
                 })
             );
+            // 채팅방 나가기 API 호출
             const response = await leaveChatRoom(roomId, userId);
             if (response.success) {
+                // 채팅 횟수 감소 API 호출 추가
+                await decrementChatCount(userId);
                 navigate("/chat", {replace: true});
             } else {
                 console.error("채팅방 나가기 실패:", response.message);
@@ -126,6 +129,7 @@ const ChatRoom = ({roomId, userId}) => {
         }
         setIsModalOpen(false);
     };
+
 
     const cancelLeaveRoom = () => {
         setIsModalOpen(false);

@@ -1,19 +1,24 @@
-// ReportDetailModal.jsx
 import { useState, useEffect } from 'react';
 import { replyToReport } from '../../api/reportAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import useAuthStore from '../../stores/authStore.js';
 
+// eslint-disable-next-line react/prop-types
 const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
     const { user } = useAuthStore();
     const [replyContent, setReplyContent] = useState('');
+    const [suspensionDays, setSuspensionDays] = useState('');
+    const [selectedStopDetail, setSelectedStopDetail] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [localReport, setLocalReport] = useState(report);
     const [modalInfo, setModalInfo] = useState({ isOpen: false, title: '', message: '' });
 
     useEffect(() => {
         setLocalReport(report);
+        // eslint-disable-next-line react/prop-types
         setReplyContent(report?.reportAnswer || '');
+        // eslint-disable-next-line react/prop-types
+        setSelectedStopDetail(report?.stopDetail || '');
     }, [report]);
 
     if (!localReport) return null;
@@ -23,15 +28,16 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
             const updatedReport = await replyToReport(localReport._id, {
                 reportAnswer: replyContent,
                 adminId: user?._id,
+                suspensionDays: suspensionDays ? parseInt(suspensionDays) : 0,
+                stopDetail: selectedStopDetail,
             });
             setLocalReport(updatedReport);
             setIsEditing(false);
             setModalInfo({
                 isOpen: true,
                 title: '성공',
-                message: '답변이 성공적으로 저장되었습니다.',
+                message: '답변과 제재 내용이 성공적으로 저장되었습니다.',
             });
-            // 부모 컴포넌트에 업데이트된 report 정보를 전달
             if (onUpdateReport) {
                 onUpdateReport(updatedReport);
             }
@@ -78,6 +84,21 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
                     <div className="mb-2">
                         <span className="font-semibold">가해자:</span> {localReport.offenderId?.nickname || localReport.offenderId}
                     </div>
+                    {localReport.stopDetail && (
+                        <div className="mb-2">
+                            <span className="font-semibold">제재 내용:</span> {localReport.stopDetail}
+                        </div>
+                    )}
+                    {localReport.stopDate && (
+                        <div className="mb-2">
+                            <span className="font-semibold">정지 시작일:</span> {new Date(localReport.stopDate).toLocaleString()}
+                        </div>
+                    )}
+                    {localReport.durUntil && (
+                        <div className="mb-2">
+                            <span className="font-semibold">정지 해제일:</span> {new Date(localReport.durUntil).toLocaleString()}
+                        </div>
+                    )}
 
                     {localReport.reportAnswer && !isEditing && (
                         <div className="mb-4 p-3 bg-gray-100 rounded">
@@ -94,13 +115,36 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
 
                     {(!localReport.reportAnswer || isEditing) && (
                         <div className="mt-4">
-              <textarea
-                  placeholder="답변 내용을 입력하세요"
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                  className="w-full border rounded p-2 mb-4"
-                  rows={4}
-              />
+                            <textarea
+                                placeholder="답변 내용을 입력하세요"
+                                value={replyContent}
+                                onChange={(e) => setReplyContent(e.target.value)}
+                                className="w-full border rounded p-2 mb-4"
+                                rows={4}
+                            />
+                            <div className="mt-2 mb-4">
+                                <label className="block mb-1 font-semibold">정지 기간 (일):</label>
+                                <input
+                                    type="number"
+                                    value={suspensionDays}
+                                    onChange={(e) => setSuspensionDays(e.target.value)}
+                                    className="w-full border rounded p-2"
+                                    placeholder="예: 7 (정지 기간이 없으면 0 또는 비워두세요)"
+                                />
+                            </div>
+                            <div className="mt-2 mb-4">
+                                <label className="block mb-1 font-semibold">제재 내용:</label>
+                                <select
+                                    value={selectedStopDetail}
+                                    onChange={(e) => setSelectedStopDetail(e.target.value)}
+                                    className="w-full border rounded p-2"
+                                >
+                                    <option value="active">active</option>
+                                    <option value="banned">banned</option>
+                                    <option value="suspended">suspended</option>
+                                    <option value="warning">warning</option>
+                                </select>
+                            </div>
                             <button
                                 onClick={handleReplySubmit}
                                 className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded"

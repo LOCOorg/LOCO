@@ -56,14 +56,12 @@ const CommunityList = () => {
                 page,
                 pageSize,
                 selectedCategory,
-                (selectedCategory === '내 글' || selectedCategory === '내 댓글') ? currentUserId : null
+                (selectedCategory === '내 글' || selectedCategory === '내 댓글') ? currentUserId : null,
+                selectedSort // sort 파라미터를 추가합니다.
             );
             setPageResponse(data);
-            let list = data.dtoList || [];
-            if (selectedSort === '인기순') {
-                list.sort((a, b) => b.recommended - a.recommended);
-            }
-            setFilteredCommunities(list);
+            // 백엔드에서 정렬된 데이터가 오므로 추가 정렬이 필요하지 않습니다.
+            setFilteredCommunities(data.dtoList || []);
         } catch (err) {
             setError('커뮤니티 목록을 불러오는 데 실패했습니다.');
             console.error(err);
@@ -71,6 +69,7 @@ const CommunityList = () => {
             setLoading(false);
         }
     };
+
 
     useEffect(() => {
         const fetchGlobalTop = async () => {

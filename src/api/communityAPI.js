@@ -3,16 +3,23 @@ import axios from 'axios';
 
 const host = `${import.meta.env.VITE_API_HOST}/api/communities`;
 
-export const fetchCommunities = async (page = 1, size = 10, category = '전체', userId = null) => {
+export const fetchCommunities = async (
+    page = 1,
+    size = 10,
+    category = '전체',
+    userId = null,
+    sort = '최신순'
+) => {
     try {
         let url = `${host}?page=${page}&size=${size}`;
-        // 카테고리 파라미터는 그대로 전달 (백엔드에서 '내 글', '내 댓글'로 처리)
         if (category) {
             url += `&category=${encodeURIComponent(category)}`;
         }
-        // userId가 있으면 쿼리 파라미터에 추가
         if (userId) {
             url += `&userId=${userId}`;
+        }
+        if (sort) {
+            url += `&sort=${encodeURIComponent(sort)}`;
         }
         const response = await axios.get(url);
         return response.data;
@@ -21,6 +28,7 @@ export const fetchCommunities = async (page = 1, size = 10, category = '전체',
         throw error;
     }
 };
+
 
 export const fetchCommunityById = async (id) => {
     try {
