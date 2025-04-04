@@ -23,15 +23,16 @@ export const createFriendRoom = async (roomType, capacity) => {
 };
 
 // 채팅 리스트
-export const fetchChatRooms = async () => {
+export const fetchChatRooms = async (params = {}) => {
     try {
-        const response = await axios.get(`${host}/rooms`);
+        const response = await axios.get(`${host}/rooms`, { params });
         return response.data;
     } catch (error) {
         console.error("채팅방 목록을 불러오는 중 오류 발생:", error);
         return [];
     }
 };
+
 
 // 특정 채팅방 정보 가져오기
 export const getChatRoomInfo = async (roomId) => {
