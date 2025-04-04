@@ -9,7 +9,8 @@ import ChatNotification from "./components/chatcomponents/ChatNotification.jsx";
 createRoot(document.getElementById('root')).render(
     <>
         <AuthInit />
-        <ChatNotification/>
-        <RouterProvider router={mainRouter} />
+        <RouterProvider router={mainRouter} >
+            <ChatNotification/>
+        </RouterProvider>
     </>
 )
