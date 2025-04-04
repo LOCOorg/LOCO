@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import {useEffect, useState} from 'react';
+import {useParams, useNavigate} from 'react-router-dom';
 import {
     fetchCommunityById,
     deleteCommunity,
@@ -11,12 +11,13 @@ import {
     deleteReply,
     deleteSubReply, fetchTopViewed, fetchTopCommented,
 } from '../../api/communityApi.js';
-import { getUserInfo } from '../../api/userAPI.js';
+import {getUserInfo} from '../../api/userAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import useAuthStore from '../../stores/authStore.js';
 import CommunityLayout from "../../layout/CommunityLayout/CommunityLayout.jsx";
 import LeftSidebar from "../../layout/CommunityLayout/LeftSidebar.jsx";
 import RightSidebar from "../../layout/CommunityLayout/RightSidebar.jsx";
+import ReportForm from "../reportcomponents/ReportForm.jsx";
 
 // 상대 시간 포맷 함수
 const formatRelativeTime = (dateString) => {
@@ -38,7 +39,7 @@ const formatRelativeTime = (dateString) => {
 };
 
 const CommunityDetail = () => {
-    const { id } = useParams();
+    const {id} = useParams();
     const navigate = useNavigate();
 
     // 커뮤니티 데이터 및 로딩, 에러 상태
@@ -61,10 +62,10 @@ const CommunityDetail = () => {
     const [commentToDelete, setCommentToDelete] = useState(null);
 
     const [replyDeleteModalOpen, setReplyDeleteModalOpen] = useState(false);
-    const [replyToDelete, setReplyToDelete] = useState({ commentId: null, replyId: null });
+    const [replyToDelete, setReplyToDelete] = useState({commentId: null, replyId: null});
 
     const [subReplyDeleteModalOpen, setSubReplyDeleteModalOpen] = useState(false);
-    const [subReplyToDelete, setSubReplyToDelete] = useState({ commentId: null, replyId: null, subReplyId: null });
+    const [subReplyToDelete, setSubReplyToDelete] = useState({commentId: null, replyId: null, subReplyId: null});
 
     // 댓글 및 답글 작성 상태
     const [newComment, setNewComment] = useState('');
@@ -83,6 +84,11 @@ const CommunityDetail = () => {
     const [sideTab, setSideTab] = useState('viewed');
     const [topViewed, setTopViewed] = useState([]);
     const [topCommented, setTopCommented] = useState([]);
+
+    // 신고 모달 상태 및 신고 대상
+    const [reportModalOpen, setReportModalOpen] = useState(false);
+    const [reportTarget, setReportTarget] = useState(null);
+
 
     // 커뮤니티 데이터 로드
     useEffect(() => {
@@ -119,7 +125,7 @@ const CommunityDetail = () => {
                     }
                 });
             }
-            const newUserMap = { ...userMap };
+            const newUserMap = {...userMap};
             const promises = Array.from(userIds).map(async (uid) => {
                 if (!newUserMap[uid]) {
                     try {
@@ -232,7 +238,7 @@ const CommunityDetail = () => {
     };
 
     const handleAddReply = async (commentId) => {
-        const state = replyState[commentId] || { text: '', file: null };
+        const state = replyState[commentId] || {text: '', file: null};
         const text = state.text.trim();
         if (!text) return;
         try {
@@ -246,7 +252,7 @@ const CommunityDetail = () => {
             setCommunity(updated);
             setReplyState((prev) => ({
                 ...prev,
-                [commentId]: { open: false, text: '', file: null },
+                [commentId]: {open: false, text: '', file: null},
             }));
         } catch (err) {
             console.log(err);
@@ -266,7 +272,7 @@ const CommunityDetail = () => {
     };
 
     const handleAddSubReply = async (commentId, replyId) => {
-        const state = subReplyState[replyId] || { text: '', file: null };
+        const state = subReplyState[replyId] || {text: '', file: null};
         const text = state.text.trim();
         if (!text) return;
         try {
@@ -280,7 +286,7 @@ const CommunityDetail = () => {
             setCommunity(updated);
             setSubReplyState((prev) => ({
                 ...prev,
-                [replyId]: { open: false, text: '', file: null },
+                [replyId]: {open: false, text: '', file: null},
             }));
         } catch (err) {
             console.log(err);
@@ -307,7 +313,7 @@ const CommunityDetail = () => {
 
     // 대댓글 삭제 모달 관련 함수
     const openReplyDeleteModal = (commentId, replyId) => {
-        setReplyToDelete({ commentId, replyId });
+        setReplyToDelete({commentId, replyId});
         setReplyDeleteModalOpen(true);
     };
 
@@ -316,7 +322,7 @@ const CommunityDetail = () => {
             const updated = await deleteReply(community._id, replyToDelete.commentId, replyToDelete.replyId);
             setCommunity(updated);
             setReplyDeleteModalOpen(false);
-            setReplyToDelete({ commentId: null, replyId: null });
+            setReplyToDelete({commentId: null, replyId: null});
         } catch (err) {
             console.log(err);
             setReplyDeleteModalOpen(false);
@@ -325,7 +331,7 @@ const CommunityDetail = () => {
 
     // 대대댓글 삭제 모달 관련 함수
     const openSubReplyDeleteModal = (commentId, replyId, subReplyId) => {
-        setSubReplyToDelete({ commentId, replyId, subReplyId });
+        setSubReplyToDelete({commentId, replyId, subReplyId});
         setSubReplyDeleteModalOpen(true);
     };
 
@@ -339,7 +345,7 @@ const CommunityDetail = () => {
             );
             setCommunity(updated);
             setSubReplyDeleteModalOpen(false);
-            setSubReplyToDelete({ commentId: null, replyId: null, subReplyId: null });
+            setSubReplyToDelete({commentId: null, replyId: null, subReplyId: null});
         } catch (err) {
             console.log(err);
             setSubReplyDeleteModalOpen(false);
@@ -367,6 +373,34 @@ const CommunityDetail = () => {
         fetchGlobalTop();
     }, []);
 
+    // 게시글 신고 핸들러
+    const handlePostReport = () => {
+        // 게시글 신고 시 신고 대상은 게시글 작성자
+        setReportTarget({nickname: userMap[community.userId] || community.userId});
+        setReportModalOpen(true);
+    };
+
+    // 댓글 신고 핸들러
+    const handleCommentReport = (comment) => {
+        // 댓글 신고 시 신고 대상은 댓글 작성자
+        const nickname = userMap[comment.userId] || comment.userId;
+        setReportTarget({nickname});
+        setReportModalOpen(true);
+    };
+
+    // 대댓글 신고 핸들러
+    const handleReplyReport = (reply) => {
+        const nickname = userMap[reply.userId] || reply.userId;
+        setReportTarget({nickname});
+        setReportModalOpen(true);
+    };
+
+    // 대대댓글 신고 핸들러
+    const handleSubReplyReport = (subReply) => {
+        const nickname = userMap[subReply.userId] || subReply.userId;
+        setReportTarget({nickname});
+        setReportModalOpen(true);
+    };
 
 
     const handleCategoryNav = (category) => {
@@ -411,242 +445,298 @@ const CommunityDetail = () => {
                 />
             }
         >
-        <div className="container mx-auto p-6">
-            {/* 게시글 삭제 확인 모달 */}
-            <CommonModal
-                isOpen={deleteModalOpen}
-                onClose={() => setDeleteModalOpen(false)}
-                title="삭제 확인"
-                onConfirm={handleDeleteConfirmed}
-            >
-                {modalContent}
-            </CommonModal>
-            {/* 추천 결과 모달 */}
-            <CommonModal
-                isOpen={recommendModalOpen}
-                onClose={() => setRecommendModalOpen(false)}
-                title={modalTitle}
-                onConfirm={() => setRecommendModalOpen(false)}
-            >
-                {modalContent}
-            </CommonModal>
-            {/* 댓글 삭제 확인 모달 */}
-            <CommonModal
-                isOpen={commentDeleteModalOpen}
-                onClose={() => setCommentDeleteModalOpen(false)}
-                title="댓글 삭제 확인"
-                onConfirm={confirmDeleteComment}
-            >
-                댓글을 삭제하시겠습니까?
-            </CommonModal>
-            {/* 대댓글 삭제 확인 모달 */}
-            <CommonModal
-                isOpen={replyDeleteModalOpen}
-                onClose={() => setReplyDeleteModalOpen(false)}
-                title="대댓글 삭제 확인"
-                onConfirm={confirmDeleteReply}
-            >
-                대댓글을 삭제하시겠습니까?
-            </CommonModal>
-            {/* 대대댓글 삭제 확인 모달 */}
-            <CommonModal
-                isOpen={subReplyDeleteModalOpen}
-                onClose={() => setSubReplyDeleteModalOpen(false)}
-                title="대대댓글 삭제 확인"
-                onConfirm={confirmDeleteSubReply}
-            >
-                대대댓글을 삭제하시겠습니까?
-            </CommonModal>
+            <div className="container mx-auto p-6">
+                {/* 게시글 삭제 확인 모달 */}
+                <CommonModal
+                    isOpen={deleteModalOpen}
+                    onClose={() => setDeleteModalOpen(false)}
+                    title="삭제 확인"
+                    onConfirm={handleDeleteConfirmed}
+                >
+                    {modalContent}
+                </CommonModal>
+                {/* 추천 결과 모달 */}
+                <CommonModal
+                    isOpen={recommendModalOpen}
+                    onClose={() => setRecommendModalOpen(false)}
+                    title={modalTitle}
+                    onConfirm={() => setRecommendModalOpen(false)}
+                >
+                    {modalContent}
+                </CommonModal>
+                {/* 댓글 삭제 확인 모달 */}
+                <CommonModal
+                    isOpen={commentDeleteModalOpen}
+                    onClose={() => setCommentDeleteModalOpen(false)}
+                    title="댓글 삭제 확인"
+                    onConfirm={confirmDeleteComment}
+                >
+                    댓글을 삭제하시겠습니까?
+                </CommonModal>
+                {/* 대댓글 삭제 확인 모달 */}
+                <CommonModal
+                    isOpen={replyDeleteModalOpen}
+                    onClose={() => setReplyDeleteModalOpen(false)}
+                    title="대댓글 삭제 확인"
+                    onConfirm={confirmDeleteReply}
+                >
+                    대댓글을 삭제하시겠습니까?
+                </CommonModal>
+                {/* 대대댓글 삭제 확인 모달 */}
+                <CommonModal
+                    isOpen={subReplyDeleteModalOpen}
+                    onClose={() => setSubReplyDeleteModalOpen(false)}
+                    title="답글 삭제 확인"
+                    onConfirm={confirmDeleteSubReply}
+                >
+                    답글을 삭제하시겠습니까?
+                </CommonModal>
 
-            <div className="bg-white rounded-lg shadow-md p-6">
-                <h1 className="text-3xl font-bold mb-2">{community.communityTitle}</h1>
-                <div className="text-sm text-gray-600 mb-4 space-x-2">
+                {/* 신고 모달 (커스텀 오버레이 사용) */}
+                {reportModalOpen && (
+                    <div className="fixed inset-0 z-50 flex justify-center items-center bg-gray-900 bg-opacity-50">
+                        <div className="bg-white p-6 rounded shadow-lg relative">
+                            <button
+                                className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
+                                onClick={() => setReportModalOpen(false)}
+                            >
+                                X
+                            </button>
+                            <ReportForm
+                                onClose={() => setReportModalOpen(false)}
+                                reportedUser={reportTarget}
+                            />
+                        </div>
+                    </div>
+                )}
+
+
+                <div className="bg-white rounded-lg shadow-md p-6">
+                    <h1 className="text-3xl font-bold mb-2">{community.communityTitle}</h1>
+                    <div className="text-sm text-gray-600 mb-4 space-x-2">
           <span>
             작성자:{' '}
               <span className="font-semibold text-red-500">{postWriterNickname}</span>
           </span>
-                    <span>
+                        <span>
             카테고리:{' '}
-                        <span className="font-semibold">{community.communityCategory}</span>
+                            <span className="font-semibold">{community.communityCategory}</span>
           </span>
-                    <span>
+                        <span>
             작성일:{' '}
-                        <span className="font-medium">
+                            <span className="font-medium">
               {formatRelativeTime(community.communityRegDate)}
             </span>
           </span>
-                    <span>
+                        <span>
             조회수:{' '}
-                        <span className="font-medium">{community.communityViews}</span>
+                            <span className="font-medium">{community.communityViews}</span>
           </span>
-                    <span>
+                        <span>
             추천:{' '}
-                        <span className="font-medium">{community.recommended}</span>
+                            <span className="font-medium">{community.recommended}</span>
           </span>
-                </div>
-                {community.communityImage && (
-                    <img
-                        src={
-                            community.communityImage.startsWith('http') ||
-                            community.communityImage.startsWith('data:')
-                                ? community.communityImage
-                                : `${import.meta.env.VITE_API_HOST}${community.communityImage}`
-                        }
-                        alt="커뮤니티 이미지"
-                        className="w-full h-auto mb-4"
-                    />
-                )}
-                <p className="text-gray-800 mb-4">{community.communityContents}</p>
-                <div className="mt-4">
-                    <button
-                        onClick={handleRecommend}
-                        className="bg-green-500 text-white font-semibold py-2 px-4 rounded hover:bg-green-600 transition duration-200"
-                    >
-                        추천하기
-                    </button>
-                </div>
-                <div className="mt-6">
-                    <h3 className="text-xl font-semibold mb-3">댓글</h3>
-                    {community.comments && community.comments.length > 0 ? (
-                        <ul className="space-y-3">
-                            {community.comments.map((comment) => {
-                                const state = replyState[comment._id] || { open: false, text: '', file: null };
-                                const nickname = userMap[comment.userId] || comment.userId;
-                                return (
-                                    <li
-                                        key={comment._id}
-                                        className="flex space-x-3 p-3 border border-gray-200 rounded hover:bg-gray-50 transition duration-200"
-                                    >
-                                        <div className="w-10 h-10 flex items-center justify-center bg-gray-400 rounded-full text-white font-bold">
-                                            {nickname.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center space-x-2 mb-1">
-                        <span className={`text-sm font-semibold ${comment.userId === community.userId ? 'text-red-500' : ''}`}>
+                    </div>
+                    {community.communityImage && (
+                        <img
+                            src={
+                                community.communityImage.startsWith('http') ||
+                                community.communityImage.startsWith('data:')
+                                    ? community.communityImage
+                                    : `${import.meta.env.VITE_API_HOST}${community.communityImage}`
+                            }
+                            alt="커뮤니티 이미지"
+                            className="w-full h-auto mb-4"
+                        />
+                    )}
+                    <p className="text-gray-800 mb-4">{community.communityContents}</p>
+                    <div className="mt-4">
+                        {community.userId !== currentUserId && (
+                            <button
+                                onClick={handlePostReport}
+                                className="bg-purple-500 text-white font-semibold py-2 px-4 rounded hover:bg-purple-600 transition duration-200"
+                            >
+                                신고
+                            </button>
+                        )}
+                        <button
+                            onClick={handleRecommend}
+                            className="bg-green-500 text-white font-semibold py-2 px-4 rounded hover:bg-green-600 transition duration-200"
+                        >
+                            추천하기
+                        </button>
+                    </div>
+                    <div className="mt-6">
+                        <h3 className="text-xl font-semibold mb-3">댓글</h3>
+                        {community.comments && community.comments.length > 0 ? (
+                            <ul className="space-y-3">
+                                {community.comments.map((comment) => {
+                                    const state = replyState[comment._id] || {open: false, text: '', file: null};
+                                    const nickname = userMap[comment.userId] || comment.userId;
+                                    return (
+                                        <li
+                                            key={comment._id}
+                                            className="flex space-x-3 p-3 border border-gray-200 rounded hover:bg-gray-50 transition duration-200"
+                                        >
+                                            <div
+                                                className="w-10 h-10 flex items-center justify-center bg-gray-400 rounded-full text-white font-bold">
+                                                {nickname.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center space-x-2 mb-1">
+                        <span
+                            className={`text-sm font-semibold ${comment.userId === community.userId ? 'text-red-500' : ''}`}>
                           {nickname}
                         </span>
-                                                <span className="text-xs text-gray-500">
+                                                    <span className="text-xs text-gray-500">
                           {formatRelativeTime(comment.commentRegDate)}
                         </span>
-                                                {comment.userId === currentUserId && (
-                                                    <button
-                                                        onClick={() => openCommentDeleteModal(comment._id)}
-                                                        className="text-red-500 text-xs ml-2 hover:underline"
-                                                    >
-                                                        삭제
-                                                    </button>
+                                                    {comment.userId === currentUserId ? (
+                                                        <button
+                                                            onClick={() => openCommentDeleteModal(comment._id)}
+                                                            className="text-red-500 text-xs ml-2 hover:underline"
+                                                        >
+                                                            삭제
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleCommentReport(comment)}
+                                                            className="text-purple-500 text-xs ml-2 hover:underline"
+                                                        >
+                                                            신고
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <p className="text-gray-800">{comment.commentContents}</p>
+                                                {comment.commentImage && (
+                                                    <img
+                                                        src={
+                                                            comment.commentImage.startsWith('http') ||
+                                                            comment.commentImage.startsWith('data:')
+                                                                ? comment.commentImage
+                                                                : `${import.meta.env.VITE_API_HOST}${comment.commentImage}`
+                                                        }
+                                                        alt="댓글 이미지"
+                                                        className="w-32 h-auto mt-2"
+                                                    />
                                                 )}
-                                            </div>
-                                            <p className="text-gray-800">{comment.commentContents}</p>
-                                            {comment.commentImage && (
-                                                <img
-                                                    src={
-                                                        comment.commentImage.startsWith('http') ||
-                                                        comment.commentImage.startsWith('data:')
-                                                            ? comment.commentImage
-                                                            : `${import.meta.env.VITE_API_HOST}${comment.commentImage}`
-                                                    }
-                                                    alt="댓글 이미지"
-                                                    className="w-32 h-auto mt-2"
-                                                />
-                                            )}
-                                            {comment.replies && comment.replies.length > 0 && (
-                                                <ul className="ml-4 mt-2 space-y-2 border-l pl-2">
-                                                    {comment.replies.map((reply) => {
-                                                        const replyNickname = userMap[reply.userId] || reply.userId;
-                                                        return (
-                                                            <li key={reply._id}>
-                                                                <div className="flex items-start space-x-2">
-                                                                    <div className="text-xs text-gray-500">
-                                    <span className={`text-sm font-semibold ${reply.userId === community.userId ? 'text-red-500' : ''}`}>
+                                                {comment.replies && comment.replies.length > 0 && (
+                                                    <ul className="ml-4 mt-2 space-y-2 border-l pl-2">
+                                                        {comment.replies.map((reply) => {
+                                                            const replyNickname = userMap[reply.userId] || reply.userId;
+                                                            return (
+                                                                <li key={reply._id}>
+                                                                    <div className="flex items-start space-x-2">
+                                                                        <div className="text-xs text-gray-500">
+                                    <span
+                                        className={`text-sm font-semibold ${reply.userId === community.userId ? 'text-red-500' : ''}`}>
                                       {replyNickname}
                                     </span>
-                                                                        <span className="ml-2 text-gray-400">
+                                                                            <span className="ml-2 text-gray-400">
                                       {formatRelativeTime(reply.commentRegDate)}
                                     </span>
-                                                                        <div className="text-gray-800 mt-1">
-                                                                            {reply.commentContents}
-                                                                        </div>
-                                                                        {reply.replyImage && (
-                                                                            <div className="mt-2">
-                                                                                <img
-                                                                                    src={
-                                                                                        reply.replyImage.startsWith('http') ||
-                                                                                        reply.replyImage.startsWith('data:')
-                                                                                            ? reply.replyImage
-                                                                                            : `${import.meta.env.VITE_API_HOST}${reply.replyImage}`
-                                                                                    }
-                                                                                    alt="대댓글 이미지"
-                                                                                    className="w-full h-auto"
-                                                                                />
+                                                                            <div className="text-gray-800 mt-1">
+                                                                                {reply.commentContents}
                                                                             </div>
-                                                                        )}
-                                                                        {reply.userId === currentUserId && (
-                                                                            <button
-                                                                                onClick={() => openReplyDeleteModal(comment._id, reply._id)}
-                                                                                className="text-red-500 text-xs ml-2 hover:underline"
-                                                                            >
-                                                                                삭제
-                                                                            </button>
-                                                                        )}
+                                                                            {reply.replyImage && (
+                                                                                <div className="mt-2">
+                                                                                    <img
+                                                                                        src={
+                                                                                            reply.replyImage.startsWith('http') ||
+                                                                                            reply.replyImage.startsWith('data:')
+                                                                                                ? reply.replyImage
+                                                                                                : `${import.meta.env.VITE_API_HOST}${reply.replyImage}`
+                                                                                        }
+                                                                                        alt="대댓글 이미지"
+                                                                                        className="w-full h-auto"
+                                                                                    />
+                                                                                </div>
+                                                                            )}
+                                                                            {reply.userId === currentUserId ? (
+                                                                                <button
+                                                                                    onClick={() => openReplyDeleteModal(comment._id, reply._id)}
+                                                                                    className="text-red-500 text-xs ml-2 hover:underline"
+                                                                                >
+                                                                                    삭제
+                                                                                </button>
+                                                                            ) : (
+                                                                                <button
+                                                                                    onClick={() => handleReplyReport(reply)}
+                                                                                    className="text-purple-500 text-xs ml-2 hover:underline"
+                                                                                >
+                                                                                    신고
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                                {reply.subReplies && reply.subReplies.length > 0 && (
-                                                                    <ul className="ml-4 mt-1 space-y-2 border-l pl-2">
-                                                                        {reply.subReplies.map((subReply) => {
-                                                                            const subReplyNickname = userMap[subReply.userId] || subReply.userId;
-                                                                            return (
-                                                                                <li key={subReply._id}>
-                                                                                    <div className="text-xs text-gray-500">
-                                            <span className={`text-sm font-semibold ${subReply.userId === community.userId ? 'text-red-500' : ''}`}>
+                                                                    {reply.subReplies && reply.subReplies.length > 0 && (
+                                                                        <ul className="ml-4 mt-1 space-y-2 border-l pl-2">
+                                                                            {reply.subReplies.map((subReply) => {
+                                                                                const subReplyNickname = userMap[subReply.userId] || subReply.userId;
+                                                                                return (
+                                                                                    <li key={subReply._id}>
+                                                                                        <div
+                                                                                            className="text-xs text-gray-500">
+                                            <span
+                                                className={`text-sm font-semibold ${subReply.userId === community.userId ? 'text-red-500' : ''}`}>
                                               {subReplyNickname}
                                             </span>
-                                                                                        <span className="ml-2 text-gray-400">
+                                                                                            <span
+                                                                                                className="ml-2 text-gray-400">
                                               {formatRelativeTime(subReply.commentRegDate)}
                                             </span>
-                                                                                        <div className="text-gray-800 mt-1">
-                                                                                            {subReply.commentContents}
-                                                                                        </div>
-                                                                                        {subReply.subReplyImage && (
-                                                                                            <div className="mt-1">
-                                                                                                <img
-                                                                                                    src={
-                                                                                                        subReply.subReplyImage.startsWith('http') ||
-                                                                                                        subReply.subReplyImage.startsWith('data:')
-                                                                                                            ? subReply.subReplyImage
-                                                                                                            : `${import.meta.env.VITE_API_HOST}${subReply.subReplyImage}`
-                                                                                                    }
-                                                                                                    alt="대대댓글 이미지"
-                                                                                                    className="w-20 h-auto"
-                                                                                                />
+                                                                                            <div
+                                                                                                className="text-gray-800 mt-1">
+                                                                                                {subReply.commentContents}
                                                                                             </div>
-                                                                                        )}
-                                                                                        {subReply.userId === currentUserId && (
-                                                                                            <button
-                                                                                                onClick={() =>
-                                                                                                    openSubReplyDeleteModal(comment._id, reply._id, subReply._id)
-                                                                                                }
-                                                                                                className="text-red-500 text-xs ml-2 hover:underline"
-                                                                                            >
-                                                                                                삭제
-                                                                                            </button>
-                                                                                        )}
-                                                                                    </div>
-                                                                                </li>
-                                                                            );
-                                                                        })}
-                                                                    </ul>
-                                                                )}
-                                                                <button
-                                                                    onClick={() => toggleSubReplyForm(reply._id, replyNickname)}
-                                                                    className="text-blue-500 text-xs mt-1 hover:underline"
-                                                                >
-                                                                    대대댓글 쓰기
-                                                                </button>
-                                                                {subReplyState[reply._id]?.open && (
-                                                                    <div className="mt-2 ml-4 border-l pl-2">
-                                                                        {/* 대대댓글 작성 폼 */}
-                                                                        <div className="border border-gray-300 rounded p-2">
+                                                                                            {subReply.subReplyImage && (
+                                                                                                <div className="mt-1">
+                                                                                                    <img
+                                                                                                        src={
+                                                                                                            subReply.subReplyImage.startsWith('http') ||
+                                                                                                            subReply.subReplyImage.startsWith('data:')
+                                                                                                                ? subReply.subReplyImage
+                                                                                                                : `${import.meta.env.VITE_API_HOST}${subReply.subReplyImage}`
+                                                                                                        }
+                                                                                                        alt="대대댓글 이미지"
+                                                                                                        className="w-20 h-auto"
+                                                                                                    />
+                                                                                                </div>
+                                                                                            )}
+                                                                                            {subReply.userId === currentUserId ? (
+                                                                                                <button
+                                                                                                    onClick={() =>
+                                                                                                        openSubReplyDeleteModal(comment._id, reply._id, subReply._id)
+                                                                                                    }
+                                                                                                    className="text-red-500 text-xs ml-2 hover:underline"
+                                                                                                >
+                                                                                                    삭제
+                                                                                                </button>
+                                                                                            ) : (
+                                                                                                <button
+                                                                                                    onClick={() => handleSubReplyReport(subReply)}
+                                                                                                    className="text-purple-500 text-xs ml-2 hover:underline"
+                                                                                                >
+                                                                                                    신고
+                                                                                                </button>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </li>
+                                                                                );
+                                                                            })}
+                                                                        </ul>
+                                                                    )}
+                                                                    <button
+                                                                        onClick={() => toggleSubReplyForm(reply._id, replyNickname)}
+                                                                        className="text-blue-500 text-xs mt-1 hover:underline"
+                                                                    >
+                                                                        답글 쓰기
+                                                                    </button>
+                                                                    {subReplyState[reply._id]?.open && (
+                                                                        <div className="mt-2 ml-4 border-l pl-2">
+                                                                            {/* 대대댓글 작성 폼 */}
+                                                                            <div
+                                                                                className="border border-gray-300 rounded p-2">
                                       <textarea
                                           className="w-full border-none outline-none focus:ring-0 text-sm"
                                           rows={2}
@@ -660,80 +750,84 @@ const CommunityDetail = () => {
                                                   },
                                               }))
                                           }
-                                          placeholder="대대댓글을 입력하세요 (최대 1000자)"
+                                          placeholder="답글을 입력하세요 (최대 1000자)"
                                       />
-                                                                            <div className="flex items-center justify-between mt-2">
-                                                                                <label className="flex items-center text-sm text-blue-600 border border-gray-300 px-2 py-1 rounded cursor-pointer">
-                                                                                    사진
-                                                                                    <input
-                                                                                        type="file"
-                                                                                        className="hidden"
-                                                                                        accept="image/*"
-                                                                                        onChange={(e) => {
-                                                                                            if (e.target.files?.[0]) {
+                                                                                <div
+                                                                                    className="flex items-center justify-between mt-2">
+                                                                                    <label
+                                                                                        className="flex items-center text-sm text-blue-600 border border-gray-300 px-2 py-1 rounded cursor-pointer">
+                                                                                        사진
+                                                                                        <input
+                                                                                            type="file"
+                                                                                            className="hidden"
+                                                                                            accept="image/*"
+                                                                                            onChange={(e) => {
+                                                                                                if (e.target.files?.[0]) {
+                                                                                                    setSubReplyState((prev) => ({
+                                                                                                        ...prev,
+                                                                                                        [reply._id]: {
+                                                                                                            ...prev[reply._id],
+                                                                                                            file: e.target.files[0],
+                                                                                                        },
+                                                                                                    }));
+                                                                                                }
+                                                                                            }}
+                                                                                        />
+                                                                                    </label>
+                                                                                    <span
+                                                                                        className="text-xs text-gray-400">
+                                          {(subReplyState[reply._id]?.text || '').length}/1000
+                                        </span>
+                                                                                </div>
+                                                                                {subReplyState[reply._id]?.file && (
+                                                                                    <div
+                                                                                        className="mt-2 flex items-center space-x-2">
+                                          <span className="text-xs text-gray-600">
+                                            {subReplyState[reply._id]?.file.name}
+                                          </span>
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() =>
                                                                                                 setSubReplyState((prev) => ({
                                                                                                     ...prev,
                                                                                                     [reply._id]: {
                                                                                                         ...prev[reply._id],
-                                                                                                        file: e.target.files[0],
+                                                                                                        file: null,
                                                                                                     },
-                                                                                                }));
+                                                                                                }))
                                                                                             }
-                                                                                        }}
-                                                                                    />
-                                                                                </label>
-                                                                                <span className="text-xs text-gray-400">
-                                          {(subReplyState[reply._id]?.text || '').length}/1000
-                                        </span>
+                                                                                            className="text-xs text-red-500 hover:underline"
+                                                                                        >
+                                                                                            X
+                                                                                        </button>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
-                                                                            {subReplyState[reply._id]?.file && (
-                                                                                <div className="mt-2 flex items-center space-x-2">
-                                          <span className="text-xs text-gray-600">
-                                            {subReplyState[reply._id]?.file.name}
-                                          </span>
-                                                                                    <button
-                                                                                        type="button"
-                                                                                        onClick={() =>
-                                                                                            setSubReplyState((prev) => ({
-                                                                                                ...prev,
-                                                                                                [reply._id]: {
-                                                                                                    ...prev[reply._id],
-                                                                                                    file: null,
-                                                                                                },
-                                                                                            }))
-                                                                                        }
-                                                                                        className="text-xs text-red-500 hover:underline"
-                                                                                    >
-                                                                                        X
-                                                                                    </button>
-                                                                                </div>
-                                                                            )}
+                                                                            <div className="text-right mt-2">
+                                                                                <button
+                                                                                    onClick={() => handleAddSubReply(comment._id, reply._id)}
+                                                                                    className="bg-blue-500 text-white text-sm px-3 py-1 rounded hover:bg-blue-600 transition duration-200"
+                                                                                >
+                                                                                    작성
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
-                                                                        <div className="text-right mt-2">
-                                                                            <button
-                                                                                onClick={() => handleAddSubReply(comment._id, reply._id)}
-                                                                                className="bg-blue-500 text-white text-sm px-3 py-1 rounded hover:bg-blue-600 transition duration-200"
-                                                                            >
-                                                                                작성
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </li>
-                                                        );
-                                                    })}
-                                                </ul>
-                                            )}
-                                            <button
-                                                onClick={() => toggleReplyForm(comment._id)}
-                                                className="text-blue-500 text-xs mt-2 hover:underline"
-                                            >
-                                                답글 쓰기
-                                            </button>
-                                            {state.open && (
-                                                <div className="mt-2 ml-4 border-l pl-2">
-                                                    {/* 대댓글 작성 폼 */}
-                                                    <div className="border border-gray-300 rounded p-2">
+                                                                    )}
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ul>
+                                                )}
+                                                <button
+                                                    onClick={() => toggleReplyForm(comment._id)}
+                                                    className="text-blue-500 text-xs mt-2 hover:underline"
+                                                >
+                                                    답글 쓰기
+                                                </button>
+                                                {state.open && (
+                                                    <div className="mt-2 ml-4 border-l pl-2">
+                                                        {/* 대댓글 작성 폼 */}
+                                                        <div className="border border-gray-300 rounded p-2">
                             <textarea
                                 className="w-full border-none outline-none focus:ring-0 text-sm"
                                 rows={2}
@@ -741,71 +835,72 @@ const CommunityDetail = () => {
                                 onChange={(e) => handleReplyTextChange(comment._id, e.target.value)}
                                 placeholder="대댓글을 입력하세요 (최대 1000자)"
                             />
-                                                        <div className="flex items-center justify-between mt-2">
-                                                            <label className="flex items-center text-sm text-blue-600 border border-gray-300 px-2 py-1 rounded cursor-pointer">
-                                                                사진
-                                                                <input
-                                                                    type="file"
-                                                                    className="hidden"
-                                                                    accept="image/*"
-                                                                    onChange={(e) => {
-                                                                        if (e.target.files?.[0]) {
-                                                                            handleReplyFileChange(comment._id, e.target.files[0]);
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            </label>
-                                                            <span className="text-xs text-gray-400">
+                                                            <div className="flex items-center justify-between mt-2">
+                                                                <label
+                                                                    className="flex items-center text-sm text-blue-600 border border-gray-300 px-2 py-1 rounded cursor-pointer">
+                                                                    사진
+                                                                    <input
+                                                                        type="file"
+                                                                        className="hidden"
+                                                                        accept="image/*"
+                                                                        onChange={(e) => {
+                                                                            if (e.target.files?.[0]) {
+                                                                                handleReplyFileChange(comment._id, e.target.files[0]);
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </label>
+                                                                <span className="text-xs text-gray-400">
                                 {state.text.length}/1000
                               </span>
-                                                        </div>
-                                                        {state.file && (
-                                                            <div className="mt-2 flex items-center space-x-2">
+                                                            </div>
+                                                            {state.file && (
+                                                                <div className="mt-2 flex items-center space-x-2">
                                 <span className="text-xs text-gray-600">
                                   {state.file.name}
                                 </span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        setReplyState((prev) => ({
-                                                                            ...prev,
-                                                                            [comment._id]: {
-                                                                                ...prev[comment._id],
-                                                                                file: null,
-                                                                            },
-                                                                        }))
-                                                                    }
-                                                                    className="text-xs text-red-500 hover:underline"
-                                                                >
-                                                                    X
-                                                                </button>
-                                                            </div>
-                                                        )}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            setReplyState((prev) => ({
+                                                                                ...prev,
+                                                                                [comment._id]: {
+                                                                                    ...prev[comment._id],
+                                                                                    file: null,
+                                                                                },
+                                                                            }))
+                                                                        }
+                                                                        className="text-xs text-red-500 hover:underline"
+                                                                    >
+                                                                        X
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-right mt-2">
+                                                            <button
+                                                                onClick={() => handleAddReply(comment._id)}
+                                                                className="bg-blue-500 text-white text-sm px-3 py-1 rounded hover:bg-blue-600 transition duration-200"
+                                                            >
+                                                                작성
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-right mt-2">
-                                                        <button
-                                                            onClick={() => handleAddReply(comment._id)}
-                                                            className="bg-blue-500 text-white text-sm px-3 py-1 rounded hover:bg-blue-600 transition duration-200"
-                                                        >
-                                                            작성
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    ) : (
-                        <p className="text-gray-600">댓글이 없습니다.</p>
-                    )}
-                </div>
-                <div className="mt-6">
-                    <h3 className="text-xl font-semibold mb-2">댓글 작성</h3>
-                    {commentError && <p className="text-red-500 mb-2">{commentError}</p>}
-                    <form onSubmit={handleAddComment} className="flex flex-col space-y-2">
-                        <div className="border border-gray-300 rounded p-2">
+                                                )}
+                                            </div>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        ) : (
+                            <p className="text-gray-600">댓글이 없습니다.</p>
+                        )}
+                    </div>
+                    <div className="mt-6">
+                        <h3 className="text-xl font-semibold mb-2">댓글 작성</h3>
+                        {commentError && <p className="text-red-500 mb-2">{commentError}</p>}
+                        <form onSubmit={handleAddComment} className="flex flex-col space-y-2">
+                            <div className="border border-gray-300 rounded p-2">
               <textarea
                   value={newComment}
                   onChange={(e) => {
@@ -817,73 +912,74 @@ const CommunityDetail = () => {
                   className="w-full border-none outline-none focus:ring-0 text-sm"
                   rows={3}
               />
-                            <div className="flex items-center justify-between mt-2">
-                                <label className="flex items-center text-sm text-blue-600 border border-gray-300 px-2 py-1 rounded cursor-pointer">
-                                    사진
-                                    <input
-                                        type="file"
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            if (e.target.files?.[0]) {
-                                                setCommentFile(e.target.files[0]);
-                                            }
-                                        }}
-                                    />
-                                </label>
-                                <span className="text-xs text-gray-400">
+                                <div className="flex items-center justify-between mt-2">
+                                    <label
+                                        className="flex items-center text-sm text-blue-600 border border-gray-300 px-2 py-1 rounded cursor-pointer">
+                                        사진
+                                        <input
+                                            type="file"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                if (e.target.files?.[0]) {
+                                                    setCommentFile(e.target.files[0]);
+                                                }
+                                            }}
+                                        />
+                                    </label>
+                                    <span className="text-xs text-gray-400">
                   {newComment.length}/1000
                 </span>
-                            </div>
-                            {commentFile && (
-                                <div className="mt-2 flex items-center space-x-2">
+                                </div>
+                                {commentFile && (
+                                    <div className="mt-2 flex items-center space-x-2">
                   <span className="text-xs text-gray-600">
                     {commentFile.name}
                   </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setCommentFile(null)}
-                                        className="text-xs text-red-500 hover:underline"
-                                    >
-                                        X
-                                    </button>
-                                </div>
-                            )}
+                                        <button
+                                            type="button"
+                                            onClick={() => setCommentFile(null)}
+                                            className="text-xs text-red-500 hover:underline"
+                                        >
+                                            X
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                type="submit"
+                                className="self-end bg-blue-500 text-white font-semibold px-4 py-2 rounded hover:bg-blue-600 transition duration-200"
+                            >
+                                작성
+                            </button>
+                        </form>
+                    </div>
+                    {community.userId === currentUserId && (
+                        <div className="mt-6 flex space-x-4">
+                            <button
+                                onClick={() => navigate(`/community/edit/${community._id}`)}
+                                className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 transition duration-200"
+                            >
+                                수정
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-200"
+                            >
+                                삭제
+                            </button>
                         </div>
+                    )}
+                    <div className="mt-6">
                         <button
-                            type="submit"
-                            className="self-end bg-blue-500 text-white font-semibold px-4 py-2 rounded hover:bg-blue-600 transition duration-200"
+                            onClick={() => navigate('/community')}
+                            className="inline-block bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200"
                         >
-                            작성
-                        </button>
-                    </form>
-                </div>
-                {community.userId === currentUserId && (
-                    <div className="mt-6 flex space-x-4">
-                        <button
-                            onClick={() => navigate(`/community/edit/${community._id}`)}
-                            className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 transition duration-200"
-                        >
-                            수정
-                        </button>
-                        <button
-                            onClick={handleDelete}
-                            className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-200"
-                        >
-                            삭제
+                            목록으로
                         </button>
                     </div>
-                )}
-                <div className="mt-6">
-                    <button
-                        onClick={() => navigate('/community')}
-                        className="inline-block bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200"
-                    >
-                        목록으로
-                    </button>
                 </div>
             </div>
-        </div>
         </CommunityLayout>
     );
 };
