@@ -95,7 +95,15 @@ const RandomChatComponent = () => {
             const age = calculateAge(userInfo.birthdate);
             const ageGroup = age >= 19 ? 'adult' : 'minor';
 
-            const rooms = await fetchChatRooms();
+            // 백엔드 필터링에 필요한 쿼리 파라미터 구성
+            const query = {
+                roomType: "random",
+                capacity,
+                matchedGender,
+                ageGroup,
+            };
+
+            const rooms = await fetchChatRooms(query);
             console.log("현재 채팅방 목록:", rooms);
 
             const availableRooms = rooms.filter((room) => {
