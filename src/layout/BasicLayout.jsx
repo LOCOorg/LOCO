@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import useAuthStore from '../stores/authStore';
+import ChatNotification from "../components/chatcomponents/ChatNotification.jsx";
 
 const BasicLayout = ({ children }) => {
     const { user } = useAuthStore();
@@ -31,6 +32,7 @@ const BasicLayout = ({ children }) => {
                         )}
                     </ul>
                 </nav>
+                <ChatNotification />
             </header>
             <main className="flex-1 p-4">
                 {children}
