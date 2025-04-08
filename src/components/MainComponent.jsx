@@ -8,6 +8,8 @@ import { useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/authStore.js";
 import PlanButton from "./product/PlanButton.jsx";
 import PaymentStatusModal from "./pay/PaymentStatusModal.jsx";
+import MyPageButton from './MyPageComponent/MyPageButton.jsx';
+import ProfileButton from './MyPageComponent/ProfileButton.jsx'
 
 function MainComponent() {
     const [user, setUser] = useState(null);
@@ -169,12 +171,16 @@ function MainComponent() {
                             <ul className="list-disc pl-5 text-gray-700">
                                 {friends.length > 0 ? (
                                     friends.map((friend, index) => (
-                                        <li
-                                            key={index}
-                                            className="cursor-pointer text-blue-500 hover:text-blue-700"
-                                            onClick={() => handleFriendSelect(friend)}
-                                        >
-                                            {friend.nickname} {friend.name}
+                                        <li key={index} className="flex items-center space-x-2">
+                                            {/* 프로필 버튼에 friend 객체를 prop으로 전달 */}
+                                            <ProfileButton profile={friend} />
+                                            {/* 친구의 이름이나 닉네임을 클릭 가능하도록 추가 */}
+                                            <span
+                                                className="cursor-pointer text-blue-500 hover:text-blue-700"
+                                                onClick={() => handleFriendSelect(friend)}
+                                            >
+                                                {friend.nickname} {friend.name}
+                                            </span>
                                         </li>
                                     ))
                                 ) : (
@@ -249,7 +255,7 @@ function MainComponent() {
                             ))}
                     </div>
                 )}
-
+                <MyPageButton />
                 <button
                     onClick={handleNavigate}
                     className="px-6 py-3 bg-blue-500 text-white text-lg rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
