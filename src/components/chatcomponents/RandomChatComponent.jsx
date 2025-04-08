@@ -50,7 +50,7 @@ const RandomChatComponent = () => {
         }
     }, [userId]);
 
-    // 랜덤 채팅방 찾기 및 생성 함수 (userId는 authStore에서 받아온 값을 사용)
+    // 랜덤 채팅방 찾기 및 생성 함수
     const findOrCreateRandomRoom = async (capacity, matchedGender) => {
         if (!userId) return;
         setLoading(true);
@@ -73,10 +73,37 @@ const RandomChatComponent = () => {
                 return;
             }
 
+            // 채팅횟수가 0인 경우 랜덤 채팅 이용 제한
+            if (userInfo.numOfChat === 0) {
+                setModalTitle("경고");
+                setModalMessage("채팅횟수가 부족하여 랜덤 채팅을 이용할 수 없습니다.");
+                setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
+                setModalOpen(true);
+                setLoading(false);
+                return;
+            }
+            // 신고로 인한 제한: reportStatus가 active가 아니고, reportTimer가 현재 시간보다 미래인 경우
+            if (userInfo.reportStatus !== "active" && userInfo.reportTimer && new Date(userInfo.reportTimer) > new Date()) {
+                setModalTitle("채팅 제한");
+                setModalMessage("신고로 인해 현재 랜덤 채팅 이용이 제한되어 있습니다.");
+                setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
+                setModalOpen(true);
+                setLoading(false);
+                return;
+            }
+
             const age = calculateAge(userInfo.birthdate);
             const ageGroup = age >= 19 ? 'adult' : 'minor';
 
-            const rooms = await fetchChatRooms();
+            // 백엔드 필터링에 필요한 쿼리 파라미터 구성
+            const query = {
+                roomType: "random",
+                capacity,
+                matchedGender,
+                ageGroup,
+            };
+
+            const rooms = await fetchChatRooms(query);
             console.log("현재 채팅방 목록:", rooms);
 
             const availableRooms = rooms.filter((room) => {

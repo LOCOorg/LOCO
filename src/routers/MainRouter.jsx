@@ -10,6 +10,7 @@ import AdminProductRouter from "./ProductRouter.jsx";
 import ProductShowcaseRouter from "./ProductShowcaseRouter.jsx";
 import QnaRouter from "./QnaRouter.jsx";
 import MyPageRouter from "./MyPageRouter.jsx";
+import ReportRouter from "./ReportRouter.jsx";
 
 
 const MainRouter = createBrowserRouter([
@@ -17,8 +18,6 @@ const MainRouter = createBrowserRouter([
         path: "/",
         element: <IndexPage/>
     },
-    ChatRouter,
-    CommunityRouter,
     {
         path: "/signupPage",
         element: <SignupPage/>
@@ -31,11 +30,13 @@ const MainRouter = createBrowserRouter([
         path: "/auth/naver/callback",
         element: <NaverLoginHandler/>  // 네이버 로그인 콜백 처리
     },
-
+    CommunityRouter,
     ChatRouter,
     LoginRouter,
     AdminProductRouter,
     ProductShowcaseRouter,
+    QnaRouter,
+    ReportRouter,
     QnaRouter,
     MyPageRouter
 ])
