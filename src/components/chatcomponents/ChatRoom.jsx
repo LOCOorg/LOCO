@@ -1,13 +1,15 @@
-import {useEffect, useState, useRef} from "react";
-import {useSocket} from "../../hooks/useSocket.js";
-import {fetchMessages, deleteMessage, leaveChatRoom, getChatRoomInfo} from "../../api/chatAPI.js";
+import { useEffect, useState, useRef } from "react";
+import { useSocket } from "../../hooks/useSocket.js";
+import { fetchMessages, deleteMessage, leaveChatRoom, getChatRoomInfo } from "../../api/chatAPI.js";
 import PropTypes from "prop-types";
-import {useNavigate} from "react-router-dom";
-import {decrementChatCount, getUserInfo, rateUser} from "../../api/userAPI.js";
+import { useNavigate } from "react-router-dom";
+import { decrementChatCount, getUserInfo, rateUser } from "../../api/userAPI.js";
 import CommonModal from "../../common/CommonModal.jsx";
 import ReportForm from "../../components/reportcomponents/ReportForm.jsx";
+// 프로필 모달을 위한 ProfileButton 컴포넌트를 import합니다.
+import ProfileButton from "../../components/MyPageComponent/ProfileButton.jsx";
 
-const ChatRoom = ({roomId, userId}) => {
+const ChatRoom = ({ roomId, userId }) => {
     const [messages, setMessages] = useState([]);
     const [messageIds, setMessageIds] = useState(new Set());
     const [text, setText] = useState("");
@@ -43,7 +45,7 @@ const ChatRoom = ({roomId, userId}) => {
             try {
                 const user = await getUserInfo(message.sender);
                 if (user && user.nickname) {
-                    message.sender = {_id: message.sender, nickname: user.nickname};
+                    message.sender = { _id: message.sender, ...user };
                 } else {
                     console.error("수신 메시지의 sender 정보 조회 실패");
                     return;
@@ -120,7 +122,7 @@ const ChatRoom = ({roomId, userId}) => {
             if (response.success) {
                 // 채팅 횟수 감소 API 호출 추가
                 await decrementChatCount(userId);
-                navigate("/chat", {replace: true});
+                navigate("/chat", { replace: true });
             } else {
                 console.error("채팅방 나가기 실패:", response.message);
             }
@@ -129,7 +131,6 @@ const ChatRoom = ({roomId, userId}) => {
         }
         setIsModalOpen(false);
     };
-
 
     const cancelLeaveRoom = () => {
         setIsModalOpen(false);
@@ -142,10 +143,10 @@ const ChatRoom = ({roomId, userId}) => {
             return;
         }
 
-        const message = {chatRoom: roomId, sender: {_id: userId, nickname: userName}, text};
+        const message = { chatRoom: roomId, sender: { _id: userId, nickname: userName }, text };
         socket.emit("sendMessage", message, (response) => {
             if (response.success) {
-                const sentMessage = {...message, _id: response.message._id};
+                const sentMessage = { ...message, _id: response.message._id };
                 setMessages((prevMessages) => [
                     ...prevMessages.filter((msg) => msg._id !== sentMessage._id),
                     sentMessage,
@@ -161,11 +162,11 @@ const ChatRoom = ({roomId, userId}) => {
         try {
             await deleteMessage(messageId);
             setMessages((prevMessages) =>
-                prevMessages.map((msg) => (msg._id === messageId ? {...msg, isDeleted: true} : msg))
+                prevMessages.map((msg) => (msg._id === messageId ? { ...msg, isDeleted: true } : msg))
             );
 
             if (socket) {
-                socket.emit("deleteMessage", {messageId, roomId});
+                socket.emit("deleteMessage", { messageId, roomId });
             }
         } catch (error) {
             console.error("메시지 삭제 중 오류 발생:", error);
@@ -200,15 +201,13 @@ const ChatRoom = ({roomId, userId}) => {
             socket.emit("joinRoom", roomId);
             socket.on("receiveMessage", handleReceiveMessage);
             socket.on("roomJoined", handleUserJoined);
-            socket.on("userLeft", ({userId}) => {
+            socket.on("userLeft", ({ userId }) => {
                 console.log(`사용자 ${userId}가 채팅방을 떠났습니다.`);
             });
 
-            socket.on("messageDeleted", ({messageId}) => {
+            socket.on("messageDeleted", ({ messageId }) => {
                 setMessages((prevMessages) =>
-                    prevMessages.map((msg) =>
-                        msg._id === messageId ? {...msg, isDeleted: true} : msg
-                    )
+                    prevMessages.map((msg) => (msg._id === messageId ? { ...msg, isDeleted: true } : msg))
                 );
             });
 
@@ -252,10 +251,22 @@ const ChatRoom = ({roomId, userId}) => {
                                         msg.sender._id === userId ? "bg-blue-100 justify-end" : "bg-gray-100"
                                     }`}
                                 >
+                                    {/* 상대방 메시지인 경우 왼쪽에 프로필 사진 표시 */}
+                                    {msg.sender._id !== userId && (
+                                        <ProfileButton profile={msg.sender} />
+                                    )}
+
                                     <div className="flex flex-col space-y-1">
                                         <span className="text-blue-700">{msg.sender.nickname}</span>
-                                        <strong>{msg.isDeleted ? "삭제된 메시지입니다." : msg.text}</strong>
+                                        <strong>
+                                            {msg.isDeleted ? "삭제된 메시지입니다." : msg.text}
+                                        </strong>
                                     </div>
+
+                                    {/* 자신의 메시지인 경우 오른쪽에 프로필 사진 표시 */}
+                                    {msg.sender._id === userId && (
+                                        <ProfileButton profile={msg.sender} />
+                                    )}
 
                                     {!msg.isDeleted && msg.sender._id === userId && (
                                         <button
@@ -324,16 +335,15 @@ const ChatRoom = ({roomId, userId}) => {
                                 return participantId !== userId;
                             })
                             .map((user) => {
-                                const participantId =
-                                    typeof user === "object" ? user._id : user;
+                                const participantId = typeof user === "object" ? user._id : user;
                                 const participantNickname =
                                     typeof user === "object" ? user.nickname : user;
                                 const isRated = ratings[participantId] === 1;
                                 return (
                                     <div key={participantId} className="my-2 flex items-center space-x-2">
-              <span className="block font-medium">
-                {participantNickname}
-              </span>
+                    <span className="block font-medium">
+                      {participantNickname}
+                    </span>
                                         <button
                                             onClick={() => handleRatingToggle(participantId)}
                                             className={`border rounded px-2 py-1 focus:outline-none ${
@@ -358,7 +368,6 @@ const ChatRoom = ({roomId, userId}) => {
                     </div>
                 )}
             </CommonModal>
-
 
             {showReportModal && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
