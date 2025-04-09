@@ -1,7 +1,9 @@
+// GlobalChatNotification.jsx
 import { useEffect, useState, useRef } from "react";
 import { useSocket } from "../../hooks/useSocket";
 import { useLocation, useNavigate } from "react-router-dom";
 import useAuthStore from "../../stores/authStore";
+import useFriendChatStore from "../../stores/useFriendChatStore"; // 추가
 
 const GlobalChatNotification = () => {
     const socket = useSocket();
@@ -12,8 +14,9 @@ const GlobalChatNotification = () => {
     const [notifications, setNotifications] = useState([]);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const { openFriendChat } = useFriendChatStore(); // 전역 상태 함수
 
-    // 사용자가 로그인되어 있다면, 소켓 연결 시 register 이벤트를 emit하여 개인 룸에 등록합니다.
+    // 사용자 등록
     useEffect(() => {
         if (socket && userId) {
             socket.emit("register", userId);
@@ -24,11 +27,11 @@ const GlobalChatNotification = () => {
         if (socket) {
             socket.on("chatNotification", (data) => {
                 console.log("Received chatNotification data:", data);
-                // 사용자가 해당 채팅방(예: `/chat/${data.chatRoom}`)에 있다면 알림을 표시하지 않음
+                // 이미 해당 채팅방에 있다면 알림 표시하지 않음
                 if (location.pathname.startsWith(`/chat/${data.chatRoom}`)) {
                     return;
                 }
-                // 고유 id를 부여해 새 알림 객체 생성 (여기선 Date.now()를 간단한 id로 사용)
+                // 고유 id 추가하여 알림 객체 생성
                 const id = Date.now();
                 const newNotif = { id, ...data };
                 setNotifications((prev) => [...prev, newNotif]);
@@ -45,17 +48,35 @@ const GlobalChatNotification = () => {
 
     const handleNotificationClick = (notif) => {
         if (notif && notif.chatRoom) {
-            navigate(`/chat/${notif.chatRoom}/${userId}`);
+            if (notif.roomType === "random") {
+                navigate(`/chat/${notif.chatRoom}/${userId}`);
+            } else if (notif.roomType === "friend") {
+                // friend 알림: friend 정보가 없으면, 메시지의 sender가 친구일 가능성이 있음
+                let friendInfo = notif.friend;
+                if (!friendInfo && notif.message && notif.message.sender && notif.message.sender.id !== userId) {
+                    friendInfo = {
+                        _id: notif.message.sender.id,
+                        nickname: notif.message.sender.nickname,
+                        name: notif.message.sender.nickname // 필요하면 추가 정보 포함
+                    };
+                }
+                openFriendChat({ roomId: notif.chatRoom, friend: friendInfo || null });
+            }
         }
-        console.log(notif);
-        // 클릭한 알림은 목록에서 제거
         setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
         setDropdownOpen(false);
     };
 
+
+    // helper: roomType에 따른 표시 텍스트
+    const renderRoomTypeTag = (roomType) => {
+        if (roomType === "random") return "[랜덤] ";
+        if (roomType === "friend") return "[친구] ";
+        return "";
+    };
+
     return (
         <div style={{ position: "relative" }}>
-            {/* 알림 버튼 */}
             <button
                 onClick={toggleDropdown}
                 style={{
@@ -66,9 +87,9 @@ const GlobalChatNotification = () => {
                     fontSize: "24px",
                 }}
             >
-                <span role="img" aria-label="notification">
-                    🔔
-                </span>
+        <span role="img" aria-label="notification">
+          🔔
+        </span>
                 {notifications.length > 0 && (
                     <span
                         style={{
@@ -82,12 +103,10 @@ const GlobalChatNotification = () => {
                             fontSize: "12px",
                         }}
                     >
-                        {notifications.length}
-                    </span>
+            {notifications.length}
+          </span>
                 )}
             </button>
-
-            {/* 드롭다운 목록: 알림이 쌓여 있음 */}
             {dropdownOpen && notifications.length > 0 && (
                 <div
                     ref={dropdownRef}
@@ -115,6 +134,7 @@ const GlobalChatNotification = () => {
                                 color: "black",
                             }}
                         >
+                            {renderRoomTypeTag(notif.roomType)}
                             {notif.notification}
                         </div>
                     ))}

@@ -10,6 +10,7 @@ import PlanButton from "./product/PlanButton.jsx";
 import PaymentStatusModal from "./pay/PaymentStatusModal.jsx";
 import MyPageButton from './MyPageComponent/MyPageButton.jsx';
 import ProfileButton from './MyPageComponent/ProfileButton.jsx'
+import useFriendChatStore from "../stores/useFriendChatStore.js";
 
 function MainComponent() {
     const [user, setUser] = useState(null);
@@ -21,6 +22,7 @@ function MainComponent() {
     const setStoreUser = useAuthStore((state) => state.setUser); //로그인 새로고침
     const authUser = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
+    const { openFriendChat } = useFriendChatStore();
     const MAX_CHAT_WINDOWS = 3;
 
 
@@ -77,12 +79,8 @@ function MainComponent() {
 
                 newRoom = room;
             }
-            setChatRooms((prevRooms) => {
-                if (!prevRooms.some((room) => room.roomId === newRoom._id)) {
-                    return [...prevRooms, { roomId: newRoom._id, friend }];
-                }
-                return prevRooms;
-            });
+            // 전역 상태를 사용해 친구 채팅 모달을 엽니다.
+            openFriendChat({ roomId: newRoom._id, friend });
         } catch (error) {
             console.error("채팅방 처리 실패:", error);
         }
