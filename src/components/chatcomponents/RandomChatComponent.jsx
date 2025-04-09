@@ -184,11 +184,8 @@ const RandomChatComponent = () => {
             <h2 className="text-2xl font-semibold mb-4">랜덤 채팅 시작</h2>
 
             <div className="mb-4">
-                <h3>유저 정보</h3>
-                <p>이름: {userInfo.name}</p>
                 <p>닉네임: {userInfo.nickname}</p>
                 <p>성별: {userInfo.gender}</p>
-                <p>전화번호: {userInfo.phone}</p>
                 <p>생년월일: {userInfo.birthdate}</p>
             </div>
 

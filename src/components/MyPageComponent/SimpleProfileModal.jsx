@@ -1,14 +1,31 @@
-// src/components/SimpleProfileModal.jsx
-import React from 'react';
+import React, { useState } from 'react';
+import ReportForm from '../reportcomponents/ReportForm.jsx';
+import useAuthStore from '../../stores/authStore';
+import {sendFriendRequest} from "../../api/userAPI.js";
 
 const SimpleProfileModal = ({ profile, onClose }) => {
+
+    const authUser = useAuthStore((state) => state.user);
+
+    const [isReportModalVisible, setIsReportModalVisible] = useState(false);
+
     if (!profile) return null;
 
-    // 메인 사진 (맨 위 사진) - profile.photo[0] 사용
+    // 메인 사진 (첫 번째 사진)
     const mainPhoto = profile.photo && profile.photo[0];
-
-    // 나머지 5장 (최대 5장으로 제한)
+    // 나머지 5장 (썸네일)
     const subPhotos = profile.photo ? profile.photo.slice(1, 6) : [];
+
+    const handleFriendRequest = async () => {
+        if (!authUser || !profile) return;
+        try {
+            await sendFriendRequest(authUser._id, profile._id);
+            alert("친구 요청을 보냈습니다.");
+        } catch (error) {
+            console.error("친구 요청 보내기 실패:", error);
+            alert("친구 요청 전송에 실패했습니다.");
+        }
+    };
 
     return (
         <div
@@ -85,8 +102,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                     )}
                 </div>
 
-
-                {/* 하단에 5개 이미지 (썸네일) */}
+                {/* 썸네일 영역 */}
                 <div style={{ display: 'flex', gap: '5px', marginBottom: '10px' }}>
                     {subPhotos.length > 0 ? (
                         subPhotos.map((photoUrl, idx) => (
@@ -108,7 +124,6 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                             </div>
                         ))
                     ) : (
-                        /* 썸네일이 없으면 5칸 회색 박스 표시 */
                         Array.from({ length: 5 }).map((_, idx) => (
                             <div
                                 key={idx}
@@ -118,19 +133,19 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                                     backgroundColor: '#eee',
                                     borderRadius: '4px',
                                 }}
-                            >
-                                {/* 빈 썸네일 */}
-                            </div>
+                            ></div>
                         ))
                     )}
                 </div>
 
-
-                {/* 사용자 기본 정보: 닉네임, 롤닉네임, 성별, 별점 */}
+                {/* 사용자 기본 정보 */}
                 <div style={{ marginBottom: '8px' }}>
-                    <strong>닉네임:</strong> {profile.nickname || '닉네임 없음'}<br />
-                    <strong>롤 닉네임:</strong> {profile.lolNickname || '미입력'}<br />
-                    <strong>성별:</strong> {profile.gender || '미입력'}<br />
+                    <strong>닉네임:</strong> {profile.nickname || '닉네임 없음'}
+                    <br />
+                    <strong>롤 닉네임:</strong> {profile.lolNickname || '미입력'}
+                    <br />
+                    <strong>성별:</strong> {profile.gender || '미입력'}
+                    <br />
                     <strong>별점:</strong> {profile.star || 0}
                 </div>
 
@@ -163,7 +178,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                             borderRadius: '4px',
                             cursor: 'pointer',
                         }}
-                        onClick={() => alert('친구신청 기능은 별도 구현 필요')}
+                        onClick={handleFriendRequest}
                     >
                         친구신청
                     </button>
@@ -177,11 +192,64 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                             borderRadius: '4px',
                             cursor: 'pointer',
                         }}
-                        onClick={() => alert('신고 기능은 별도 구현 필요')}
+                        onClick={() => setIsReportModalVisible(true)}
                     >
                         신고
                     </button>
                 </div>
+
+                {/* 신고 모달창: 프로필 모달 내부에서 신고 모달 크기에 맞게 중앙에 띄우기 */}
+                {isReportModalVisible && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: 'rgba(0,0,0,0.6)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 2000,
+                        }}
+                    >
+                        <div
+                            style={{
+                                position: 'relative',
+                                background: 'white',
+                                padding: '20px',
+                                borderRadius: '8px',
+                                boxShadow: '0 0 10px rgba(0,0,0,0.3)',
+                                // content 크기에 맞게 자동 조절되도록 함 (width: auto)
+                                width: 'auto',
+                                maxWidth: '90%',
+                            }}
+                        >
+                            {/* 뒤로가기 버튼 */}
+                            <button
+                                onClick={() => setIsReportModalVisible(false)}
+                                style={{
+                                    position: 'absolute',
+                                    top: '10px',
+                                    left: '10px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    fontSize: '16px',
+                                    color: 'gray',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                ← 뒤로가기
+                            </button>
+                            <ReportForm
+                                onClose={() => setIsReportModalVisible(false)}
+                                reportedUser={profile}
+                                onReportCreated={() => {}}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
