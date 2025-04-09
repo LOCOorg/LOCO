@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
+import useAuthStore from '../../stores/authStore';
+import {sendFriendRequest} from "../../api/userAPI.js";
 
 const SimpleProfileModal = ({ profile, onClose }) => {
+
+    const authUser = useAuthStore((state) => state.user);
+
     const [isReportModalVisible, setIsReportModalVisible] = useState(false);
 
     if (!profile) return null;
@@ -10,6 +15,17 @@ const SimpleProfileModal = ({ profile, onClose }) => {
     const mainPhoto = profile.photo && profile.photo[0];
     // 나머지 5장 (썸네일)
     const subPhotos = profile.photo ? profile.photo.slice(1, 6) : [];
+
+    const handleFriendRequest = async () => {
+        if (!authUser || !profile) return;
+        try {
+            await sendFriendRequest(authUser._id, profile._id);
+            alert("친구 요청을 보냈습니다.");
+        } catch (error) {
+            console.error("친구 요청 보내기 실패:", error);
+            alert("친구 요청 전송에 실패했습니다.");
+        }
+    };
 
     return (
         <div
@@ -162,7 +178,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                             borderRadius: '4px',
                             cursor: 'pointer',
                         }}
-                        onClick={() => alert('친구신청 기능은 별도 구현 필요')}
+                        onClick={handleFriendRequest}
                     >
                         친구신청
                     </button>
