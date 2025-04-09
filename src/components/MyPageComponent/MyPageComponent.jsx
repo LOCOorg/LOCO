@@ -98,7 +98,7 @@ const MyPageContent = ({ overrideProfile }) => {
     // 친구 요청 수락 처리 함수
     const handleAcceptRequest = async (requestId) => {
         try {
-            await acceptFriendRequest(requestId);
+            await acceptFriendRequest(authUser._id, requestId);
             // 수락 후 목록에서 제거
             setFriendRequests(prev => prev.filter(req => req._id !== requestId));
             alert("친구 요청을 수락하였습니다.");
@@ -164,7 +164,7 @@ const MyPageContent = ({ overrideProfile }) => {
                 </div>
                 {isOwnProfile && editMode && (
                     <div className="mt-2">
-                        <input type="file" accept="image/*" multiple onChange={handlePhotoChange} />
+                        <input type="file" accept="image/*" multiple onChange={handlePhotoChange}/>
                     </div>
                 )}
             </div>
@@ -173,7 +173,8 @@ const MyPageContent = ({ overrideProfile }) => {
             <div className="mb-2">
                 <strong>닉네임:</strong>
                 {isOwnProfile && editMode ? (
-                    <input type="text" name="nickname" value={formData.nickname} onChange={handleInputChange} className="ml-2 border p-1" />
+                    <input type="text" name="nickname" value={formData.nickname} onChange={handleInputChange}
+                           className="ml-2 border p-1"/>
                 ) : (
                     <span className="ml-2">{profile.nickname}</span>
                 )}
@@ -181,7 +182,8 @@ const MyPageContent = ({ overrideProfile }) => {
             <div className="mb-2">
                 <strong>자기소개:</strong>
                 {isOwnProfile && editMode ? (
-                    <textarea name="info" value={formData.info} onChange={handleInputChange} className="ml-2 border p-1" />
+                    <textarea name="info" value={formData.info} onChange={handleInputChange}
+                              className="ml-2 border p-1"/>
                 ) : (
                     <span className="ml-2">{profile.info || '등록된 자기소개가 없습니다.'}</span>
                 )}
@@ -189,7 +191,8 @@ const MyPageContent = ({ overrideProfile }) => {
             <div className="mb-2">
                 <strong>성별:</strong>
                 {isOwnProfile && editMode ? (
-                    <select name="gender" value={formData.gender} onChange={handleInputChange} className="ml-2 border p-1">
+                    <select name="gender" value={formData.gender} onChange={handleInputChange}
+                            className="ml-2 border p-1">
                         <option value="male">남성</option>
                         <option value="female">여성</option>
                         <option value="select">선택 안함</option>
@@ -198,7 +201,53 @@ const MyPageContent = ({ overrideProfile }) => {
                     <span className="ml-2">{profile.gender || '미입력'}</span>
                 )}
             </div>
-            {/* 추가 프로필 필드들 ... */}
+            <div className="mb-2">
+                <strong>생년월일:</strong>
+                <span className="ml-2">{profile.birthdate || '미입력'}</span>
+            </div>
+
+            <div className="mb-2">
+                <strong>롤/TFT 닉네임:</strong>
+                {isOwnProfile && editMode ? (
+                    <input type="text" name="lolNickname" value={formData.lolNickname} onChange={handleInputChange}
+                           className="ml-2 border p-1"/>
+                ) : (
+                    <span className="ml-2">{profile.lolNickname || '미입력'}</span>
+                )}
+            </div>
+
+            <div className="mb-2">
+                <strong>서든닉네임:</strong>
+                {isOwnProfile && editMode ? (
+                    <input type="text" name="suddenNickname" value={formData.suddenNickname}
+                           onChange={handleInputChange} className="ml-2 border p-1"/>
+                ) : (
+                    <span className="ml-2">{profile.suddenNickname || '미입력'}</span>
+                )}
+            </div>
+
+            <div className="mb-2">
+                <strong>배틀그라운드 닉네임:</strong>
+                {isOwnProfile && editMode ? (
+                    <input type="text" name="battleNickname" value={formData.battleNickname}
+                           onChange={handleInputChange} className="ml-2 border p-1"/>
+                ) : (
+                    <span className="ml-2">{profile.battleNickname || '미입력'}</span>
+                )}
+            </div>
+
+            <div className="mt-4">
+                <h3 className="text-xl font-semibold">본인 QnA 내역</h3>
+                {profile.qnaHistory && profile.qnaHistory.length > 0 ? (
+                    <ul className="list-disc ml-6">
+                        {profile.qnaHistory.map((qna, idx) => (
+                            <li key={idx}>{qna}</li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p>등록된 QnA 내역이 없습니다.</p>
+                )}
+            </div>
 
             {isOwnProfile && (
                 <div className="mt-4">
@@ -207,7 +256,8 @@ const MyPageContent = ({ overrideProfile }) => {
                             <button onClick={handleSave} className="px-4 py-2 bg-green-500 text-white rounded mr-2">
                                 저장
                             </button>
-                            <button onClick={() => setEditMode(false)} className="px-4 py-2 bg-gray-500 text-white rounded">
+                            <button onClick={() => setEditMode(false)}
+                                    className="px-4 py-2 bg-gray-500 text-white rounded">
                                 취소
                             </button>
                         </>
