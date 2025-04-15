@@ -1,29 +1,37 @@
 import React, { useState } from 'react';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
 import useAuthStore from '../../stores/authStore';
-import {sendFriendRequest} from "../../api/userAPI.js";
+import { sendFriendRequest } from "../../api/userAPI.js";
+import CommonModal from '../../common/CommonModal.jsx';
 
 const SimpleProfileModal = ({ profile, onClose }) => {
-
     const authUser = useAuthStore((state) => state.user);
-
     const [isReportModalVisible, setIsReportModalVisible] = useState(false);
+    // alert 모달 상태 추가
+    const [alertModalOpen, setAlertModalOpen] = useState(false);
+    const [alertModalMessage, setAlertModalMessage] = useState("");
 
     if (!profile) return null;
 
-    // 메인 사진 (첫 번째 사진)
     const mainPhoto = profile.photo && profile.photo[0];
-    // 나머지 5장 (썸네일)
     const subPhotos = profile.photo ? profile.photo.slice(1, 6) : [];
 
     const handleFriendRequest = async () => {
         if (!authUser || !profile) return;
         try {
             await sendFriendRequest(authUser._id, profile._id);
-            alert("친구 요청을 보냈습니다.");
+            setAlertModalMessage("친구 요청을 보냈습니다.");
+            setAlertModalOpen(true);
         } catch (error) {
             console.error("친구 요청 보내기 실패:", error);
-            alert("친구 요청 전송에 실패했습니다.");
+            // error.response가 있는 경우 상세 에러 메시지를 추출
+            const detailedMessage = error.response && error.response.data
+                ? error.response.data.errorMessage ||
+                error.response.data.message ||
+                JSON.stringify(error.response.data)
+                : error.message;
+            setAlertModalMessage(`친구 요청 전송에 실패했습니다. (${detailedMessage})`);
+            setAlertModalOpen(true);
         }
     };
 
@@ -54,7 +62,6 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                     boxShadow: '0 0 10px rgba(0,0,0,0.3)',
                 }}
             >
-                {/* 닫기 버튼 */}
                 <button
                     onClick={onClose}
                     style={{
@@ -70,8 +77,6 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                 >
                     ×
                 </button>
-
-                {/* 메인 사진 영역 */}
                 <div style={{ width: '100%', height: '200px', marginBottom: '10px' }}>
                     {mainPhoto ? (
                         <img
@@ -101,8 +106,6 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                         </div>
                     )}
                 </div>
-
-                {/* 썸네일 영역 */}
                 <div style={{ display: 'flex', gap: '5px', marginBottom: '10px' }}>
                     {subPhotos.length > 0 ? (
                         subPhotos.map((photoUrl, idx) => (
@@ -137,8 +140,6 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                         ))
                     )}
                 </div>
-
-                {/* 사용자 기본 정보 */}
                 <div style={{ marginBottom: '8px' }}>
                     <strong>닉네임:</strong> {profile.nickname || '닉네임 없음'}
                     <br />
@@ -148,8 +149,6 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                     <br />
                     <strong>별점:</strong> {profile.star || 0}
                 </div>
-
-                {/* 자기소개 */}
                 <div style={{ marginBottom: '10px' }}>
                     <strong>자기소개</strong>
                     <div
@@ -165,8 +164,6 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                         {profile.info || '자기소개가 없습니다.'}
                     </div>
                 </div>
-
-                {/* 친구신청, 신고 버튼 */}
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                     <button
                         style={{
@@ -197,8 +194,6 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                         신고
                     </button>
                 </div>
-
-                {/* 신고 모달창: 프로필 모달 내부에서 신고 모달 크기에 맞게 중앙에 띄우기 */}
                 {isReportModalVisible && (
                     <div
                         style={{
@@ -221,12 +216,10 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                                 padding: '20px',
                                 borderRadius: '8px',
                                 boxShadow: '0 0 10px rgba(0,0,0,0.3)',
-                                // content 크기에 맞게 자동 조절되도록 함 (width: auto)
                                 width: 'auto',
                                 maxWidth: '90%',
                             }}
                         >
-                            {/* 뒤로가기 버튼 */}
                             <button
                                 onClick={() => setIsReportModalVisible(false)}
                                 style={{
@@ -249,6 +242,18 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                             />
                         </div>
                     </div>
+                )}
+                {/* alert 대신 CommonModal 사용 */}
+                {alertModalOpen && (
+                    <CommonModal
+                        isOpen={alertModalOpen}
+                        onClose={() => setAlertModalOpen(false)}
+                        title="알림"
+                        onConfirm={() => setAlertModalOpen(false)}
+                        showCancel={false}
+                    >
+                        {alertModalMessage}
+                    </CommonModal>
                 )}
             </div>
         </div>

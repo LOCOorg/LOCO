@@ -208,6 +208,9 @@ const ReportListComponent = () => {
                                 <p className="mb-1">
                                     <span className="font-semibold">신고일:</span> {new Date(report.reportDate).toLocaleString()}
                                 </p>
+                                <p className="mb-1">
+                                    <span className="font-semibold">가해자:</span> {report.offenderId.nickname}
+                                </p>
                                 <div className="flex justify-end space-x-2 mt-2">
                                     <button
                                         onClick={() => handleOpenDetail(report)}

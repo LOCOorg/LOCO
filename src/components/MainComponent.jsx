@@ -8,6 +8,7 @@ import PaymentStatusModal from "./pay/PaymentStatusModal.jsx";
 import MyPageButton from "./MyPageComponent/MyPageButton.jsx";
 import ProfileButton from "./MyPageComponent/ProfileButton.jsx";
 import useFriendChatStore from "../stores/useFriendChatStore.js";
+import ReportNotificationModal from "./reportcomponents/ReportNotificationModal.jsx";
 
 function MainComponent() {
     const [user, setUser] = useState(null);
@@ -106,6 +107,7 @@ function MainComponent() {
         <>
             {/* PaymentStatusModal을 최상위에 렌더링 */}
             <PaymentStatusModal />
+            <ReportNotificationModal />
 
             <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
                 <h1 className="text-4xl font-bold text-gray-800 mb-6">홈</h1>
@@ -129,7 +131,7 @@ function MainComponent() {
                                                 className="cursor-pointer text-blue-500 hover:text-blue-700"
                                                 onClick={() => handleFriendSelect(friend)}
                                             >
-                        {friend.nickname} {friend.name}
+                        {friend.nickname}
                       </span>
                                         </li>
                                     ))

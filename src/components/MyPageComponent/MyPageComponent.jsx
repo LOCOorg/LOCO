@@ -1,8 +1,9 @@
-// src/components/MyPageContent/MyPageContent.jsx
 import { useEffect, useState } from 'react';
 import { getUserInfo, updateUserProfile, getFriendRequestList, acceptFriendRequest } from "../../api/userAPI";
 import { uploadFile } from "../../api/fileUploadAPI";
 import useAuthStore from '../../stores/authStore';
+// 경로는 실제 CommonModal 위치에 맞게 수정하세요.
+import CommonModal from '../../common/CommonModal.jsx';
 
 const MyPageContent = ({ overrideProfile }) => {
     const authUser = useAuthStore((state) => state.user);
@@ -10,6 +11,9 @@ const MyPageContent = ({ overrideProfile }) => {
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({});
     const [friendRequests, setFriendRequests] = useState([]);
+    // alert 모달 상태 추가
+    const [alertModalOpen, setAlertModalOpen] = useState(false);
+    const [alertModalMessage, setAlertModalMessage] = useState("");
 
     useEffect(() => {
         if (overrideProfile) {
@@ -41,7 +45,6 @@ const MyPageContent = ({ overrideProfile }) => {
         }
     }, [authUser, overrideProfile]);
 
-    // 친구 요청 목록 불러오기 (로그인 사용자의 경우)
     useEffect(() => {
         if (authUser) {
             getFriendRequestList(authUser._id)
@@ -62,8 +65,10 @@ const MyPageContent = ({ overrideProfile }) => {
     const handlePhotoChange = async (e) => {
         const files = Array.from(e.target.files);
         const currentCount = formData.photo.length;
+        // alert("최대 6장까지 업로드 가능합니다."); 대신
         if (currentCount + files.length > 6) {
-            alert("최대 6장까지 업로드 가능합니다.");
+            setAlertModalMessage("최대 6장까지 업로드 가능합니다.");
+            setAlertModalOpen(true);
             return;
         }
         const newPhotoURLs = [];
@@ -95,16 +100,19 @@ const MyPageContent = ({ overrideProfile }) => {
         }
     };
 
-    // 친구 요청 수락 처리 함수
+    // 친구 요청 수락 처리
     const handleAcceptRequest = async (requestId) => {
         try {
             await acceptFriendRequest(authUser._id, requestId);
-            // 수락 후 목록에서 제거
             setFriendRequests(prev => prev.filter(req => req._id !== requestId));
-            alert("친구 요청을 수락하였습니다.");
+            // alert("친구 요청을 수락하였습니다."); 대신
+            setAlertModalMessage("친구 요청을 수락하였습니다.");
+            setAlertModalOpen(true);
         } catch (error) {
             console.error("친구 요청 수락 실패:", error);
-            alert("친구 요청 수락에 실패했습니다.");
+            // alert("친구 요청 수락에 실패했습니다."); 대신
+            setAlertModalMessage("친구 요청 수락에 실패했습니다.");
+            setAlertModalOpen(true);
         }
     };
 
@@ -113,8 +121,6 @@ const MyPageContent = ({ overrideProfile }) => {
             <h2 className="text-2xl font-bold mb-2">프로필 정보</h2>
             <p className="mb-4">로코 코인: {profile.coinLeft}</p>
             <p className="mb-4">내 별점: {profile.star}</p>
-
-            {/* 친구 요청 목록 섹션 */}
             <div className="mb-6">
                 <h3 className="text-xl font-semibold">친구 요청 목록</h3>
                 {friendRequests.length > 0 ? (
@@ -135,8 +141,6 @@ const MyPageContent = ({ overrideProfile }) => {
                     <p>처리 대기 중인 친구 요청이 없습니다.</p>
                 )}
             </div>
-
-            {/* 기존 프로필 편집 및 정보 표시 */}
             <div className="mb-4">
                 <h3 className="text-xl font-semibold">프로필 사진 (최대 6장)</h3>
                 <div className="flex flex-wrap gap-2">
@@ -168,8 +172,6 @@ const MyPageContent = ({ overrideProfile }) => {
                     </div>
                 )}
             </div>
-
-            {/* 기타 프로필 정보 편집/표시 */}
             <div className="mb-2">
                 <strong>닉네임:</strong>
                 {isOwnProfile && editMode ? (
@@ -205,7 +207,6 @@ const MyPageContent = ({ overrideProfile }) => {
                 <strong>생년월일:</strong>
                 <span className="ml-2">{profile.birthdate || '미입력'}</span>
             </div>
-
             <div className="mb-2">
                 <strong>롤/TFT 닉네임:</strong>
                 {isOwnProfile && editMode ? (
@@ -215,7 +216,6 @@ const MyPageContent = ({ overrideProfile }) => {
                     <span className="ml-2">{profile.lolNickname || '미입력'}</span>
                 )}
             </div>
-
             <div className="mb-2">
                 <strong>서든닉네임:</strong>
                 {isOwnProfile && editMode ? (
@@ -225,7 +225,6 @@ const MyPageContent = ({ overrideProfile }) => {
                     <span className="ml-2">{profile.suddenNickname || '미입력'}</span>
                 )}
             </div>
-
             <div className="mb-2">
                 <strong>배틀그라운드 닉네임:</strong>
                 {isOwnProfile && editMode ? (
@@ -235,7 +234,6 @@ const MyPageContent = ({ overrideProfile }) => {
                     <span className="ml-2">{profile.battleNickname || '미입력'}</span>
                 )}
             </div>
-
             <div className="mt-4">
                 <h3 className="text-xl font-semibold">본인 QnA 내역</h3>
                 {profile.qnaHistory && profile.qnaHistory.length > 0 ? (
@@ -248,7 +246,6 @@ const MyPageContent = ({ overrideProfile }) => {
                     <p>등록된 QnA 내역이 없습니다.</p>
                 )}
             </div>
-
             {isOwnProfile && (
                 <div className="mt-4">
                     {editMode ? (
@@ -267,6 +264,18 @@ const MyPageContent = ({ overrideProfile }) => {
                         </button>
                     )}
                 </div>
+            )}
+            {/* alert 대신 CommonModal 사용 */}
+            {alertModalOpen && (
+                <CommonModal
+                    isOpen={alertModalOpen}
+                    onClose={() => setAlertModalOpen(false)}
+                    title="알림"
+                    onConfirm={() => setAlertModalOpen(false)}
+                    showCancel={false}
+                >
+                    {alertModalMessage}
+                </CommonModal>
             )}
         </div>
     );
