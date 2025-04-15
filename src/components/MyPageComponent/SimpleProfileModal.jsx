@@ -20,13 +20,17 @@ const SimpleProfileModal = ({ profile, onClose }) => {
         if (!authUser || !profile) return;
         try {
             await sendFriendRequest(authUser._id, profile._id);
-            // alert("친구 요청을 보냈습니다."); 대신
             setAlertModalMessage("친구 요청을 보냈습니다.");
             setAlertModalOpen(true);
         } catch (error) {
             console.error("친구 요청 보내기 실패:", error);
-            // alert("친구 요청 전송에 실패했습니다."); 대신
-            setAlertModalMessage("친구 요청 전송에 실패했습니다.");
+            // error.response가 있는 경우 상세 에러 메시지를 추출
+            const detailedMessage = error.response && error.response.data
+                ? error.response.data.errorMessage ||
+                error.response.data.message ||
+                JSON.stringify(error.response.data)
+                : error.message;
+            setAlertModalMessage(`친구 요청 전송에 실패했습니다. (${detailedMessage})`);
             setAlertModalOpen(true);
         }
     };
