@@ -30,7 +30,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                 error.response.data.message ||
                 JSON.stringify(error.response.data)
                 : error.message;
-            setAlertModalMessage(`친구 요청 전송에 실패했습니다. (${detailedMessage})`);
+            setAlertModalMessage(`${detailedMessage}`);
             setAlertModalOpen(true);
         }
     };
