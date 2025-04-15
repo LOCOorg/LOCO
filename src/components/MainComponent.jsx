@@ -131,7 +131,7 @@ function MainComponent() {
                                                 className="cursor-pointer text-blue-500 hover:text-blue-700"
                                                 onClick={() => handleFriendSelect(friend)}
                                             >
-                        {friend.nickname} {friend.name}
+                        {friend.nickname}
                       </span>
                                         </li>
                                     ))
