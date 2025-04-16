@@ -163,7 +163,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
 
     return (
         <div
-            className="fixed bottom-5 right-5 w-[350px] max-h-[450px] bg-white shadow-lg rounded-lg flex flex-col overflow-hidden z-[1000]"
+            className="fixed bottom-5 right-5 w-[350px] h-[400px] bg-white shadow-lg rounded-lg flex flex-col overflow-hidden z-[1000]"
             style={customStyle}
         >
             <div className="bg-[#0084ff] text-white p-2.5 cursor-pointer flex justify-between items-center">
