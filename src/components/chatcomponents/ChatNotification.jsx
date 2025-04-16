@@ -4,6 +4,7 @@ import { useSocket } from "../../hooks/useSocket";
 import { useLocation, useNavigate } from "react-router-dom";
 import useAuthStore from "../../stores/authStore";
 import useFriendChatStore from "../../stores/useFriendChatStore";
+import useNotificationStore from "../../stores/notificationStore.js";
 
 const GlobalChatNotification = () => {
     const socket = useSocket();
@@ -11,10 +12,16 @@ const GlobalChatNotification = () => {
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const userId = user?._id;
-    const [notifications, setNotifications] = useState([]);
+
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const { openFriendChat } = useFriendChatStore();
+
+    // 기존 상태 관리 대신 전역 스토어 사용
+    const notifications = useNotificationStore((state) => state.notifications);
+    const addNotification = useNotificationStore((state) => state.addNotification);
+    const removeNotification = useNotificationStore((state) => state.removeNotification);
+
 
     // 사용자 등록
     useEffect(() => {
@@ -27,20 +34,19 @@ const GlobalChatNotification = () => {
         if (socket) {
             socket.on("chatNotification", (data) => {
                 console.log("Received chatNotification data:", data);
-                // 이미 해당 채팅방에 있다면 알림 표시하지 않음
                 if (location.pathname.startsWith(`/chat/${data.chatRoom}`)) {
                     return;
                 }
-                // 고유 id 추가하여 알림 객체 생성
                 const id = Date.now();
                 const newNotif = { id, ...data };
-                setNotifications((prev) => [...prev, newNotif]);
+                addNotification(newNotif);
             });
             return () => {
                 socket.off("chatNotification");
             };
         }
-    }, [socket, location]);
+    }, [socket, location, addNotification]);
+
 
     const toggleDropdown = () => {
         setDropdownOpen((prev) => !prev);
@@ -51,7 +57,6 @@ const GlobalChatNotification = () => {
             if (notif.roomType === "random") {
                 navigate(`/chat/${notif.chatRoom}/${userId}`);
             } else if (notif.roomType === "friend") {
-                // friend 알림: friend 정보가 없으면, 메시지의 sender가 친구일 가능성이 있음
                 let friendInfo = notif.friend;
                 if (
                     !friendInfo &&
@@ -62,15 +67,16 @@ const GlobalChatNotification = () => {
                     friendInfo = {
                         _id: notif.message.sender.id,
                         nickname: notif.message.sender.nickname,
-                        name: notif.message.sender.nickname, // 필요하면 추가 정보 포함
+                        name: notif.message.sender.nickname,
                     };
                 }
                 openFriendChat({ roomId: notif.chatRoom, friend: friendInfo || null });
             }
         }
-        setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+        removeNotification(notif.id);
         setDropdownOpen(false);
     };
+
 
     // helper: roomType에 따른 표시 텍스트
     const renderRoomTypeTag = (roomType) => {

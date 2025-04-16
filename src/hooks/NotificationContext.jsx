@@ -1,5 +1,7 @@
 import { createContext, useState } from 'react';
 
+// 친구 요청 알림 전역상태 관리
+
 export const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {

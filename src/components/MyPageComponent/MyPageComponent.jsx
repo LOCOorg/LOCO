@@ -1,8 +1,8 @@
+// src/components/MyPageComponent.jsx
 import { useEffect, useState } from 'react';
-import { getUserInfo, updateUserProfile, getFriendRequestList, acceptFriendRequest } from "../../api/userAPI";
+import { getUserInfo, updateUserProfile, getFriendRequestList, acceptFriendRequest, declineFriendRequest } from "../../api/userAPI"; // declineFriendRequest 추가됨
 import { uploadFile } from "../../api/fileUploadAPI";
 import useAuthStore from '../../stores/authStore';
-// 경로는 실제 CommonModal 위치에 맞게 수정하세요.
 import CommonModal from '../../common/CommonModal.jsx';
 
 const MyPageContent = ({ overrideProfile }) => {
@@ -11,7 +11,6 @@ const MyPageContent = ({ overrideProfile }) => {
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({});
     const [friendRequests, setFriendRequests] = useState([]);
-    // alert 모달 상태 추가
     const [alertModalOpen, setAlertModalOpen] = useState(false);
     const [alertModalMessage, setAlertModalMessage] = useState("");
 
@@ -65,7 +64,6 @@ const MyPageContent = ({ overrideProfile }) => {
     const handlePhotoChange = async (e) => {
         const files = Array.from(e.target.files);
         const currentCount = formData.photo.length;
-        // alert("최대 6장까지 업로드 가능합니다."); 대신
         if (currentCount + files.length > 6) {
             setAlertModalMessage("최대 6장까지 업로드 가능합니다.");
             setAlertModalOpen(true);
@@ -105,13 +103,25 @@ const MyPageContent = ({ overrideProfile }) => {
         try {
             await acceptFriendRequest(authUser._id, requestId);
             setFriendRequests(prev => prev.filter(req => req._id !== requestId));
-            // alert("친구 요청을 수락하였습니다."); 대신
             setAlertModalMessage("친구 요청을 수락하였습니다.");
             setAlertModalOpen(true);
         } catch (error) {
             console.error("친구 요청 수락 실패:", error);
-            // alert("친구 요청 수락에 실패했습니다."); 대신
             setAlertModalMessage("친구 요청 수락에 실패했습니다.");
+            setAlertModalOpen(true);
+        }
+    };
+
+    // 친구 요청 거절 처리
+    const handleDeclineRequest = async (requestId) => {
+        try {
+            await declineFriendRequest(authUser._id, requestId);
+            setFriendRequests(prev => prev.filter(req => req._id !== requestId));
+            setAlertModalMessage("친구 요청을 거절하였습니다.");
+            setAlertModalOpen(true);
+        } catch (error) {
+            console.error("친구 요청 거절 실패:", error);
+            setAlertModalMessage("친구 요청 거절에 실패했습니다.");
             setAlertModalOpen(true);
         }
     };
@@ -129,12 +139,20 @@ const MyPageContent = ({ overrideProfile }) => {
                             <div>
                                 <p>{req.sender.nickname}님의 친구 요청</p>
                             </div>
-                            <button
-                                onClick={() => handleAcceptRequest(req._id)}
-                                className="px-4 py-1 bg-green-500 text-white rounded"
-                            >
-                                수락
-                            </button>
+                            <div className="flex">
+                                <button
+                                    onClick={() => handleAcceptRequest(req._id)}
+                                    className="px-4 py-1 bg-green-500 text-white rounded mr-2"
+                                >
+                                    수락
+                                </button>
+                                <button
+                                    onClick={() => handleDeclineRequest(req._id)}
+                                    className="px-4 py-1 bg-red-500 text-white rounded"
+                                >
+                                    거절
+                                </button>
+                            </div>
                         </div>
                     ))
                 ) : (
@@ -265,7 +283,6 @@ const MyPageContent = ({ overrideProfile }) => {
                     )}
                 </div>
             )}
-            {/* alert 대신 CommonModal 사용 */}
             {alertModalOpen && (
                 <CommonModal
                     isOpen={alertModalOpen}

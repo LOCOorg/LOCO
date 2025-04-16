@@ -125,6 +125,16 @@ export const getFriendRequestList = async (userId) => {
     }
 };
 
+// 친구 요청 거절 API 함수
+export const declineFriendRequest = async (userId, requestId) => {
+    try {
+        const response = await axios.post(`${host}/${userId}/friend-request/decline`, { requestId });
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data.message || error.message);
+    }
+};
+
 // 친구 삭제 요청 API
 export const deleteFriend = async (userId, friendId) => {
     try {
