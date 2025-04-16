@@ -98,7 +98,6 @@ const RandomChatComponent = () => {
             // 백엔드 필터링에 필요한 쿼리 파라미터 구성
             const query = {
                 roomType: "random",
-                capacity,
                 matchedGender,
                 ageGroup,
             };
