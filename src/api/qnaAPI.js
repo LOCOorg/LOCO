@@ -23,14 +23,17 @@ export async function getQnas() {
  * @param {string} status - QnA 상태 ("답변대기" 또는 "답변완료")
  * @returns {Promise<Object>} 페이지네이션된 QnA 데이터와 페이징 정보
  */
-export async function getQnaPageByStatus(page, size, status) {
+export async function getQnaPageByStatus(page, size, status, keyword = "") {
     try {
-        const response = await axios.get(host, { params: { page, size, qnaStatus: status } });
+        const response = await axios.get(host, {
+            params: { page, size, qnaStatus: status, keyword }
+        });
         return response.data;
     } catch (error) {
         throw new Error('Failed to fetch QnA page by status');
     }
 }
+
 
 /**
  * 새로운 QnA를 생성합니다.
