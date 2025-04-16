@@ -188,7 +188,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                                             <div className="text-sm mt-1">
                                                 {message.text}
                                             </div>
-                                            <div className={`text-xs text-gray-600 mt-1 ${isMyMessage ? "text-right" : "text-left"}`}>
+                                            <div className={`text-xs text-white-600 mt-1 ${isMyMessage ? "text-right" : "text-left"}`}>
                                                 {formatTime(message.textTime)}
                                             </div>
                                         </div>
