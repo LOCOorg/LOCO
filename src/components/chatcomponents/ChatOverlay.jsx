@@ -14,7 +14,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
     const [userName, setUserName] = useState("");
     const socket = useSocket();
     const authUser = useAuthStore((state) => state.user);
-    const senderId = authUser?._id; // authStore에서 받아온 사용자 ID
+    const senderId = authUser?._id;
 
     const messagesContainerRef = useRef(null);
 
@@ -153,116 +153,42 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
         }
     };
 
-    // 닫기 버튼 처리
     const handleClose = () => {
         if (onClose) {
             onClose(roomId);
         }
     };
 
-    // 날짜별로 그룹화 된 메시지 객체 생성
     const groupedMessages = groupMessagesByDate(messages);
 
     return (
         <div
-            style={{
-                position: "fixed",
-                bottom: "20px",
-                right: "20px",
-                width: "350px",
-                maxHeight: "500px",
-                backgroundColor: "white",
-                boxShadow: "0 0 10px rgba(0,0,0,0.3)",
-                borderRadius: "8px",
-                display: "flex",
-                flexDirection: "column",
-                overflow: "hidden",
-                zIndex: 1000,
-                ...customStyle,
-            }}
+            className="fixed bottom-5 right-5 w-[350px] max-h-[450px] bg-white shadow-lg rounded-lg flex flex-col overflow-hidden z-[1000]"
+            style={customStyle}
         >
-            <div
-                style={{
-                    backgroundColor: "#0084ff",
-                    color: "white",
-                    padding: "10px",
-                    cursor: "pointer",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                }}
-            >
+            <div className="bg-[#0084ff] text-white p-2.5 cursor-pointer flex justify-between items-center">
                 <span>{friend ? (friend.nickname || friend.name) : "채팅"}</span>
-                <button
-                    onClick={handleClose}
-                    style={{
-                        background: "none",
-                        border: "none",
-                        color: "white",
-                        fontSize: "16px",
-                        cursor: "pointer",
-                    }}
-                >
+                <button onClick={handleClose} className="bg-transparent border-0 text-white text-base cursor-pointer">
                     X
                 </button>
             </div>
-            <div
-                ref={messagesContainerRef}
-                style={{
-                    flex: "1",
-                    padding: "10px",
-                    overflowY: "auto",
-                    backgroundColor: "#f0f0f0",
-                    minHeight: "300px",
-                    maxHeight: "300px",
-                }}
-            >
+            <div ref={messagesContainerRef} className="flex-1 p-2.5 overflow-y-auto bg-gray-100 h-[300px]">
                 {Object.keys(groupedMessages).map((date) => (
                     <div key={date}>
-                        {/* 날짜 헤더 */}
-                        <div
-                            style={{
-                                textAlign: "center",
-                                margin: "10px 0",
-                                fontSize: "12px",
-                                color: "#555",
-                            }}
-                        >
+                        <div className="text-center my-[10px] text-xs text-gray-600">
                             {date}
                         </div>
-                        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                        <ul className="list-none p-0 m-0">
                             {groupedMessages[date].map((message) => {
                                 const isMyMessage = message.sender._id === senderId;
                                 return (
-                                    <li
-                                        key={message._id}
-                                        style={{
-                                            display: "flex",
-                                            justifyContent: isMyMessage ? "flex-end" : "flex-start",
-                                            marginBottom: "8px",
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                backgroundColor: isMyMessage ? "#0084ff" : "#e4e6eb",
-                                                color: isMyMessage ? "white" : "black",
-                                                padding: "8px 12px",
-                                                borderRadius: "16px",
-                                                maxWidth: "70%",
-                                            }}
-                                        >
-                                            <strong style={{ fontSize: "12px" }}>{message.sender.name}</strong>
-                                            <div style={{ fontSize: "14px", marginTop: "4px" }}>
+                                    <li key={message._id} className={`flex ${isMyMessage ? "justify-end" : "justify-start"} mb-2`}>
+                                        <div className={`${isMyMessage ? "bg-[#0084ff] text-white" : "bg-[#e4e6eb] text-black"} py-2 px-3 rounded-[16px] max-w-[70%]`}>
+                                            <strong className="text-xs">{message.sender.name}</strong>
+                                            <div className="text-sm mt-1">
                                                 {message.text}
                                             </div>
-                                            <div
-                                                style={{
-                                                    fontSize: "10px",
-                                                    color: "#555",
-                                                    marginTop: "4px",
-                                                    textAlign: isMyMessage ? "right" : "left",
-                                                }}
-                                            >
+                                            <div className={`text-xs text-gray-600 mt-1 ${isMyMessage ? "text-right" : "text-left"}`}>
                                                 {formatTime(message.textTime)}
                                             </div>
                                         </div>
@@ -273,29 +199,15 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                     </div>
                 ))}
             </div>
-            <form onSubmit={handleSendMessage} style={{ display: "flex", borderTop: "1px solid #ddd" }}>
+            <form onSubmit={handleSendMessage} className="flex border-t border-gray-300">
                 <input
                     type="text"
                     value={newMessage}
                     onChange={handleMessageChange}
                     placeholder="메시지를 입력하세요..."
-                    style={{
-                        flex: "1",
-                        padding: "10px",
-                        border: "none",
-                        outline: "none",
-                    }}
+                    className="flex-1 p-2.5 border-none outline-none"
                 />
-                <button
-                    type="submit"
-                    style={{
-                        padding: "10px 15px",
-                        backgroundColor: "#0084ff",
-                        color: "white",
-                        border: "none",
-                        cursor: "pointer",
-                    }}
-                >
+                <button type="submit" className="py-2.5 px-3.5 bg-[#0084ff] text-white border-0 cursor-pointer">
                     전송
                 </button>
             </form>

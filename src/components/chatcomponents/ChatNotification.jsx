@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useSocket } from "../../hooks/useSocket";
 import { useLocation, useNavigate } from "react-router-dom";
 import useAuthStore from "../../stores/authStore";
-import useFriendChatStore from "../../stores/useFriendChatStore"; // 추가
+import useFriendChatStore from "../../stores/useFriendChatStore";
 
 const GlobalChatNotification = () => {
     const socket = useSocket();
@@ -14,7 +14,7 @@ const GlobalChatNotification = () => {
     const [notifications, setNotifications] = useState([]);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
-    const { openFriendChat } = useFriendChatStore(); // 전역 상태 함수
+    const { openFriendChat } = useFriendChatStore();
 
     // 사용자 등록
     useEffect(() => {
@@ -53,11 +53,16 @@ const GlobalChatNotification = () => {
             } else if (notif.roomType === "friend") {
                 // friend 알림: friend 정보가 없으면, 메시지의 sender가 친구일 가능성이 있음
                 let friendInfo = notif.friend;
-                if (!friendInfo && notif.message && notif.message.sender && notif.message.sender.id !== userId) {
+                if (
+                    !friendInfo &&
+                    notif.message &&
+                    notif.message.sender &&
+                    notif.message.sender.id !== userId
+                ) {
                     friendInfo = {
                         _id: notif.message.sender.id,
                         nickname: notif.message.sender.nickname,
-                        name: notif.message.sender.nickname // 필요하면 추가 정보 포함
+                        name: notif.message.sender.nickname, // 필요하면 추가 정보 포함
                     };
                 }
                 openFriendChat({ roomId: notif.chatRoom, friend: friendInfo || null });
@@ -67,7 +72,6 @@ const GlobalChatNotification = () => {
         setDropdownOpen(false);
     };
 
-
     // helper: roomType에 따른 표시 텍스트
     const renderRoomTypeTag = (roomType) => {
         if (roomType === "random") return "[랜덤] ";
@@ -76,33 +80,16 @@ const GlobalChatNotification = () => {
     };
 
     return (
-        <div style={{ position: "relative" }}>
+        <div className="relative">
             <button
                 onClick={toggleDropdown}
-                style={{
-                    position: "relative",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: "24px",
-                }}
+                className="relative bg-transparent border-0 cursor-pointer text-2xl"
             >
         <span role="img" aria-label="notification">
           🔔
         </span>
                 {notifications.length > 0 && (
-                    <span
-                        style={{
-                            position: "absolute",
-                            top: -5,
-                            right: -5,
-                            background: "red",
-                            borderRadius: "50%",
-                            color: "white",
-                            padding: "2px 6px",
-                            fontSize: "12px",
-                        }}
-                    >
+                    <span className="absolute top-[-5px] right-[-5px] bg-red-500 rounded-full text-white py-[2px] px-[6px] text-xs">
             {notifications.length}
           </span>
                 )}
@@ -110,29 +97,13 @@ const GlobalChatNotification = () => {
             {dropdownOpen && notifications.length > 0 && (
                 <div
                     ref={dropdownRef}
-                    style={{
-                        position: "absolute",
-                        top: "100%",
-                        right: 0,
-                        background: "white",
-                        boxShadow: "0 0 10px rgba(0,0,0,0.2)",
-                        borderRadius: "4px",
-                        zIndex: 1000,
-                        width: "250px",
-                        maxHeight: "300px",
-                        overflowY: "auto",
-                    }}
+                    className="absolute top-full right-0 bg-white shadow-lg rounded z-[1000] w-[250px] max-h-[300px] overflow-y-auto"
                 >
                     {notifications.map((notif) => (
                         <div
                             key={notif.id}
                             onClick={() => handleNotificationClick(notif)}
-                            style={{
-                                padding: "10px",
-                                borderBottom: "1px solid #ddd",
-                                cursor: "pointer",
-                                color: "black",
-                            }}
+                            className="p-2.5 border-b border-gray-300 cursor-pointer text-black"
                         >
                             {renderRoomTypeTag(notif.roomType)}
                             {notif.notification}
