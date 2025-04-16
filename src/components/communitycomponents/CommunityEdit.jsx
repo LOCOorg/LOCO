@@ -143,20 +143,20 @@ const CommunityEdit = () => {
                         </div>
                     </div>
                     {uploadMethod === 'url' ? (
-                        <div>
+                        <div key="url">
                             <label className="block text-gray-700 font-medium mb-2">
                                 이미지 URL:
                             </label>
                             <input
                                 type="text"
-                                value={imageUrl}
+                                value={imageUrl || ''}
                                 onChange={(e) => setImageUrl(e.target.value)}
                                 placeholder="이미지 URL을 입력하세요"
                                 className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"
                             />
                         </div>
                     ) : (
-                        <div>
+                        <div key="file">
                             <label className="block text-gray-700 font-medium mb-2">
                                 이미지 파일:
                             </label>
@@ -168,6 +168,7 @@ const CommunityEdit = () => {
                             />
                         </div>
                     )}
+
                     <button
                         type="submit"
                         className="bg-blue-500 text-white font-semibold py-2 px-4 rounded hover:bg-blue-600 transition duration-200"
