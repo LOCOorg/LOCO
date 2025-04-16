@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import CommonModal from '../../common/CommonModal.jsx';
-import { fetchNotifications, markNotificationAsRead } from '../../api/reportNotificationAPI.js';
+import { fetchNotifications, markNotificationAsReadAndDelete } from '../../api/reportNotificationAPI.js';
 import useAuthStore from '../../stores/authStore.js';
 
 const NotificationModal = () => {
@@ -28,8 +28,8 @@ const NotificationModal = () => {
 
     const handleClose = async () => {
         if (notifications[currentIndex]) {
-            // 알림을 확인 처리
-            await markNotificationAsRead(notifications[currentIndex]._id);
+            // 알림 읽음 후 즉시 삭제 처리
+            await markNotificationAsReadAndDelete(notifications[currentIndex]._id);
         }
         // 다음 알림이 있으면 인덱스 업데이트, 없으면 모달 닫기
         if (currentIndex < notifications.length - 1) {

@@ -26,3 +26,15 @@ export const markNotificationAsRead = async (notificationId) => {
         throw new Error('알림 상태 업데이트에 실패했습니다.');
     }
 };
+
+// 알림 읽음 후 즉시 삭제 처리를 위한 함수
+export const markNotificationAsReadAndDelete = async (notificationId) => {
+    try {
+        const response = await axios.patch(`${host}/${notificationId}/delete`, {}, {
+            withCredentials: true,
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error('알림 삭제 상태 업데이트에 실패했습니다.');
+    }
+};
