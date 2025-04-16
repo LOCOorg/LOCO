@@ -27,6 +27,13 @@ const ChatRoom = ({ roomId, userId }) => {
 
     const messagesContainerRef = useRef(null);
 
+    // 메시지 전송 시간을 포맷하는 헬퍼 함수 (시간:분 형식)
+    const formatTime = (textTime) => {
+        if (!textTime) return "";
+        const date = new Date(textTime);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
     const getUserName = async () => {
         try {
             const response = await getUserInfo(userId);
@@ -146,7 +153,8 @@ const ChatRoom = ({ roomId, userId }) => {
         const message = { chatRoom: roomId, sender: { _id: userId, nickname: userName }, text };
         socket.emit("sendMessage", message, (response) => {
             if (response.success) {
-                const sentMessage = { ...message, _id: response.message._id };
+                // 백엔드에서는 textTime 필드를 사용하도록 설정되어 있습니다.
+                const sentMessage = { ...message, _id: response.message._id, textTime: response.message.textTime };
                 setMessages((prevMessages) => [
                     ...prevMessages.filter((msg) => msg._id !== sentMessage._id),
                     sentMessage,
@@ -243,7 +251,8 @@ const ChatRoom = ({ roomId, userId }) => {
                         className="space-y-4 mb-6 max-h-96 overflow-y-auto"
                     >
                         {messages.map((msg) => {
-                            const uniqueKey = `${msg.sender._id}-${msg._id}-${msg.text}-${msg.timestamp}`;
+                            // 메시지 고유키에 textTime 필드를 사용합니다.
+                            const uniqueKey = `${msg.sender._id}-${msg._id}-${msg.text}-${msg.textTime}`;
                             return (
                                 <div
                                     key={uniqueKey}
@@ -251,7 +260,6 @@ const ChatRoom = ({ roomId, userId }) => {
                                         msg.sender._id === userId ? "bg-blue-100 justify-end" : "bg-gray-100"
                                     }`}
                                 >
-                                    {/* 상대방 메시지인 경우 왼쪽에 프로필 사진 표시 */}
                                     {msg.sender._id !== userId && (
                                         <ProfileButton profile={msg.sender} />
                                     )}
@@ -261,9 +269,11 @@ const ChatRoom = ({ roomId, userId }) => {
                                         <strong>
                                             {msg.isDeleted ? "삭제된 메시지입니다." : msg.text}
                                         </strong>
+                                        <span className="text-xs text-gray-500">
+                                            {formatTime(msg.textTime)}
+                                        </span>
                                     </div>
 
-                                    {/* 자신의 메시지인 경우 오른쪽에 프로필 사진 표시 */}
                                     {msg.sender._id === userId && (
                                         <ProfileButton profile={msg.sender} />
                                     )}
@@ -341,9 +351,9 @@ const ChatRoom = ({ roomId, userId }) => {
                                 const isRated = ratings[participantId] === 1;
                                 return (
                                     <div key={participantId} className="my-2 flex items-center space-x-2">
-                    <span className="block font-medium">
-                      {participantNickname}
-                    </span>
+                                        <span className="block font-medium">
+                                            {participantNickname}
+                                        </span>
                                         <button
                                             onClick={() => handleRatingToggle(participantId)}
                                             className={`border rounded px-2 py-1 focus:outline-none ${

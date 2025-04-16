@@ -18,6 +18,32 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
 
     const messagesContainerRef = useRef(null);
 
+    // textTime을 HH:MM 형식으로 포맷하는 헬퍼 함수
+    const formatTime = (textTime) => {
+        if (!textTime) return "";
+        const date = new Date(textTime);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    // 날짜를 "YYYY-MM-DD" 형태로 포맷하는 헬퍼 함수 (그룹 헤더용)
+    const formatDate = (textTime) => {
+        if (!textTime) return "";
+        const date = new Date(textTime);
+        return date.toLocaleDateString();
+    };
+
+    // 메시지를 날짜별로 그룹화하는 함수
+    const groupMessagesByDate = (messages) => {
+        return messages.reduce((groups, message) => {
+            const date = formatDate(message.textTime);
+            if (!groups[date]) {
+                groups[date] = [];
+            }
+            groups[date].push(message);
+            return groups;
+        }, {});
+    };
+
     // 사용자 정보 불러오기
     useEffect(() => {
         if (!senderId) return;
@@ -134,6 +160,9 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
         }
     };
 
+    // 날짜별로 그룹화 된 메시지 객체 생성
+    const groupedMessages = groupMessagesByDate(messages);
+
     return (
         <div
             style={{
@@ -163,7 +192,6 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                     alignItems: "center",
                 }}
             >
-                {/* eslint-disable-next-line react/prop-types */}
                 <span>{friend ? (friend.nickname || friend.name) : "채팅"}</span>
                 <button
                     onClick={handleClose}
@@ -189,36 +217,61 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                     maxHeight: "300px",
                 }}
             >
-                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                    {messages.map((message) => {
-                        const isMyMessage = message.sender._id === senderId;
-                        return (
-                            <li
-                                key={message._id}
-                                style={{
-                                    display: "flex",
-                                    justifyContent: isMyMessage ? "flex-end" : "flex-start",
-                                    marginBottom: "8px",
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        backgroundColor: isMyMessage ? "#0084ff" : "#e4e6eb",
-                                        color: isMyMessage ? "white" : "black",
-                                        padding: "8px 12px",
-                                        borderRadius: "16px",
-                                        maxWidth: "70%",
-                                    }}
-                                >
-                                    <strong style={{ fontSize: "12px" }}>{message.sender.name}</strong>
-                                    <div style={{ fontSize: "14px", marginTop: "4px" }}>
-                                        {message.text}
-                                    </div>
-                                </div>
-                            </li>
-                        );
-                    })}
-                </ul>
+                {Object.keys(groupedMessages).map((date) => (
+                    <div key={date}>
+                        {/* 날짜 헤더 */}
+                        <div
+                            style={{
+                                textAlign: "center",
+                                margin: "10px 0",
+                                fontSize: "12px",
+                                color: "#555",
+                            }}
+                        >
+                            {date}
+                        </div>
+                        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                            {groupedMessages[date].map((message) => {
+                                const isMyMessage = message.sender._id === senderId;
+                                return (
+                                    <li
+                                        key={message._id}
+                                        style={{
+                                            display: "flex",
+                                            justifyContent: isMyMessage ? "flex-end" : "flex-start",
+                                            marginBottom: "8px",
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                backgroundColor: isMyMessage ? "#0084ff" : "#e4e6eb",
+                                                color: isMyMessage ? "white" : "black",
+                                                padding: "8px 12px",
+                                                borderRadius: "16px",
+                                                maxWidth: "70%",
+                                            }}
+                                        >
+                                            <strong style={{ fontSize: "12px" }}>{message.sender.name}</strong>
+                                            <div style={{ fontSize: "14px", marginTop: "4px" }}>
+                                                {message.text}
+                                            </div>
+                                            <div
+                                                style={{
+                                                    fontSize: "10px",
+                                                    color: "#555",
+                                                    marginTop: "4px",
+                                                    textAlign: isMyMessage ? "right" : "left",
+                                                }}
+                                            >
+                                                {formatTime(message.textTime)}
+                                            </div>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </div>
+                ))}
             </div>
             <form onSubmit={handleSendMessage} style={{ display: "flex", borderTop: "1px solid #ddd" }}>
                 <input

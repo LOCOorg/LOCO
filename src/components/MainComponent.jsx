@@ -1,5 +1,6 @@
+// src/components/MainComponent.jsx
 import { useEffect, useState } from "react";
-import { getUserInfo } from "../api/userAPI";
+import { getUserInfo, deleteFriend } from "../api/userAPI";
 import { createFriendRoom, fetchChatRooms, joinChatRoom } from "../api/chatAPI";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/authStore.js";
@@ -9,23 +10,27 @@ import MyPageButton from "./MyPageComponent/MyPageButton.jsx";
 import ProfileButton from "./MyPageComponent/ProfileButton.jsx";
 import useFriendChatStore from "../stores/useFriendChatStore.js";
 import ReportNotificationModal from "./reportcomponents/ReportNotificationModal.jsx";
+import CommonModal from "../common/CommonModal.jsx";
 
 function MainComponent() {
     const [user, setUser] = useState(null);
     const [friends, setFriends] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [friendToDelete, setFriendToDelete] = useState(null);
+    const [errorModalOpen, setErrorModalOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+
     const navigate = useNavigate();
     const setStoreUser = useAuthStore((state) => state.setUser);
     const authUser = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
-    // 채팅 모달 관리는 GlobalFriendChatOverlay에서 처리하므로, 전역 상태의 openFriendChat만 사용합니다.
     const { openFriendChat } = useFriendChatStore();
 
     useEffect(() => {
         if (!authUser) return;
         const fetchUserData = async () => {
             try {
-                // authStore에서 받아온 authUser의 _id로 상세 유저 정보를 불러옵니다.
                 const userData = await getUserInfo(authUser._id);
                 setUser(userData);
 
@@ -74,11 +79,41 @@ function MainComponent() {
 
                 newRoom = room;
             }
-            // 전역 상태에 친구 채팅을 추가합니다.
             openFriendChat({ roomId: newRoom._id, friend });
         } catch (error) {
             console.error("채팅방 처리 실패:", error);
         }
+    };
+
+    // 삭제 버튼 클릭 시, 모달을 열고 삭제할 친구 정보를 설정
+    const openDeleteModal = (friend) => {
+        setFriendToDelete(friend);
+        setIsDeleteModalOpen(true);
+    };
+
+    // 모달에서 확인 버튼을 누르면 삭제 API 호출 후 상태 업데이트
+    const confirmDeleteFriend = async () => {
+        try {
+            await deleteFriend(user._id, friendToDelete._id);
+            setFriends(friends.filter((item) => item._id !== friendToDelete._id));
+            setIsDeleteModalOpen(false);
+            setFriendToDelete(null);
+        } catch (error) {
+            setErrorMessage(error.message);
+            setErrorModalOpen(true);
+            setIsDeleteModalOpen(false);
+            setFriendToDelete(null);
+        }
+    };
+
+    const cancelDelete = () => {
+        setIsDeleteModalOpen(false);
+        setFriendToDelete(null);
+    };
+
+    const closeErrorModal = () => {
+        setErrorModalOpen(false);
+        setErrorMessage("");
     };
 
     const handleNavigate = () => {
@@ -87,7 +122,6 @@ function MainComponent() {
 
     const handleNavigateLogin = () => {
         if (user) {
-            // 로그인 상태이면 로그아웃 처리 후 로그인 페이지로 이동
             logout();
             navigate("/loginPage");
         } else {
@@ -105,7 +139,6 @@ function MainComponent() {
 
     return (
         <>
-            {/* PaymentStatusModal을 최상위에 렌더링 */}
             <PaymentStatusModal />
             <ReportNotificationModal />
 
@@ -122,17 +155,21 @@ function MainComponent() {
                             <p className="text-gray-600">친구 목록:</p>
                             <ul className="list-disc pl-5 text-gray-700">
                                 {friends.length > 0 ? (
-                                    friends.map((friend, index) => (
-                                        <li key={index} className="flex items-center space-x-2">
-                                            {/* 프로필 버튼에 friend 객체를 prop으로 전달 */}
+                                    friends.map((friend) => (
+                                        <li key={friend._id} className="flex items-center space-x-2">
                                             <ProfileButton profile={friend} />
-                                            {/* 친구의 이름 또는 닉네임 클릭 시 채팅방 열기 */}
                                             <span
                                                 className="cursor-pointer text-blue-500 hover:text-blue-700"
                                                 onClick={() => handleFriendSelect(friend)}
                                             >
-                        {friend.nickname}
-                      </span>
+                                                {friend.nickname}
+                                            </span>
+                                            <button
+                                                onClick={() => openDeleteModal(friend)}
+                                                className="text-red-500 hover:text-red-700 ml-2"
+                                            >
+                                                삭제
+                                            </button>
                                         </li>
                                     ))
                                 ) : (
@@ -170,6 +207,27 @@ function MainComponent() {
                 </button>
                 <PlanButton />
             </div>
+
+            {/* 친구 삭제 확인 모달 */}
+            <CommonModal
+                isOpen={isDeleteModalOpen}
+                onClose={cancelDelete}
+                title="친구 삭제 확인"
+                onConfirm={confirmDeleteFriend}
+            >
+                {friendToDelete ? `${friendToDelete.nickname}님을 친구 목록에서 삭제하시겠습니까?` : ""}
+            </CommonModal>
+
+            {/* 오류 모달 (취소 버튼 숨김) */}
+            <CommonModal
+                isOpen={errorModalOpen}
+                onClose={closeErrorModal}
+                title="오류"
+                onConfirm={closeErrorModal}
+                showCancel={false}
+            >
+                {errorMessage}
+            </CommonModal>
         </>
     );
 }

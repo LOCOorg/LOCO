@@ -124,3 +124,13 @@ export const getFriendRequestList = async (userId) => {
         throw new Error(error.response?.data.message || error.message);
     }
 };
+
+// 친구 삭제 요청 API
+export const deleteFriend = async (userId, friendId) => {
+    try {
+        const response = await axios.delete(`${host}/${userId}/friends/${friendId}`);
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data.message || error.message);
+    }
+};
