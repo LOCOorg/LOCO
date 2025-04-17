@@ -121,15 +121,18 @@ function MainComponent() {
                         <p className="text-gray-500">로딩 중...</p>
                     ) : user ? (
                         <>
-                            <h2 className="text-lg font-medium text-gray-700 mb-2">
-                                {user.nickname} 님
-                            </h2>
+                            <div className="flex items-center mb-4">
+                                <ProfileButton profile={user}/>
+                                <span className="ml-2 text-lg font-medium text-gray-700">
+                                    {user.nickname} 님
+                                </span>
+                            </div>
                             <p className="text-gray-600 mb-2">친구 목록:</p>
                             <ul className="list-disc pl-5 text-gray-700">
                                 {friends.length > 0 ? (
                                     friends.map((friend) => (
                                         <li key={friend._id} className="flex items-center space-x-2 mb-2">
-                                            <ProfileButton profile={friend} />
+                                            <ProfileButton profile={friend}/>
                                             <span
                                                 className="cursor-pointer text-blue-500 hover:text-blue-700"
                                                 onClick={() => handleFriendSelect(friend)}
@@ -154,7 +157,7 @@ function MainComponent() {
 
                 {/* 오른쪽: 액션 버튼들 */}
                 <div className="flex flex-col items-center lg:items-start space-y-4">
-                    <MyPageButton />
+                    <MyPageButton/>
                     <button
                         onClick={handleNavigateChat}
                         className="px-6 py-3 bg-blue-500 text-white text-lg rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
