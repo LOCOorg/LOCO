@@ -158,7 +158,7 @@ function QnaListComponent() {
             <div className="mb-6">
                 <input
                     type="text"
-                    placeholder="검색어를 입력하세요..."
+                    placeholder="제목 또는 내용 입력..."
                     value={searchKeyword}
                     onChange={handleSearchInputChange}
                     className="px-4 py-2 border rounded w-full"
