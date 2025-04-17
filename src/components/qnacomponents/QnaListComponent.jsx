@@ -138,18 +138,6 @@ function QnaListComponent() {
                     </button>
                 )}
             </div>
-
-            {/* 검색 입력 */}
-            <div className="mb-6">
-                <input
-                    type="text"
-                    placeholder="검색어를 입력하세요..."
-                    value={searchKeyword}
-                    onChange={handleSearchInputChange}
-                    className="px-4 py-2 border rounded w-full"
-                />
-            </div>
-
             {/* 탭 전환 버튼 */}
             <div className="flex justify-center space-x-4 mb-6">
                 <button
@@ -165,6 +153,18 @@ function QnaListComponent() {
                     답변완료
                 </button>
             </div>
+
+            {/* 검색 입력 */}
+            <div className="mb-6">
+                <input
+                    type="text"
+                    placeholder="검색어를 입력하세요..."
+                    value={searchKeyword}
+                    onChange={handleSearchInputChange}
+                    className="px-4 py-2 border rounded w-full"
+                />
+            </div>
+
 
             {loading && <p>로딩 중...</p>}
             {error && <p className="text-red-500">에러: {error}</p>}
