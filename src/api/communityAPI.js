@@ -8,25 +8,19 @@ export const fetchCommunities = async (
     size = 10,
     category = '전체',
     userId = null,
-    sort = '최신순'
+    sort = '최신순',
+    keyword = '',
+    searchType = 'title+content'   // 추가
 ) => {
-    try {
-        let url = `${host}?page=${page}&size=${size}`;
-        if (category) {
-            url += `&category=${encodeURIComponent(category)}`;
-        }
-        if (userId) {
-            url += `&userId=${userId}`;
-        }
-        if (sort) {
-            url += `&sort=${encodeURIComponent(sort)}`;
-        }
-        const response = await axios.get(url);
-        return response.data;
-    } catch (error) {
-        console.error("fetchCommunities error:", error);
-        throw error;
-    }
+    let url = `${host}?page=${page}&size=${size}`;
+    if (category)    url += `&category=${encodeURIComponent(category)}`;
+    if (userId)      url += `&userId=${userId}`;
+    if (sort)        url += `&sort=${encodeURIComponent(sort)}`;
+    if (keyword)     url += `&keyword=${encodeURIComponent(keyword)}`;
+    if (searchType)  url += `&searchType=${encodeURIComponent(searchType)}`;  // 추가
+
+    const response = await axios.get(url);
+    return response.data;
 };
 
 

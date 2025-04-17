@@ -49,6 +49,9 @@ const CommunityList = () => {
     const [topCommented, setTopCommented] = useState([]);
     const [sideTab, setSideTab] = useState('viewed');
 
+    const [keyword, setKeyword] = useState('');
+    const [searchType, setSearchType] = useState('title+content');
+
     const loadCommunities = async (page) => {
         setLoading(true);
         try {
@@ -57,17 +60,23 @@ const CommunityList = () => {
                 pageSize,
                 selectedCategory,
                 (selectedCategory === '내 글' || selectedCategory === '내 댓글') ? currentUserId : null,
-                selectedSort // sort 파라미터를 추가합니다.
+                selectedSort,
+                keyword,
+                searchType      // 검색 타입 함께 전달
             );
             setPageResponse(data);
-            // 백엔드에서 정렬된 데이터가 오므로 추가 정렬이 필요하지 않습니다.
             setFilteredCommunities(data.dtoList || []);
         } catch (err) {
             setError('커뮤니티 목록을 불러오는 데 실패했습니다.');
-            console.error(err);
         } finally {
             setLoading(false);
         }
+    };
+
+    // 검색 실행 핸들러
+    const handleSearch = () => {
+        setCurrentPage(1);
+        loadCommunities(1);
     };
 
 
@@ -165,6 +174,47 @@ const CommunityList = () => {
                                 {option}
                             </button>
                         ))}
+                    </div>
+                </div>
+                {/* ── 검색폼 ── */}
+                <div className="flex items-center mb-4 space-x-2">
+                    <select
+                        value={searchType}
+                        onChange={e => setSearchType(e.target.value)}
+                        className="border rounded px-3 py-1 bg-white"
+                    >
+                        <option value="title">제목</option>
+                        <option value="content">내용</option>
+                        <option value="title+content">제목+내용</option>
+                        <option value="author">작성자</option>
+                    </select>
+
+                    <div className="relative flex-1">
+                        <input
+                            type="text"
+                            value={keyword}
+                            onChange={e => setKeyword(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                            placeholder="검색어 입력"
+                            className="w-full border rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                        <button
+                            onClick={handleSearch}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                            {/* Heroicon 검색 아이콘 */}
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 className="h-5 w-5"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                            >
+                                <path strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M8 16l4-4m0 0l4-4m-4 4H3m13 4h5m-5-8h5" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
                 <div className="mt-6">
