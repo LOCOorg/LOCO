@@ -1,4 +1,4 @@
-// src/components/CommunityForm.jsx
+// src/components/communitycomponents/CommunityForm.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createCommunity } from '../../api/communityAPI.js';
