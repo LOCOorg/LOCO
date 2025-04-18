@@ -185,70 +185,7 @@ function MainComponent() {
                     )
                 )}
 
-                {/* 현재 보이는 채팅창 */}
-                {visibleChatRooms.map((room, index) => (
-                    <ChatOverlay
-                        key={room.roomId}
-                        roomId={room.roomId}
-                        customStyle={{right: 20 + index * 360 + "px"}}
-                        onClose={handleCloseChat}
-                        friend={room.friend}
-                    />
-                ))}
 
-                {/* 더 보기 영역: 아이콘 목록으로 표시 */}
-                {hiddenChatRooms.length > 0 && (
-                    <div
-                        style={{
-                            position: "fixed",
-                            bottom: "20px",
-                            right: 20 + MAX_CHAT_WINDOWS * 360 + "px",
-                            zIndex: 1100,
-                        }}
-                    >
-                        <button
-                            onClick={toggleShowMore}
-                            style={{
-                                padding: "10px 15px",
-                                backgroundColor: "#0084ff",
-                                color: "white",
-                                border: "none",
-                                cursor: "pointer",
-                                borderRadius: "8px",
-                                marginBottom: "5px",
-                            }}
-                        >
-                            {showMore
-                                ? "채팅 숨기기"
-                                : `+${hiddenChatRooms.length}개의 채팅`}
-                        </button>
-
-                        {showMore &&
-                            hiddenChatRooms.map((room) => (
-                                <button
-                                    key={room.roomId}
-                                    onClick={() => handleSwapChat(room.roomId)}
-                                    style={{
-                                        display: "block",
-                                        margin: "5px 0",
-                                        padding: "5px",
-                                        backgroundColor: "#eee",
-                                        border: "1px solid #ccc",
-                                        borderRadius: "50%",
-                                        width: "40px",
-                                        height: "40px",
-                                        textAlign: "center",
-                                        cursor: "pointer",
-                                    }}
-                                    title={room.friend ? room.friend.nickname || room.friend.name : "채팅"}
-                                >
-                                    {room.friend && room.friend.nickname
-                                        ? room.friend.nickname[0]
-                                        : "채팅"}
-                                </button>
-                            ))}
-                    </div>
-                )}
                 <MyPageButton />
                 <button
                     onClick={handleNavigate}
