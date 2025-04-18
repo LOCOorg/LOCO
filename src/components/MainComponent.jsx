@@ -6,8 +6,10 @@ import { useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/authStore.js";
 import PlanButton from "./product/PlanButton.jsx";
 import PaymentStatusModal from "./pay/PaymentStatusModal.jsx";
-import MyPageButton from "./MyPageComponent/MyPageButton.jsx";
-import ProfileButton from "./MyPageComponent/ProfileButton.jsx";
+import MyPageButton from './MyPageComponent/MyPageButton.jsx';
+import ProfileButton from './MyPageComponent/ProfileButton.jsx'
+import PRButton from "./PR/PRButton.jsx";
+import DeveloperButton from "./DeveloperComponent/DeveloperButton.jsx";
 import useFriendChatStore from "../stores/useFriendChatStore.js";
 import ReportNotificationModal from "./reportcomponents/ReportNotificationModal.jsx";
 import CommonModal from "../common/CommonModal.jsx";
@@ -22,6 +24,7 @@ function MainComponent() {
     const [errorMessage, setErrorMessage] = useState("");
 
     const navigate = useNavigate();
+    const setStoreUser = useAuthStore((state) => state.setUser);
     const authUser = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
     const { openFriendChat } = useFriendChatStore();
@@ -30,8 +33,10 @@ function MainComponent() {
         if (!authUser) return;
         const fetchUserData = async () => {
             try {
+                // authStore에서 받아온 authUser의 _id로 상세 유저 정보를 불러옵니다.
                 const userData = await getUserInfo(authUser._id);
                 setUser(userData);
+
                 const friendsData = await Promise.all(
                     userData.friends.map(async (friendId) => {
                         const friendInfo = await getUserInfo(friendId);
@@ -45,6 +50,7 @@ function MainComponent() {
                 setLoading(false);
             }
         };
+
         fetchUserData();
     }, [authUser]);
 
@@ -61,6 +67,7 @@ function MainComponent() {
                 const ids = room.chatUsers.map((u) => u._id);
                 return ids.includes(user._id) && ids.includes(friendId);
             });
+
             let newRoom;
             if (existingRoom) {
                 newRoom = existingRoom;
@@ -76,10 +83,13 @@ function MainComponent() {
         }
     };
 
+    // 삭제 버튼 클릭 시, 모달을 열고 삭제할 친구 정보를 설정
     const openDeleteModal = (friend) => {
         setFriendToDelete(friend);
         setIsDeleteModalOpen(true);
     };
+
+    // 모달에서 확인 버튼을 누르면 삭제 API 호출 후 상태 업데이트
     const confirmDeleteFriend = async () => {
         try {
             await deleteFriend(user._id, friendToDelete._id);
@@ -93,10 +103,12 @@ function MainComponent() {
             setFriendToDelete(null);
         }
     };
+
     const cancelDelete = () => {
         setIsDeleteModalOpen(false);
         setFriendToDelete(null);
     };
+
     const closeErrorModal = () => {
         setErrorModalOpen(false);
         setErrorMessage("");
