@@ -12,7 +12,7 @@ function QnaListComponent() {
     // 검색어 상태
     const [searchKeyword, setSearchKeyword] = useState("");
     const [inputKeyword, setInputKeyword] = useState("");
-    const [searchType,    setSearchType]    = useState('both');
+    const [searchType, setSearchType]    = useState('both');
 
     // "답변대기" 상태 목록 및 페이징 상태
     const [waitingQnas, setWaitingQnas] = useState([]);
