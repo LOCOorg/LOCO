@@ -10,6 +10,8 @@ import PlanButton from "./product/PlanButton.jsx";
 import PaymentStatusModal from "./pay/PaymentStatusModal.jsx";
 import MyPageButton from './MyPageComponent/MyPageButton.jsx';
 import ProfileButton from './MyPageComponent/ProfileButton.jsx'
+import PRButton from "./PR/PRButton.jsx";
+import DeveloperButton from "./DeveloperComponent/DeveloperButton.jsx";
 
 function MainComponent() {
     const [user, setUser] = useState(null);
@@ -281,6 +283,8 @@ function MainComponent() {
                     상품등록
                 </button>
                 <PlanButton/> {/* productShowcase 플랜 버튼 추가 */}
+                <PRButton/>
+                <DeveloperButton/>
 
             </div>
         </>
