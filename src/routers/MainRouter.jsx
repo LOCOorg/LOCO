@@ -11,7 +11,8 @@ import ProductShowcaseRouter from "./ProductShowcaseRouter.jsx";
 import QnaRouter from "./QnaRouter.jsx";
 import MyPageRouter from "./MyPageRouter.jsx";
 import ReportRouter from "./ReportRouter.jsx";
-
+import PRRouter from "./PRRouter.jsx";
+import DeveloperRouter from "./DeveloperRouter.jsx";
 
 const MainRouter = createBrowserRouter([
     {
@@ -38,7 +39,9 @@ const MainRouter = createBrowserRouter([
     QnaRouter,
     ReportRouter,
     QnaRouter,
-    MyPageRouter
+    MyPageRouter,
+    PRRouter,
+    DeveloperRouter,
 ])
 
 export default MainRouter;

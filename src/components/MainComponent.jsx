@@ -6,8 +6,10 @@ import { useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/authStore.js";
 import PlanButton from "./product/PlanButton.jsx";
 import PaymentStatusModal from "./pay/PaymentStatusModal.jsx";
-import MyPageButton from "./MyPageComponent/MyPageButton.jsx";
-import ProfileButton from "./MyPageComponent/ProfileButton.jsx";
+import MyPageButton from './MyPageComponent/MyPageButton.jsx';
+import ProfileButton from './MyPageComponent/ProfileButton.jsx'
+import PRButton from "./PR/PRButton.jsx";
+import DeveloperButton from "./DeveloperComponent/DeveloperButton.jsx";
 import useFriendChatStore from "../stores/useFriendChatStore.js";
 import ReportNotificationModal from "./reportcomponents/ReportNotificationModal.jsx";
 import CommonModal from "../common/CommonModal.jsx";
@@ -31,6 +33,7 @@ function MainComponent() {
         if (!authUser) return;
         const fetchUserData = async () => {
             try {
+                // authStore에서 받아온 authUser의 _id로 상세 유저 정보를 불러옵니다.
                 const userData = await getUserInfo(authUser._id);
                 setUser(userData);
 
@@ -122,6 +125,7 @@ function MainComponent() {
 
     const handleNavigateLogin = () => {
         if (user) {
+            // 로그인 상태이면 로그아웃 처리 후 로그인 페이지로 이동
             logout();
             navigate("/loginPage");
         } else {
@@ -158,6 +162,7 @@ function MainComponent() {
                                     friends.map((friend) => (
                                         <li key={friend._id} className="flex items-center space-x-2">
                                             <ProfileButton profile={friend} />
+                                            {/* 친구의 이름이나 닉네임을 클릭 가능하도록 추가 */}
                                             <span
                                                 className="cursor-pointer text-blue-500 hover:text-blue-700"
                                                 onClick={() => handleFriendSelect(friend)}
@@ -180,6 +185,70 @@ function MainComponent() {
                     )
                 )}
 
+                {/* 현재 보이는 채팅창 */}
+                {visibleChatRooms.map((room, index) => (
+                    <ChatOverlay
+                        key={room.roomId}
+                        roomId={room.roomId}
+                        customStyle={{right: 20 + index * 360 + "px"}}
+                        onClose={handleCloseChat}
+                        friend={room.friend}
+                    />
+                ))}
+
+                {/* 더 보기 영역: 아이콘 목록으로 표시 */}
+                {hiddenChatRooms.length > 0 && (
+                    <div
+                        style={{
+                            position: "fixed",
+                            bottom: "20px",
+                            right: 20 + MAX_CHAT_WINDOWS * 360 + "px",
+                            zIndex: 1100,
+                        }}
+                    >
+                        <button
+                            onClick={toggleShowMore}
+                            style={{
+                                padding: "10px 15px",
+                                backgroundColor: "#0084ff",
+                                color: "white",
+                                border: "none",
+                                cursor: "pointer",
+                                borderRadius: "8px",
+                                marginBottom: "5px",
+                            }}
+                        >
+                            {showMore
+                                ? "채팅 숨기기"
+                                : `+${hiddenChatRooms.length}개의 채팅`}
+                        </button>
+
+                        {showMore &&
+                            hiddenChatRooms.map((room) => (
+                                <button
+                                    key={room.roomId}
+                                    onClick={() => handleSwapChat(room.roomId)}
+                                    style={{
+                                        display: "block",
+                                        margin: "5px 0",
+                                        padding: "5px",
+                                        backgroundColor: "#eee",
+                                        border: "1px solid #ccc",
+                                        borderRadius: "50%",
+                                        width: "40px",
+                                        height: "40px",
+                                        textAlign: "center",
+                                        cursor: "pointer",
+                                    }}
+                                    title={room.friend ? room.friend.nickname || room.friend.name : "채팅"}
+                                >
+                                    {room.friend && room.friend.nickname
+                                        ? room.friend.nickname[0]
+                                        : "채팅"}
+                                </button>
+                            ))}
+                    </div>
+                )}
                 <MyPageButton />
                 <button
                     onClick={handleNavigate}
@@ -205,7 +274,10 @@ function MainComponent() {
                 >
                     상품등록
                 </button>
-                <PlanButton />
+                <PlanButton/> {/* productShowcase 플랜 버튼 추가 */}
+                <PRButton/>
+                <DeveloperButton/>
+
             </div>
 
             {/* 친구 삭제 확인 모달 */}

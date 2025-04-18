@@ -1,4 +1,4 @@
-// src/components/CommunityEdit.jsx
+// src/components/communitycomponents/CommunityEdit.jsx
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchCommunityById, updateCommunity } from '../../api/communityApi.js';
