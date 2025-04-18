@@ -58,12 +58,15 @@ function QnaDetailModal({ qna, onClose }) {
                 {/* 작성자 정보 표시 */}
                 <p className="text-sm text-gray-500 mb-4">
                     작성자: {qna.userId?.nickname || '알 수 없음'}
+                    <span className="ml-4">
+                                            답변자: {qna.answerUserId?.nickname || '알 수 없음'}
+                                        </span>
                 </p>
                 <p className="mb-4">{qna.qnaContents}</p>
                 {/* 답변이 이미 있는 경우에는 답변 내용을 표시 */}
                 {qna.qnaAnswer && !isEditing && (
                     <div className="mb-4">
-                        <h3 className="text-xl font-semibold">답변</h3>
+                    <h3 className="text-xl font-semibold">답변</h3>
                         <p className="text-gray-700">{qna.qnaAnswer}</p>
                     </div>
                 )}
