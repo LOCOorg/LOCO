@@ -1,9 +1,7 @@
-// src/components/MainComponent
-
+// src/components/MainComponent.jsx
 import { useEffect, useState } from "react";
-import { getUserInfo } from "../api/userAPI";
+import { getUserInfo, deleteFriend } from "../api/userAPI";
 import { createFriendRoom, fetchChatRooms, joinChatRoom } from "../api/chatAPI";
-import ChatOverlay from "./chatcomponents/ChatOverlay.jsx";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/authStore.js";
 import PlanButton from "./product/PlanButton.jsx";
@@ -12,19 +10,24 @@ import MyPageButton from './MyPageComponent/MyPageButton.jsx';
 import ProfileButton from './MyPageComponent/ProfileButton.jsx'
 import PRButton from "./PR/PRButton.jsx";
 import DeveloperButton from "./DeveloperComponent/DeveloperButton.jsx";
+import useFriendChatStore from "../stores/useFriendChatStore.js";
+import ReportNotificationModal from "./reportcomponents/ReportNotificationModal.jsx";
+import CommonModal from "../common/CommonModal.jsx";
 
 function MainComponent() {
     const [user, setUser] = useState(null);
     const [friends, setFriends] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [chatRooms, setChatRooms] = useState([]);
-    const [showMore, setShowMore] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [friendToDelete, setFriendToDelete] = useState(null);
+    const [errorModalOpen, setErrorModalOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+
     const navigate = useNavigate();
-    const setStoreUser = useAuthStore((state) => state.setUser); //로그인 새로고침
+    const setStoreUser = useAuthStore((state) => state.setUser);
     const authUser = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
-    const MAX_CHAT_WINDOWS = 3;
-
+    const { openFriendChat } = useFriendChatStore();
 
     useEffect(() => {
         if (!authUser) return;
@@ -79,15 +82,41 @@ function MainComponent() {
 
                 newRoom = room;
             }
-            setChatRooms((prevRooms) => {
-                if (!prevRooms.some((room) => room.roomId === newRoom._id)) {
-                    return [...prevRooms, { roomId: newRoom._id, friend }];
-                }
-                return prevRooms;
-            });
+            openFriendChat({ roomId: newRoom._id, friend });
         } catch (error) {
             console.error("채팅방 처리 실패:", error);
         }
+    };
+
+    // 삭제 버튼 클릭 시, 모달을 열고 삭제할 친구 정보를 설정
+    const openDeleteModal = (friend) => {
+        setFriendToDelete(friend);
+        setIsDeleteModalOpen(true);
+    };
+
+    // 모달에서 확인 버튼을 누르면 삭제 API 호출 후 상태 업데이트
+    const confirmDeleteFriend = async () => {
+        try {
+            await deleteFriend(user._id, friendToDelete._id);
+            setFriends(friends.filter((item) => item._id !== friendToDelete._id));
+            setIsDeleteModalOpen(false);
+            setFriendToDelete(null);
+        } catch (error) {
+            setErrorMessage(error.message);
+            setErrorModalOpen(true);
+            setIsDeleteModalOpen(false);
+            setFriendToDelete(null);
+        }
+    };
+
+    const cancelDelete = () => {
+        setIsDeleteModalOpen(false);
+        setFriendToDelete(null);
+    };
+
+    const closeErrorModal = () => {
+        setErrorModalOpen(false);
+        setErrorMessage("");
     };
 
     const handleNavigate = () => {
@@ -112,52 +141,10 @@ function MainComponent() {
         navigate("/community");
     };
 
-    // "더 보기" 버튼 토글
-    const toggleShowMore = () => {
-        setShowMore((prev) => !prev);
-    };
-
-    // visible: 최대 MAX_CHAT_WINDOWS개의 채팅창, hidden: 나머지 채팅
-    const visibleChatRooms = chatRooms.slice(0, MAX_CHAT_WINDOWS);
-    const hiddenChatRooms = chatRooms.slice(MAX_CHAT_WINDOWS);
-
-    // onClose 콜백: 해당 roomId의 채팅창 제거
-    const handleCloseChat = (roomId) => {
-        setChatRooms((prevRooms) => prevRooms.filter(room => room.roomId !== roomId));
-    };
-
-    // hidden 영역의 채팅 아이콘 클릭 시, visible 영역의 가장 왼쪽 채팅을 제거하고
-    // 선택한 hidden 채팅을 visible 영역의 마지막 자리에 넣어 순환 교환합니다.
-    const handleSwapChat = (selectedRoomId) => {
-        setChatRooms((prevRooms) => {
-            // 순환 교환은 hidden 채팅이 존재할 때만 처리
-            if (prevRooms.length <= MAX_CHAT_WINDOWS) return prevRooms;
-            const newRooms = [...prevRooms];
-            // visible 영역의 가장 왼쪽 채팅 제거
-            const removedVisible = newRooms.shift();
-
-            // 기존 배열에서 선택한 hidden 채팅의 인덱스 찾기
-            const selectedIndex = newRooms.findIndex(room => room.roomId === selectedRoomId);
-            if (selectedIndex === -1) return prevRooms;
-
-            // 선택한 hidden 채팅 제거
-            const [selectedRoom] = newRooms.splice(selectedIndex, 1);
-
-            // visible 영역은 newRooms[0 ~ MAX_CHAT_WINDOWS-1] (현재 newRooms의 길이는 MAX_CHAT_WINDOWS-1)
-            // 선택한 hidden 채팅을 visible의 마지막 자리에 삽입
-            newRooms.splice(MAX_CHAT_WINDOWS - 1, 0, selectedRoom);
-
-            // 제거된 visible 채팅을 hidden 영역의 마지막에 추가
-            newRooms.push(removedVisible);
-
-            return newRooms;
-        });
-    };
-
     return (
         <>
-            {/* PaymentStatusModal을 반환문 최상위에 포함하여 렌더링 */}
-            <PaymentStatusModal/>
+            <PaymentStatusModal />
+            <ReportNotificationModal />
 
             <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
                 <h1 className="text-4xl font-bold text-gray-800 mb-6">홈</h1>
@@ -172,17 +159,22 @@ function MainComponent() {
                             <p className="text-gray-600">친구 목록:</p>
                             <ul className="list-disc pl-5 text-gray-700">
                                 {friends.length > 0 ? (
-                                    friends.map((friend, index) => (
-                                        <li key={index} className="flex items-center space-x-2">
-                                            {/* 프로필 버튼에 friend 객체를 prop으로 전달 */}
+                                    friends.map((friend) => (
+                                        <li key={friend._id} className="flex items-center space-x-2">
                                             <ProfileButton profile={friend} />
                                             {/* 친구의 이름이나 닉네임을 클릭 가능하도록 추가 */}
                                             <span
                                                 className="cursor-pointer text-blue-500 hover:text-blue-700"
                                                 onClick={() => handleFriendSelect(friend)}
                                             >
-                                                {friend.nickname} {friend.name}
+                                                {friend.nickname}
                                             </span>
+                                            <button
+                                                onClick={() => openDeleteModal(friend)}
+                                                className="text-red-500 hover:text-red-700 ml-2"
+                                            >
+                                                삭제
+                                            </button>
                                         </li>
                                     ))
                                 ) : (
@@ -266,7 +258,7 @@ function MainComponent() {
                 </button>
                 <button
                     onClick={handleCommunity}
-                    className="px-6 py-3 bg-green-500 text-white text-lg rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-6 py-3 bg-green-500 text-white text-lg rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                     커뮤니티
                 </button>
@@ -287,6 +279,27 @@ function MainComponent() {
                 <DeveloperButton/>
 
             </div>
+
+            {/* 친구 삭제 확인 모달 */}
+            <CommonModal
+                isOpen={isDeleteModalOpen}
+                onClose={cancelDelete}
+                title="친구 삭제 확인"
+                onConfirm={confirmDeleteFriend}
+            >
+                {friendToDelete ? `${friendToDelete.nickname}님을 친구 목록에서 삭제하시겠습니까?` : ""}
+            </CommonModal>
+
+            {/* 오류 모달 (취소 버튼 숨김) */}
+            <CommonModal
+                isOpen={errorModalOpen}
+                onClose={closeErrorModal}
+                title="오류"
+                onConfirm={closeErrorModal}
+                showCancel={false}
+            >
+                {errorMessage}
+            </CommonModal>
         </>
     );
 }

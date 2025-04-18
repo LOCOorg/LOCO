@@ -1,14 +1,39 @@
-// src/components/SimpleProfileModal.jsx
-import React from 'react';
+import React, { useState } from 'react';
+import ReportForm from '../reportcomponents/ReportForm.jsx';
+import useAuthStore from '../../stores/authStore';
+import { sendFriendRequest } from "../../api/userAPI.js";
+import CommonModal from '../../common/CommonModal.jsx';
 
 const SimpleProfileModal = ({ profile, onClose }) => {
+    const authUser = useAuthStore((state) => state.user);
+    const [isReportModalVisible, setIsReportModalVisible] = useState(false);
+    // alert 모달 상태 추가
+    const [alertModalOpen, setAlertModalOpen] = useState(false);
+    const [alertModalMessage, setAlertModalMessage] = useState("");
+
     if (!profile) return null;
 
-    // 메인 사진 (맨 위 사진) - profile.photo[0] 사용
     const mainPhoto = profile.photo && profile.photo[0];
-
-    // 나머지 5장 (최대 5장으로 제한)
     const subPhotos = profile.photo ? profile.photo.slice(1, 6) : [];
+
+    const handleFriendRequest = async () => {
+        if (!authUser || !profile) return;
+        try {
+            await sendFriendRequest(authUser._id, profile._id);
+            setAlertModalMessage("친구 요청을 보냈습니다.");
+            setAlertModalOpen(true);
+        } catch (error) {
+            console.error("친구 요청 보내기 실패:", error);
+            // error.response가 있는 경우 상세 에러 메시지를 추출
+            const detailedMessage = error.response && error.response.data
+                ? error.response.data.errorMessage ||
+                error.response.data.message ||
+                JSON.stringify(error.response.data)
+                : error.message;
+            setAlertModalMessage(`${detailedMessage}`);
+            setAlertModalOpen(true);
+        }
+    };
 
     return (
         <div
@@ -37,7 +62,6 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                     boxShadow: '0 0 10px rgba(0,0,0,0.3)',
                 }}
             >
-                {/* 닫기 버튼 */}
                 <button
                     onClick={onClose}
                     style={{
@@ -53,8 +77,6 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                 >
                     ×
                 </button>
-
-                {/* 메인 사진 영역 */}
                 <div style={{ width: '100%', height: '200px', marginBottom: '10px' }}>
                     {mainPhoto ? (
                         <img
@@ -84,9 +106,6 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                         </div>
                     )}
                 </div>
-
-
-                {/* 하단에 5개 이미지 (썸네일) */}
                 <div style={{ display: 'flex', gap: '5px', marginBottom: '10px' }}>
                     {subPhotos.length > 0 ? (
                         subPhotos.map((photoUrl, idx) => (
@@ -108,7 +127,6 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                             </div>
                         ))
                     ) : (
-                        /* 썸네일이 없으면 5칸 회색 박스 표시 */
                         Array.from({ length: 5 }).map((_, idx) => (
                             <div
                                 key={idx}
@@ -118,23 +136,19 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                                     backgroundColor: '#eee',
                                     borderRadius: '4px',
                                 }}
-                            >
-                                {/* 빈 썸네일 */}
-                            </div>
+                            ></div>
                         ))
                     )}
                 </div>
-
-
-                {/* 사용자 기본 정보: 닉네임, 롤닉네임, 성별, 별점 */}
                 <div style={{ marginBottom: '8px' }}>
-                    <strong>닉네임:</strong> {profile.nickname || '닉네임 없음'}<br />
-                    <strong>롤 닉네임:</strong> {profile.lolNickname || '미입력'}<br />
-                    <strong>성별:</strong> {profile.gender || '미입력'}<br />
+                    <strong>닉네임:</strong> {profile.nickname || '닉네임 없음'}
+                    <br />
+                    <strong>롤 닉네임:</strong> {profile.lolNickname || '미입력'}
+                    <br />
+                    <strong>성별:</strong> {profile.gender || '미입력'}
+                    <br />
                     <strong>별점:</strong> {profile.star || 0}
                 </div>
-
-                {/* 자기소개 */}
                 <div style={{ marginBottom: '10px' }}>
                     <strong>자기소개</strong>
                     <div
@@ -150,8 +164,6 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                         {profile.info || '자기소개가 없습니다.'}
                     </div>
                 </div>
-
-                {/* 친구신청, 신고 버튼 */}
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                     <button
                         style={{
@@ -163,7 +175,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                             borderRadius: '4px',
                             cursor: 'pointer',
                         }}
-                        onClick={() => alert('친구신청 기능은 별도 구현 필요')}
+                        onClick={handleFriendRequest}
                     >
                         친구신청
                     </button>
@@ -177,11 +189,72 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                             borderRadius: '4px',
                             cursor: 'pointer',
                         }}
-                        onClick={() => alert('신고 기능은 별도 구현 필요')}
+                        onClick={() => setIsReportModalVisible(true)}
                     >
                         신고
                     </button>
                 </div>
+                {isReportModalVisible && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: 'rgba(0,0,0,0.6)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 2000,
+                        }}
+                    >
+                        <div
+                            style={{
+                                position: 'relative',
+                                background: 'white',
+                                padding: '20px',
+                                borderRadius: '8px',
+                                boxShadow: '0 0 10px rgba(0,0,0,0.3)',
+                                width: 'auto',
+                                maxWidth: '90%',
+                            }}
+                        >
+                            <button
+                                onClick={() => setIsReportModalVisible(false)}
+                                style={{
+                                    position: 'absolute',
+                                    top: '10px',
+                                    left: '10px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    fontSize: '16px',
+                                    color: 'gray',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                ← 뒤로가기
+                            </button>
+                            <ReportForm
+                                onClose={() => setIsReportModalVisible(false)}
+                                reportedUser={profile}
+                                onReportCreated={() => {}}
+                            />
+                        </div>
+                    </div>
+                )}
+                {/* alert 대신 CommonModal 사용 */}
+                {alertModalOpen && (
+                    <CommonModal
+                        isOpen={alertModalOpen}
+                        onClose={() => setAlertModalOpen(false)}
+                        title="알림"
+                        onConfirm={() => setAlertModalOpen(false)}
+                        showCancel={false}
+                    >
+                        {alertModalMessage}
+                    </CommonModal>
+                )}
             </div>
         </div>
     );

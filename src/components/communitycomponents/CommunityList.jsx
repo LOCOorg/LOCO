@@ -1,4 +1,4 @@
-//src/components/communitycomponents/CommunityList.jsx
+// CommunityList.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchCommunities, fetchTopViewed, fetchTopCommented } from '../../api/communityApi.js';
@@ -8,9 +8,6 @@ import CommunityLayout from '../../layout/CommunityLayout/CommunityLayout.jsx';
 import LeftSidebar from '../../layout/CommunityLayout/LeftSidebar.jsx';
 import RightSidebar from '../../layout/CommunityLayout/RightSidebar.jsx';
 import useAuthStore from '../../stores/authStore.js';
-
-// 검색 훅 import
-import useCommunitySearch from '../../hooks/useCommunitySearch';
 
 const formatRelativeTime = (dateString) => {
     const date = new Date(dateString);
@@ -52,9 +49,8 @@ const CommunityList = () => {
     const [topCommented, setTopCommented] = useState([]);
     const [sideTab, setSideTab] = useState('viewed');
 
-    // 추가: 검색어와 검색 유형 상태
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchType, setSearchType] = useState('제목+내용');
+    const [keyword, setKeyword] = useState('');
+    const [searchType, setSearchType] = useState('title+content');
 
     const loadCommunities = async (page) => {
         setLoading(true);
@@ -64,17 +60,23 @@ const CommunityList = () => {
                 pageSize,
                 selectedCategory,
                 (selectedCategory === '내 글' || selectedCategory === '내 댓글') ? currentUserId : null,
-                selectedSort // sort 파라미터를 추가합니다.
+                selectedSort,
+                keyword,
+                searchType      // 검색 타입 함께 전달
             );
             setPageResponse(data);
-            // 백엔드에서 정렬된 데이터가 오므로 추가 정렬이 필요하지 않습니다.
             setFilteredCommunities(data.dtoList || []);
         } catch (err) {
             setError('커뮤니티 목록을 불러오는 데 실패했습니다.');
-            console.error(err);
         } finally {
             setLoading(false);
         }
+    };
+
+    // 검색 실행 핸들러
+    const handleSearch = () => {
+        setCurrentPage(1);
+        loadCommunities(1);
     };
 
 
@@ -100,12 +102,11 @@ const CommunityList = () => {
 
     // 현재 사용자가 필요한 카테고리일 때 userId가 로드되지 않았다면 호출하지 않음
     useEffect(() => {
-        if (searchQuery.trim() !== "") return;
         if ((selectedCategory === '내 글' || selectedCategory === '내 댓글') && !currentUserId) {
             return;
         }
         loadCommunities(currentPage);
-    }, [currentPage, selectedCategory, selectedSort, currentUserId, searchQuery]);
+    }, [currentPage, selectedCategory, selectedSort, currentUserId]);
 
     useEffect(() => {
         const fetchUserNames = async () => {
@@ -144,25 +145,6 @@ const CommunityList = () => {
         setCurrentPage(page);
     };
 
-
-
-    // 검색어가 있을 때 useCommunitySearch 훅 사용 (검색어, 페이지, limit, 검색 유형)
-    const { results: searchResults, total: searchTotal, loading: searchLoading, error: searchError } =
-        useCommunitySearch(searchQuery, currentPage, pageSize, searchType);
-
-    // 검색 결과 사용 여부에 따라 보여줄 커뮤니티 목록 및 로딩/오류 상태 결정
-    const isSearchMode = searchQuery.trim() !== "";
-    const communitiesToDisplay = isSearchMode ? searchResults : filteredCommunities;
-    const displayLoading = isSearchMode ? searchLoading : loading;
-    const displayError = isSearchMode ? searchError : error;
-
-    // 검색 모드일 때 페이징을 위해 pageResponse 형태와 유사한 객체 생성
-    const pageResponseForSearch = {
-        dtoList: searchResults,
-        total: searchTotal,
-        page: currentPage,
-        size: pageSize
-    };
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -194,100 +176,47 @@ const CommunityList = () => {
                         ))}
                     </div>
                 </div>
-                {/* 검색 입력란과 검색 유형 선택 UI */}
-                <div className="mb-4 flex items-center">
+                {/* ── 검색폼 ── */}
+                <div className="flex items-center mb-4 space-x-2">
                     <select
                         value={searchType}
-                        onChange={(e) => {
-                            setSearchType(e.target.value);
-                            setCurrentPage(1);
-                        }}
-                        className="p-2 border rounded mr-2"  // 오른쪽 여백(mr-2) 추가
+                        onChange={e => setSearchType(e.target.value)}
+                        className="border rounded px-3 py-1 bg-white"
                     >
-                        <option value="제목+내용">제목+내용</option>
-                        <option value="제목">제목</option>
-                        <option value="내용">내용</option>
+                        <option value="title">제목</option>
+                        <option value="content">내용</option>
+                        <option value="title+content">제목+내용</option>
+                        <option value="author">작성자</option>
                     </select>
-                    <input
-                        type="text"
-                        placeholder="검색어를 입력하세요"
-                        value={searchQuery}
-                        onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setCurrentPage(1); // 검색어 변경 시 첫 페이지로 이동
-                        }}
-                        className="border p-2 rounded w-1/3" // 입력창 너비를 1/3로 지정
-                    />
+
+                    <div className="relative flex-1">
+                        <input
+                            type="text"
+                            value={keyword}
+                            onChange={e => setKeyword(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                            placeholder="검색어 입력"
+                            className="w-full border rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                        <button
+                            onClick={handleSearch}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                            {/* Heroicon 검색 아이콘 */}
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 className="h-5 w-5"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                            >
+                                <path strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M8 16l4-4m0 0l4-4m-4 4H3m13 4h5m-5-8h5" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                {/* 로딩 및 오류 처리 */}
-                {displayLoading ? (
-                    <div className="flex justify-center items-center h-screen">로딩중...</div>
-                ) : displayError ? (
-                    <div className="text-red-500 text-center mt-4">{displayError}</div>
-                ) : null}
-                {/* 커뮤니티 목록 렌더링 */}
-                {!displayLoading && !displayError && (
-                    <>
-                        {communitiesToDisplay.length === 0 ? (
-                            <p className="text-gray-600">게시글이 없습니다.</p>
-                        ) : (
-                            <ul className="space-y-4">
-                                {communitiesToDisplay.map((community) => (
-                                    <li
-                                        key={community._id}
-                                        className="border border-gray-200 p-4 rounded shadow-sm hover:shadow-md transition duration-200 flex"
-                                    >
-                                        {community.communityImage && (
-                                            <div className="w-20 h-20 mr-4 flex-shrink-0">
-                                                <img
-                                                    src={
-                                                        community.communityImage.startsWith('http') ||
-                                                        community.communityImage.startsWith('data:')
-                                                            ? community.communityImage
-                                                            : `${import.meta.env.VITE_API_HOST}${community.communityImage}`
-                                                    }
-                                                    alt="게시글 이미지"
-                                                    className="w-full h-full object-cover rounded"
-                                                />
-                                            </div>
-                                        )}
-                                        <div className="flex-1">
-                                            <button
-                                                onClick={() => navigate(`/community/${community._id}`)}
-                                                className="text-blue-500 font-medium hover:underline"
-                                            >
-                                                {community.communityTitle} ({community.communityCategory})
-                                            </button>
-                                            <p className="mt-2 text-sm text-gray-600">
-                                                작성일:{' '}
-                                                <span className="font-semibold">{formatRelativeTime(community.communityRegDate)}</span>{' '}
-                                                | 조회수:{' '}
-                                                <span className="font-semibold">{community.communityViews}</span>{' '}
-                                                | 추천:{' '}
-                                                <span className="font-semibold">{community.recommended}</span>{' '}
-                                                | 댓글:{' '}
-                                                <span className="font-semibold">
-                                                    {community.commentCount || (community.comments ? community.comments.length : 0)}
-                                                </span>
-                                            </p>
-                                            <p className="text-sm text-gray-600">
-                                                작성자:{' '}
-                                                <span className="font-semibold">{userMap[community.userId] || community.userId}</span>
-                                            </p>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                        {/* 페이징 컴포넌트: 검색 모드이면 search 전용 pageResponse, 아니면 기존 pageResponse 사용 */}
-                        {(isSearchMode ? pageResponseForSearch : pageResponse) && (
-                            <PageComponent
-                                pageResponse={isSearchMode ? pageResponseForSearch : pageResponse}
-                                changePage={changePage}
-                            />
-                        )}
-                    </>
-                )}
                 <div className="mt-6">
                     <button
                         onClick={() => navigate('/community/new')}
@@ -296,6 +225,58 @@ const CommunityList = () => {
                         새 게시글 작성
                     </button>
                 </div>
+                <br/>
+                {filteredCommunities.length === 0 ? (
+                    <p className="text-gray-600">게시글이 없습니다.</p>
+                ) : (
+                    <ul className="space-y-4">
+                        {filteredCommunities.map((community) => (
+                            <li
+                                key={community._id}
+                                className="border border-gray-200 p-4 rounded shadow-sm hover:shadow-md transition duration-200 flex"
+                            >
+                                {community.communityImage && (
+                                    <div className="w-20 h-20 mr-4 flex-shrink-0">
+                                        <img
+                                            src={community.communityImage.startsWith('http') || community.communityImage.startsWith('data:')
+                                                ? community.communityImage
+                                                : `${import.meta.env.VITE_API_HOST}${community.communityImage}`}
+                                            alt="게시글 이미지"
+                                            className="w-full h-full object-cover rounded"
+                                        />
+                                    </div>
+                                )}
+                                <div className="flex-1">
+                                    <button
+                                        onClick={() => navigate(`/community/${community._id}`)}
+                                        className="text-blue-500 font-medium hover:underline"
+                                    >
+                                        {community.communityTitle} ({community.communityCategory})
+                                    </button>
+                                    <p className="mt-2 text-sm text-gray-600">
+                                        작성일:{' '}
+                                        <span className="font-semibold">{formatRelativeTime(community.communityRegDate)}</span>{' '}
+                                        | 조회수:{' '}
+                                        <span className="font-semibold">{community.communityViews}</span>{' '}
+                                        | 추천:{' '}
+                                        <span className="font-semibold">{community.recommended}</span>{' '}
+                                        | 댓글:{' '}
+                                        <span className="font-semibold">
+                                            {community.commentCount || (community.comments ? community.comments.length : 0)}
+                                        </span>
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                        작성자:{' '}
+                                        <span className="font-semibold">{userMap[community.userId] || community.userId}</span>
+                                    </p>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+                {pageResponse && (
+                    <PageComponent pageResponse={pageResponse} changePage={changePage}/>
+                )}
             </div>
         </CommunityLayout>
     );

@@ -4,13 +4,13 @@ import './index.css'
 import mainRouter from "./routers/MainRouter.jsx";
 import { RouterProvider } from 'react-router-dom'
 import AuthInit from '../src/components/authComponent/AuthInit.jsx';
-import ChatNotification from "./components/chatcomponents/ChatNotification.jsx"; // AuthInit import
+import GlobalFriendChatOverlay from "./components/chatcomponents/GlobalFriendChatOverlay.jsx";
+import {NotificationProvider} from "./hooks/NotificationContext.jsx";
 
 createRoot(document.getElementById('root')).render(
-    <>
+    <NotificationProvider>
         <AuthInit />
-        <RouterProvider router={mainRouter} >
-            <ChatNotification/>
-        </RouterProvider>
-    </>
+        <RouterProvider router={mainRouter} />
+        <GlobalFriendChatOverlay />
+    </NotificationProvider>
 )

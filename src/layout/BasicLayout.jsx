@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
+import ChatNotification from "../components/chatcomponents/ChatNotification.jsx";
 import useAuthStore from '../stores/authStore';
+import FriendRequestNotification from "../components/MyPageComponent/FriendRequestNotification.jsx";
 
 const BasicLayout = ({ children }) => {
     const { user } = useAuthStore();
@@ -7,9 +9,7 @@ const BasicLayout = ({ children }) => {
     return (
         <div className="flex flex-col min-h-screen">
             <header className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
-                <Link to="/" className="text-2xl font-bold">
-                    LOCO
-                </Link>
+                <Link to="/" className="text-2xl font-bold">LOCO</Link>
                 <nav>
                     <ul className="flex space-x-4">
                         <li>
@@ -31,6 +31,8 @@ const BasicLayout = ({ children }) => {
                         )}
                     </ul>
                 </nav>
+                <ChatNotification />
+                <FriendRequestNotification/>
             </header>
             <main className="flex-1 p-4">
                 {children}

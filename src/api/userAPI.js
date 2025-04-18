@@ -91,3 +91,56 @@ export const decrementChatCount = async (userId) => {
         throw error;
     }
 };
+
+// 친구 요청 보내기 API 함수
+export const sendFriendRequest = async (senderId, receiverId) => {
+    try {
+        // senderId를 URL 경로에 추가 (라우터: "/:userId/friend-request")
+        const response = await axios.post(`${host}/${senderId}/friend-request`, { senderId, receiverId });
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data.message || error.message);
+    }
+};
+
+// 친구 요청 수락 API 함수
+export const acceptFriendRequest = async (userId, requestId) => {
+    try {
+        // userId(친구 요청을 수락하는 사용자)를 URL 경로에 추가 (라우터: "/:userId/friend-request/accept")
+        const response = await axios.post(`${host}/${userId}/friend-request/accept`, { requestId });
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data.message || error.message);
+    }
+};
+
+// 친구 요청 목록 조회 API 함수
+export const getFriendRequestList = async (userId) => {
+    try {
+        // 라우터 경로: "/:userId/friend-requests"
+        const response = await axios.get(`${host}/${userId}/friend-requests`);
+        return response.data.data; // 백엔드에서 data 필드에 목록 전달
+    } catch (error) {
+        throw new Error(error.response?.data.message || error.message);
+    }
+};
+
+// 친구 요청 거절 API 함수
+export const declineFriendRequest = async (userId, requestId) => {
+    try {
+        const response = await axios.post(`${host}/${userId}/friend-request/decline`, { requestId });
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data.message || error.message);
+    }
+};
+
+// 친구 삭제 요청 API
+export const deleteFriend = async (userId, friendId) => {
+    try {
+        const response = await axios.delete(`${host}/${userId}/friends/${friendId}`);
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data.message || error.message);
+    }
+};

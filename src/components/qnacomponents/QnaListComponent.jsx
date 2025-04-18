@@ -9,6 +9,9 @@ function QnaListComponent() {
     // 현재 활성 탭: "답변대기" 또는 "답변완료"
     const [activeTab, setActiveTab] = useState("답변대기");
 
+    // 검색어 상태
+    const [searchKeyword, setSearchKeyword] = useState("");
+
     // "답변대기" 상태 목록 및 페이징 상태
     const [waitingQnas, setWaitingQnas] = useState([]);
     const [waitingPagination, setWaitingPagination] = useState(null);
@@ -31,12 +34,12 @@ function QnaListComponent() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
 
-    // "답변대기" 목록 데이터 불러오기
+    // "답변대기" 목록 데이터 불러오기 (검색어 반영)
     useEffect(() => {
         const fetchWaitingQnas = async () => {
             setLoading(true);
             try {
-                const data = await getQnaPageByStatus(waitingPage, pageSize, "답변대기");
+                const data = await getQnaPageByStatus(waitingPage, pageSize, "답변대기", searchKeyword);
                 setWaitingQnas(data.dtoList);
                 setWaitingPagination(data);
             } catch (err) {
@@ -45,14 +48,14 @@ function QnaListComponent() {
             setLoading(false);
         };
         fetchWaitingQnas();
-    }, [waitingPage, pageSize]);
+    }, [waitingPage, pageSize, searchKeyword]);
 
-    // "답변완료" 목록 데이터 불러오기
+    // "답변완료" 목록 데이터 불러오기 (검색어 반영)
     useEffect(() => {
         const fetchAnsweredQnas = async () => {
             setLoading(true);
             try {
-                const data = await getQnaPageByStatus(answeredPage, pageSize, "답변완료");
+                const data = await getQnaPageByStatus(answeredPage, pageSize, "답변완료", searchKeyword);
                 setAnsweredQnas(data.dtoList);
                 setAnsweredPagination(data);
             } catch (err) {
@@ -61,25 +64,21 @@ function QnaListComponent() {
             setLoading(false);
         };
         fetchAnsweredQnas();
-    }, [answeredPage, pageSize]);
+    }, [answeredPage, pageSize, searchKeyword]);
 
     const handleQnaClick = (qna) => {
         setSelectedQna(qna);
         setShowModal(true);
     };
 
-    // 모달을 닫을 때, 답변이 등록되어 상태가 "답변완료"라면 waitingQnas 상태를 로컬에서 직접 업데이트합니다.
     const handleCloseModal = () => {
         if (selectedQna && selectedQna.qnaStatus === "답변완료") {
-            // 답변대기 목록에서 해당 QnA 항목 제거
             setWaitingQnas(prevWaiting => prevWaiting.filter(qna => qna._id !== selectedQna._id));
-            // 답변완료 목록에 이미 존재하는지 확인 후 추가 또는 업데이트
             setAnsweredQnas(prevAnswered => {
                 const exists = prevAnswered.some(qna => qna._id === selectedQna._id);
                 if (exists) {
                     return prevAnswered.map(qna => qna._id === selectedQna._id ? selectedQna : qna);
                 } else {
-                    // 배열의 끝에 추가하여 순서대로 유지
                     return [...prevAnswered, selectedQna];
                 }
             });
@@ -88,24 +87,20 @@ function QnaListComponent() {
         setShowModal(false);
     };
 
-
-
-    // 삭제 요청 시 대상 ID 저장 후 모달 오픈
     const requestDelete = (id) => {
         setDeleteTargetId(id);
         setIsDeleteModalOpen(true);
     };
 
-    // 삭제 확인 후 해당 목록만 갱신
     const confirmDelete = async () => {
         try {
             await deleteQna(deleteTargetId);
             if (activeTab === "답변대기") {
-                const waitingData = await getQnaPageByStatus(waitingPage, pageSize, "답변대기");
+                const waitingData = await getQnaPageByStatus(waitingPage, pageSize, "답변대기", searchKeyword);
                 setWaitingQnas(waitingData.dtoList);
                 setWaitingPagination(waitingData);
             } else {
-                const answeredData = await getQnaPageByStatus(answeredPage, pageSize, "답변완료");
+                const answeredData = await getQnaPageByStatus(answeredPage, pageSize, "답변완료", searchKeyword);
                 setAnsweredQnas(answeredData.dtoList);
                 setAnsweredPagination(answeredData);
             }
@@ -122,6 +117,14 @@ function QnaListComponent() {
         navigate('/qna/new');
     };
 
+    // 검색 입력 값 변경 핸들러
+    const handleSearchInputChange = (e) => {
+        setSearchKeyword(e.target.value);
+        // 검색어가 변경되면 페이지 번호를 초기화
+        setWaitingPage(1);
+        setAnsweredPage(1);
+    };
+
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
@@ -136,8 +139,19 @@ function QnaListComponent() {
                 )}
             </div>
 
+            {/* 검색 입력 */}
+            <div className="mb-6">
+                <input
+                    type="text"
+                    placeholder="검색어를 입력하세요..."
+                    value={searchKeyword}
+                    onChange={handleSearchInputChange}
+                    className="px-4 py-2 border rounded w-full"
+                />
+            </div>
+
             {/* 탭 전환 버튼 */}
-            <div className="flex space-x-4 mb-6">
+            <div className="flex justify-center space-x-4 mb-6">
                 <button
                     onClick={() => setActiveTab("답변대기")}
                     className={`px-4 py-2 rounded transition ${activeTab === "답변대기" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
@@ -191,10 +205,9 @@ function QnaListComponent() {
                             ))}
                         </ul>
                     ) : (
-                        <p className="text-gray-500">답변대기 문의가 없습니다.</p>
+                        <p className="text-gray-500">검색 조건에 맞는 문의가 없습니다.</p>
                     )}
 
-                    {/* 답변대기 페이징 컨트롤 */}
                     {waitingPagination && (
                         <div className="mt-6 flex items-center justify-center space-x-2">
                             {waitingPagination.prev && (
@@ -263,10 +276,9 @@ function QnaListComponent() {
                             ))}
                         </ul>
                     ) : (
-                        <p className="text-gray-500">답변완료 문의가 없습니다.</p>
+                        <p className="text-gray-500">검색 조건에 맞는 문의가 없습니다.</p>
                     )}
 
-                    {/* 답변완료 페이징 컨트롤 */}
                     {answeredPagination && (
                         <div className="mt-6 flex items-center justify-center space-x-2">
                             {answeredPagination.prev && (

@@ -19,6 +19,7 @@ import CommunityLayout from "../../layout/CommunityLayout/CommunityLayout.jsx";
 import LeftSidebar from "../../layout/CommunityLayout/LeftSidebar.jsx";
 import RightSidebar from "../../layout/CommunityLayout/RightSidebar.jsx";
 import ReportForm from "../reportcomponents/ReportForm.jsx";
+import ProfileButton from '../../components/MyPageComponent/ProfileButton.jsx';
 
 // 상대 시간 포맷 함수
 const formatRelativeTime = (dateString) => {
@@ -42,6 +43,9 @@ const formatRelativeTime = (dateString) => {
 const CommunityDetail = () => {
     const {id} = useParams();
     const navigate = useNavigate();
+
+    const [postProfile, setPostProfile] = useState(null);
+    const [profileMap, setProfileMap] = useState({});
 
     // 커뮤니티 데이터 및 로딩, 에러 상태
     const [community, setCommunity] = useState(null);
@@ -89,6 +93,48 @@ const CommunityDetail = () => {
     // 신고 모달 상태 및 신고 대상
     const [reportModalOpen, setReportModalOpen] = useState(false);
     const [reportTarget, setReportTarget] = useState(null);
+
+    useEffect(() => {
+        if (community && community.userId) {
+            getUserInfo(community.userId)
+                .then((data) => setPostProfile(data))
+                .catch((error) => console.error("프로필 불러오기 실패", error));
+        }
+    }, [community]);
+
+    useEffect(() => {
+        const fetchUserProfiles = async () => {
+            if (!community) return;
+            const userIds = new Set();
+            userIds.add(community.userId);
+            if (community.comments) {
+                community.comments.forEach((comment) => {
+                    userIds.add(comment.userId);
+                    if (comment.replies) {
+                        comment.replies.forEach((reply) => {
+                            userIds.add(reply.userId);
+                            if (reply.subReplies) {
+                                reply.subReplies.forEach((subReply) => userIds.add(subReply.userId));
+                            }
+                        });
+                    }
+                });
+            }
+            const newProfileMap = {};
+            await Promise.all(
+                Array.from(userIds).map(async (uid) => {
+                    try {
+                        const userInfo = await getUserInfo(uid);
+                        newProfileMap[uid] = userInfo;
+                    } catch (error) {
+                        console.error(error);
+                    }
+                })
+            );
+            setProfileMap(newProfileMap);
+        };
+        fetchUserProfiles();
+    }, [community]);
 
 
     // 커뮤니티 데이터 로드
@@ -516,6 +562,7 @@ const CommunityDetail = () => {
                     <h1 className="text-3xl font-bold mb-2">{community.communityTitle}</h1>
                     <div className="text-sm text-gray-600 mb-4 space-x-2">
           <span>
+              <ProfileButton profile={postProfile} />
             작성자:{' '}
               <span className="font-semibold text-red-500">{postWriterNickname}</span>
           </span>
@@ -579,10 +626,8 @@ const CommunityDetail = () => {
                                             key={comment._id}
                                             className="flex space-x-3 p-3 border border-gray-200 rounded hover:bg-gray-50 transition duration-200"
                                         >
-                                            <div
-                                                className="w-10 h-10 flex items-center justify-center bg-gray-400 rounded-full text-white font-bold">
-                                                {nickname.charAt(0).toUpperCase()}
-                                            </div>
+                                            <ProfileButton profile={profileMap[comment.userId]} />
+
                                             <div className="flex-1">
                                                 <div className="flex items-center space-x-2 mb-1">
                         <span
@@ -628,6 +673,8 @@ const CommunityDetail = () => {
                                                             return (
                                                                 <li key={reply._id}>
                                                                     <div className="flex items-start space-x-2">
+                                                                        {/* 대댓글 작성자 프로필 버튼 */}
+                                                                        <ProfileButton profile={profileMap[reply.userId]} />
                                                                         <div className="text-xs text-gray-500">
                                     <span
                                         className={`text-sm font-semibold ${reply.userId === community.userId ? 'text-red-500' : ''}`}>
@@ -678,6 +725,8 @@ const CommunityDetail = () => {
                                                                                     <li key={subReply._id}>
                                                                                         <div
                                                                                             className="text-xs text-gray-500">
+                                                                                            {/* 대대댓글 작성자 프로필 버튼 */}
+                                                                                            <ProfileButton profile={profileMap[subReply.userId]} />
                                             <span
                                                 className={`text-sm font-semibold ${subReply.userId === community.userId ? 'text-red-500' : ''}`}>
                                               {subReplyNickname}
