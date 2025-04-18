@@ -15,6 +15,8 @@ const ReportListComponent = () => {
     const [filterCategory, setFilterCategory] = useState("all"); // 전체 카테고리일 경우 "all"
     const [filterStatus, setFilterStatus] = useState("all"); // 전체 상태일 경우 "all"
     const pageSize = 5;
+    const [keyword, setKeyword] = useState('');
+    const [searchType, setSearchType] = useState('all');
 
     // 신고 목록 불러오기 (필터 적용)
     const loadReports = async (page) => {
@@ -28,6 +30,10 @@ const ReportListComponent = () => {
             }
             if (filterStatus && filterStatus !== "all") {
                 filters.reportStatus = filterStatus;
+            }
+            if (keyword.trim()) {
+                filters.keyword = keyword.trim();
+                filters.searchType = searchType;
             }
             const data = await fetchReports(page, pageSize, filters);
             setPageData(data);
@@ -91,6 +97,12 @@ const ReportListComponent = () => {
     const handleStatusFilterChange = (status) => {
         setFilterStatus(status);
         setCurrentPage(1); // 필터 변경 시 첫 페이지로 리셋
+    };
+
+    // 검색 버튼 혹은 Enter 키 눌렀을 때
+    const handleSearch = () => {
+        setCurrentPage(1);
+        loadReports(1);
     };
 
     return (
@@ -195,6 +207,35 @@ const ReportListComponent = () => {
                 </button>
             </div>
 
+            {/* 검색창 */}
+            <div className="mb-4 flex items-center space-x-2">
+                <select
+                    value={searchType}
+                    onChange={e => setSearchType(e.target.value)}
+                    className="border rounded px-2 py-1"
+                >
+                    <option value="all">전체</option>
+                    <option value="title">제목</option>
+                    <option value="content">내용</option>
+                    <option value="admin">관리자</option>
+                    <option value="offender">가해자</option>
+                </select>
+                <input
+                    type="text"
+                    placeholder="검색어 입력"
+                    value={keyword}
+                    onChange={e => setKeyword(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                    className="flex-1 border rounded px-3 py-1"
+                />
+                <button
+                    onClick={handleSearch}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded"
+                >
+                    검색
+                </button>
+            </div>
+
             {error && <p className="text-red-500 mb-4">{error}</p>}
             {pageData && (
                 <>
@@ -211,6 +252,11 @@ const ReportListComponent = () => {
                                 <p className="mb-1">
                                     <span className="font-semibold">가해자:</span> {report.offenderId.nickname}
                                 </p>
+                                {report.adminId?.nickname && (
+                                    <p className="mb-1">
+                                        <span className="font-semibold">처리 관리자:</span> {report.adminId.nickname}
+                                    </p>
+                                )}
                                 <div className="flex justify-end space-x-2 mt-2">
                                     <button
                                         onClick={() => handleOpenDetail(report)}
