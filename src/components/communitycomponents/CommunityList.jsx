@@ -1,4 +1,4 @@
-// CommunityList.jsx
+//src/components/communitycomponents/CommunityList.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchCommunities, fetchTopViewed, fetchTopCommented } from '../../api/communityApi.js';
