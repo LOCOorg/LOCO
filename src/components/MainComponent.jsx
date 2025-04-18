@@ -195,6 +195,8 @@ function MainComponent() {
                         상품등록
                     </button>
                     <PlanButton />
+                    <PRButton/>
+                    <DeveloperButton/>
                 </div>
             </div>
 
