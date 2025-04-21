@@ -144,3 +144,48 @@ export const deleteFriend = async (userId, friendId) => {
         throw new Error(error.response?.data.message || error.message);
     }
 };
+
+/**
+ * 사용자 차단
+ * POST /api/user/:userId/block/:targetUserId
+ */
+export const blockUser = async (userId, targetUserId) => {
+    try {
+        const response = await axios.post(
+            `${host}/${userId}/block/${targetUserId}`
+        );
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data.message || error.message);
+    }
+};
+
+/**
+ * 차단 해제
+ * DELETE /api/user/:userId/block/:targetUserId
+ */
+export const unblockUser = async (userId, targetUserId) => {
+    try {
+        const response = await axios.delete(
+            `${host}/${userId}/block/${targetUserId}`
+        );
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data.message || error.message);
+    }
+};
+
+/**
+ * 차단 목록 조회
+ * GET /api/user/:userId/blocked
+ */
+export const getBlockedUsers = async (userId) => {
+    try {
+        const response = await axios.get(
+            `${host}/${userId}/blocked`
+        );
+        return response.data.data; // [{ _id, nickname, photo }, …]
+    } catch (error) {
+        throw new Error(error.response?.data.message || error.message);
+    }
+};
