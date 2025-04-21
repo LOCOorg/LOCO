@@ -84,6 +84,11 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
                     <div className="mb-2">
                         <span className="font-semibold">가해자:</span> {localReport.offenderId?.nickname || localReport.offenderId}
                     </div>
+                    {localReport.adminId?.nickname && (
+                        <div className="mb-2">
+                            <span className="font-semibold">처리 관리자:</span> {localReport.adminId.nickname}
+                        </div>
+                    )}
                     {localReport.stopDetail && (
                         <div className="mb-2">
                             <span className="font-semibold">제재 내용:</span> {localReport.stopDetail}

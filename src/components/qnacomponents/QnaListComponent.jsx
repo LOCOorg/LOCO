@@ -11,6 +11,8 @@ function QnaListComponent() {
 
     // 검색어 상태
     const [searchKeyword, setSearchKeyword] = useState("");
+    const [inputKeyword, setInputKeyword] = useState("");
+    const [searchType, setSearchType]    = useState('both');
 
     // "답변대기" 상태 목록 및 페이징 상태
     const [waitingQnas, setWaitingQnas] = useState([]);
@@ -39,7 +41,7 @@ function QnaListComponent() {
         const fetchWaitingQnas = async () => {
             setLoading(true);
             try {
-                const data = await getQnaPageByStatus(waitingPage, pageSize, "답변대기", searchKeyword);
+                const data = await getQnaPageByStatus(waitingPage, pageSize, "답변대기", searchKeyword, searchType);
                 setWaitingQnas(data.dtoList);
                 setWaitingPagination(data);
             } catch (err) {
@@ -48,14 +50,14 @@ function QnaListComponent() {
             setLoading(false);
         };
         fetchWaitingQnas();
-    }, [waitingPage, pageSize, searchKeyword]);
+    }, [waitingPage, pageSize, searchKeyword, searchType]);
 
     // "답변완료" 목록 데이터 불러오기 (검색어 반영)
     useEffect(() => {
         const fetchAnsweredQnas = async () => {
             setLoading(true);
             try {
-                const data = await getQnaPageByStatus(answeredPage, pageSize, "답변완료", searchKeyword);
+                const data = await getQnaPageByStatus(answeredPage, pageSize, "답변완료", searchKeyword, searchType);
                 setAnsweredQnas(data.dtoList);
                 setAnsweredPagination(data);
             } catch (err) {
@@ -64,7 +66,7 @@ function QnaListComponent() {
             setLoading(false);
         };
         fetchAnsweredQnas();
-    }, [answeredPage, pageSize, searchKeyword]);
+    }, [answeredPage, pageSize, searchKeyword, searchType]);
 
     const handleQnaClick = (qna) => {
         setSelectedQna(qna);
@@ -117,13 +119,20 @@ function QnaListComponent() {
         navigate('/qna/new');
     };
 
-    // 검색 입력 값 변경 핸들러
-    const handleSearchInputChange = (e) => {
-        setSearchKeyword(e.target.value);
-        // 검색어가 변경되면 페이지 번호를 초기화
-        setWaitingPage(1);
-        setAnsweredPage(1);
+    // 검색 실행 핸들러
+    const handleSearch = () => {
+               // 페이지 초기화
+            setWaitingPage(1);
+            setAnsweredPage(1);
+            setSearchKeyword(inputKeyword);
     };
+
+       // 엔터키 눌렀을 때 검색 실행
+           const handleSearchKeyDown = (e) => {
+               if (e.key === 'Enter') {
+                       handleSearch();
+                   }
+           };
 
     return (
         <div className="p-6">
@@ -138,18 +147,6 @@ function QnaListComponent() {
                     </button>
                 )}
             </div>
-
-            {/* 검색 입력 */}
-            <div className="mb-6">
-                <input
-                    type="text"
-                    placeholder="검색어를 입력하세요..."
-                    value={searchKeyword}
-                    onChange={handleSearchInputChange}
-                    className="px-4 py-2 border rounded w-full"
-                />
-            </div>
-
             {/* 탭 전환 버튼 */}
             <div className="flex justify-center space-x-4 mb-6">
                 <button
@@ -165,6 +162,42 @@ function QnaListComponent() {
                     답변완료
                 </button>
             </div>
+
+            {/* 검색 입력: 옵션   단일 입력창 */}
+            <div className="mb-6 flex items-center space-x-2">
+                <select
+                    value={searchType}
+                    onChange={e => setSearchType(e.target.value)}
+                    className="border rounded px-3 py-2"
+                >
+                    <option value="title">제목</option>
+                    <option value="contents">내용</option>
+                    <option value="both">제목 내용</option>
+                    <option value="author">작성자</option>
+                    <option value="answerer">답변자</option>
+                </select>
+                <input
+                    type="text"
+                    placeholder={
+                        searchType === 'title'     ? '제목 검색...'
+                            : searchType === 'contents'  ? '내용 검색...'
+                                : searchType === 'author'    ? '작성자 검색...'
+                                    : searchType === 'answerer'  ? '답변자 검색...'
+                                        : '제목 내용 검색...'
+                    }
+                    value={inputKeyword}
+                    onChange={e => setInputKeyword(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
+                    className="px-4 py-2 border rounded flex-grow"
+                />
+                <button
+                    onClick={handleSearch}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                >
+                    검색
+                </button>
+            </div>
+
 
             {loading && <p>로딩 중...</p>}
             {error && <p className="text-red-500">에러: {error}</p>}
@@ -253,6 +286,9 @@ function QnaListComponent() {
                                     <h3 className="text-xl font-semibold">{qna.qnaTitle}</h3>
                                     <p className="text-sm text-gray-500">
                                         작성자: {qna.userId?.nickname || '알 수 없음'}
+                                        <span className="ml-4">
+                                            답변자: {qna.answerUserId?.nickname || '알 수 없음'}
+                                        </span>
                                     </p>
                                     <p className="text-gray-600">{qna.qnaContents.substring(0, 100)}...</p>
                                     <div className="mt-2 flex items-center justify-between">

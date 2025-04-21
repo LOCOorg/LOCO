@@ -23,10 +23,10 @@ export async function getQnas() {
  * @param {string} status - QnA 상태 ("답변대기" 또는 "답변완료")
  * @returns {Promise<Object>} 페이지네이션된 QnA 데이터와 페이징 정보
  */
-export async function getQnaPageByStatus(page, size, status, keyword = "") {
+export async function getQnaPageByStatus(page, size, status, keyword = "", searchType = 'both') {
     try {
         const response = await axios.get(host, {
-            params: { page, size, qnaStatus: status, keyword }
+            params: { page, size, qnaStatus: status, keyword, searchType }
         });
         return response.data;
     } catch (error) {
