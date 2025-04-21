@@ -1,14 +1,8 @@
-import {Outlet} from "react-router-dom";
-import BasicLayout from "../../layout/BasicLayout.jsx";
+// src/pages/chat/ChatIndexPage.jsx
+import { Outlet } from "react-router-dom";
 
 function ChatIndexPage() {
-    return (
-        <>
-            <BasicLayout>
-                <Outlet/>
-            </BasicLayout>
-        </>
-    );
+    return <Outlet />;
 }
 
 export default ChatIndexPage;

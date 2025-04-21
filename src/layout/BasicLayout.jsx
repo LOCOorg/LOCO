@@ -1,9 +1,10 @@
-import { Link } from 'react-router-dom';
+// src/layouts/BasicLayout.jsx
+import { Link, Outlet } from 'react-router-dom';
 import ChatNotification from "../components/chatcomponents/ChatNotification.jsx";
 import useAuthStore from '../stores/authStore';
 import FriendRequestNotification from "../components/MyPageComponent/FriendRequestNotification.jsx";
 
-const BasicLayout = ({ children }) => {
+const BasicLayout = () => {
     const { user } = useAuthStore();
 
     return (
@@ -31,12 +32,16 @@ const BasicLayout = ({ children }) => {
                         )}
                     </ul>
                 </nav>
-                <ChatNotification />
-                <FriendRequestNotification/>
+                <div className="flex items-center space-x-4">
+                    <ChatNotification />
+                    <FriendRequestNotification />
+                </div>
             </header>
+
             <main className="flex-1 p-4">
-                {children}
+                <Outlet />
             </main>
+
             <footer className="bg-gray-100 text-center py-2">
                 © 2025 LOCO. All rights reserved.
             </footer>
