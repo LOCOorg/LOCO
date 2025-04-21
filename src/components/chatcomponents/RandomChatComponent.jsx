@@ -98,7 +98,7 @@ const RandomChatComponent = () => {
             // 백엔드 필터링에 필요한 쿼리 파라미터 구성
             const query = {
                 roomType: "random",
-                matchedGender,
+                ...(matchedGender !== "any" && { matchedGender }),
                 ageGroup,
             };
 
@@ -117,7 +117,6 @@ const RandomChatComponent = () => {
                 if (matchedGender === "opposite") {
                     if (room.matchedGender !== "opposite" || room.chatUsers.every(user => user.gender === userInfo.gender)) return false;
                 }
-                if (matchedGender === "any" && room.matchedGender !== "any") return false;
 
                 if (room.ageGroup !== ageGroup) return false;
 
