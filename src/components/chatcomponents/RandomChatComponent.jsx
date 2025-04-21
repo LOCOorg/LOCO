@@ -50,6 +50,20 @@ const RandomChatComponent = () => {
         if (userId) fetchUserInfoAsync(userId);
     }, [userId]);
 
+    // 차단 해제
+    const handleUnblock = async (blockedUserId) => {
+        try {
+            await unblockUser(userId, blockedUserId);
+            const updatedList = blockedUsers.filter(u => u._id !== blockedUserId);
+            setBlockedUsers(updatedList);
+        } catch (error) {
+            setModalTitle("에러");
+            setModalMessage("차단 해제에 실패했습니다.");
+            setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
+            setModalOpen(true);
+        }
+    };
+
     // 랜덤 채팅방 찾기 및 생성 함수
     const findOrCreateRandomRoom = async (capacity, matchedGender) => {
         if (!userId) return;
