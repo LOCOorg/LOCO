@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
-const SOCKET_SERVER_URL = "http://localhost:3000"; // 웹소켓 서버 주소
+const SOCKET_SERVER_URL = "http://192.168.0.14:3000"; // 웹소켓 서버 주소
 
 export const useSocket = () => {
     const [socket, setSocket] = useState(null);
