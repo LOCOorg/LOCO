@@ -8,8 +8,8 @@ const BasicLayout = ({ children }) => {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
-                <Link to="/" className="text-2xl font-bold">LOCO</Link>
+            <header className="sticky top-0 z-50 bg-blue-600 text-white px-4 py-3 flex items-center justify-between shadow-md">
+            <Link to="/" className="text-2xl font-bold">LOCO</Link>
                 <nav>
                     <ul className="flex space-x-4">
                         <li>
