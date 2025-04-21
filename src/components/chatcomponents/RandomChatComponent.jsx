@@ -7,7 +7,7 @@ import CommonModal from "../../common/CommonModal";
 import useAuthStore from "../../stores/authStore.js";
 
 const RandomChatComponent = () => {
-    const [capacity, setCapacity] = useState("");
+    const [capacity, setCapacity] = useState(2);
     const [matchedGender, setMatchedGender] = useState("any");
     const [userInfo, setUserInfo] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -188,20 +188,16 @@ const RandomChatComponent = () => {
             </div>
 
             <div className="mb-4">
-                <input
-                    type="text"
-                    placeholder="참여 인원 (2~5명)"
+                <select
                     value={capacity}
-                    onChange={(e) => {
-                        const value = parseInt(e.target.value, 10);
-                        if (!isNaN(value) && value >= 2 && value <= 5) {
-                            setCapacity(value);
-                        } else {
-                            setCapacity("");
-                        }
-                    }}
+                    onChange={(e) => setCapacity(Number(e.target.value))}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                >
+                    <option value={2}>2명</option>
+                    <option value={3}>3명</option>
+                    <option value={4}>4명</option>
+                    <option value={5}>5명</option>
+                </select>
             </div>
 
             <div className="mb-4">
