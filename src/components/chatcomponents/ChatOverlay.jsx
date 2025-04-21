@@ -14,7 +14,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
     const [userName, setUserName] = useState("");
     const socket = useSocket();
     const authUser = useAuthStore((state) => state.user);
-    const senderId = authUser?._id;
+    const senderId = "6805d797041653f706e7a091";
 
     const messagesContainerRef = useRef(null);
 
