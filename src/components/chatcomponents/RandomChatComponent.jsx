@@ -151,10 +151,15 @@ const RandomChatComponent = () => {
                 setModalOpen(true);
             } else {
                 room = await createChatRoom("random", capacity, matchedGender, ageGroup);
+
                 setModalTitle("알림");
                 setModalMessage(`새로운 랜덤 채팅방(${capacity}명, ${matchedGender} 매칭, ${ageGroup})을 생성했습니다.`);
                 setModalButtons([{ text: "확인", action: () => navigate(`/chat/${room._id}/${userId}`) }]);
                 setModalOpen(true);
+                if (!room || !room._id) {
+                    console.error("⚠️ createChatRoom 반환값 오류:", room);
+                    throw new Error("채팅방 생성에 실패했습니다.");
+                    }
             }
 
             await joinChatRoom(room._id, userId);
