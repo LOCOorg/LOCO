@@ -1,21 +1,23 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getUserInfo } from "../../api/userAPI";
+import {getUserInfo, getBlockedUsers, unblockUser} from "../../api/userAPI";
 import { createChatRoom, joinChatRoom, fetchChatRooms, fetchUserLeftRooms } from "../../api/chatAPI";
 import LoadingComponent from "../../common/LoadingComponent.jsx";
 import CommonModal from "../../common/CommonModal";
 import useAuthStore from "../../stores/authStore.js";
 
 const RandomChatComponent = () => {
-    const [capacity, setCapacity] = useState("");
+    const [capacity, setCapacity] = useState(2);
     const [matchedGender, setMatchedGender] = useState("any");
     const [userInfo, setUserInfo] = useState(null);
+    const [blockedUsers, setBlockedUsers] = useState([]); // 차단 사용자 객체 배열
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [modalMessage, setModalMessage] = useState("");
     const [modalTitle, setModalTitle] = useState("");
     const [modalButtons, setModalButtons] = useState([]);
+    const [showBlockedModal, setShowBlockedModal] = useState(false); // 차단 목록 모달 상태
     const navigate = useNavigate();
     const authUser = useAuthStore((state) => state.user);
     const userId = authUser?._id; // authStore에서 받아온 사용자 ID
@@ -26,9 +28,7 @@ const RandomChatComponent = () => {
         const birth = new Date(birthdate);
         let age = today.getFullYear() - birth.getFullYear();
         const m = today.getMonth() - birth.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-            age--;
-        }
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
         return age;
     };
 
@@ -37,9 +37,11 @@ const RandomChatComponent = () => {
         try {
             const data = await getUserInfo(userId);
             setUserInfo(data);
-            setLoading(false);
+            const blocked = await getBlockedUsers(userId);
+            setBlockedUsers(blocked);
         } catch (err) {
             setError(err.message);
+        } finally {
             setLoading(false);
         }
     };
@@ -49,6 +51,20 @@ const RandomChatComponent = () => {
             fetchUserInfoAsync(userId);
         }
     }, [userId]);
+
+    // 차단 해제
+    const handleUnblock = async (blockedUserId) => {
+        try {
+            await unblockUser(userId, blockedUserId);
+            const updatedList = blockedUsers.filter(u => u._id !== blockedUserId);
+            setBlockedUsers(updatedList);
+        } catch (error) {
+            setModalTitle("에러");
+            setModalMessage("차단 해제에 실패했습니다.");
+            setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
+            setModalOpen(true);
+        }
+    };
 
     // 랜덤 채팅방 찾기 및 생성 함수
     const findOrCreateRandomRoom = async (capacity, matchedGender) => {
@@ -60,7 +76,7 @@ const RandomChatComponent = () => {
                 setModalMessage("참여 인원은 2~5명 사이로 입력해주세요.");
                 setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
                 setModalOpen(true);
-                setLoading(false);
+                //setLoading(false);
                 return;
             }
 
@@ -69,7 +85,7 @@ const RandomChatComponent = () => {
                 setModalMessage("유저 정보를 불러오는 중입니다.");
                 setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
                 setModalOpen(true);
-                setLoading(false);
+                //setLoading(false);
                 return;
             }
 
@@ -79,7 +95,7 @@ const RandomChatComponent = () => {
                 setModalMessage("채팅횟수가 부족하여 랜덤 채팅을 이용할 수 없습니다.");
                 setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
                 setModalOpen(true);
-                setLoading(false);
+                //setLoading(false);
                 return;
             }
             // 신고로 인한 제한: reportStatus가 active가 아니고, reportTimer가 현재 시간보다 미래인 경우
@@ -88,7 +104,7 @@ const RandomChatComponent = () => {
                 setModalMessage("신고로 인해 현재 랜덤 채팅 이용이 제한되어 있습니다.");
                 setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
                 setModalOpen(true);
-                setLoading(false);
+                //setLoading(false);
                 return;
             }
 
@@ -98,40 +114,31 @@ const RandomChatComponent = () => {
             // 백엔드 필터링에 필요한 쿼리 파라미터 구성
             const query = {
                 roomType: "random",
-                matchedGender,
+                ...(matchedGender !== "any" && { matchedGender }),
                 ageGroup,
+                userId
             };
 
             const rooms = await fetchChatRooms(query);
             console.log("현재 채팅방 목록:", rooms);
 
-            const availableRooms = rooms.filter((room) => {
-                if (room.roomType !== "random") return false;
+            const blockedIds = blockedUsers.map(u => u._id);
+            const availableRooms = rooms.filter(room => {
                 if (room.capacity !== capacity) return false;
                 if (room.chatUsers.length >= room.capacity) return false;
                 if (room.isActive || room.status !== "waiting") return false;
-
-                if (matchedGender === "same") {
-                    if (room.matchedGender !== "same" || room.chatUsers.some(user => user.gender !== userInfo.gender)) return false;
-                }
-                if (matchedGender === "opposite") {
-                    if (room.matchedGender !== "opposite" || room.chatUsers.every(user => user.gender === userInfo.gender)) return false;
-                }
-                if (matchedGender === "any" && room.matchedGender !== "any") return false;
-
+                if (matchedGender === "same" && (room.matchedGender !== "same" || room.chatUsers.some(u => u.gender !== userInfo.gender))) return false;
+                if (matchedGender === "opposite" && (room.matchedGender !== "opposite" || room.chatUsers.every(u => u.gender === userInfo.gender))) return false;
                 if (room.ageGroup !== ageGroup) return false;
-
+                if (room.chatUsers.some(u => blockedIds.includes(u._id))) return false;
                 return true;
             });
 
-            let room;
-
             const leftRooms = await fetchUserLeftRooms(userId);
-            const existingRoom = rooms.find(
-                (room) =>
-                    room.roomType === "random" &&
-                    room.chatUsers.some(user => user._id === userId) &&
-                    !leftRooms.includes(room._id)
+            const existingRoom = rooms.find(room =>
+                room.chatUsers.some(u => u._id === userId) &&
+                !leftRooms.includes(room._id) &&
+                !room.chatUsers.some(u => blockedIds.includes(u._id))
             );
 
             if (existingRoom) {
@@ -139,33 +146,51 @@ const RandomChatComponent = () => {
                 setModalMessage("이미 참여중인 채팅방으로 이동합니다.");
                 setModalButtons([{ text: "확인", action: () => navigate(`/chat/${existingRoom._id}/${userId}`) }]);
                 setModalOpen(true);
-                setLoading(false);
+                //setLoading(false);
                 return;
             }
 
             if (availableRooms.length > 0) {
-                room = availableRooms[Math.floor(Math.random() * availableRooms.length)];
+                const room = availableRooms[Math.floor(Math.random() * availableRooms.length)];
+                // 즉시 참여
                 setModalTitle("알림");
-                setModalMessage(`랜덤 채팅방(${capacity}명, ${matchedGender} 매칭, ${ageGroup})에 참가했습니다.`);
-                setModalButtons([{ text: "확인", action: () => navigate(`/chat/${room._id}/${userId}`) }]);
-                setModalOpen(true);
-            } else {
-                room = await createChatRoom("random", capacity, matchedGender, ageGroup);
-
-                setModalTitle("알림");
-                setModalMessage(`새로운 랜덤 채팅방(${capacity}명, ${matchedGender} 매칭, ${ageGroup})을 생성했습니다.`);
-                setModalButtons([{ text: "확인", action: () => navigate(`/chat/${room._id}/${userId}`) }]);
-                setModalOpen(true);
-                if (!room || !room._id) {
-                    console.error("⚠️ createChatRoom 반환값 오류:", room);
-                    throw new Error("채팅방 생성에 실패했습니다.");
+                setModalMessage(`랜덤 채팅방(${capacity}명, ${matchedGender})에 참가합니다.`);
+                setModalButtons([{
+                    text: "확인",
+                    action: async () => {
+                        await joinChatRoom(room._id, userId);
+                        navigate(`/chat/${room._id}/${userId}`);
                     }
+                }]);
+                setModalOpen(true);
+                return;
             }
 
-            await joinChatRoom(room._id, userId);
-            console.log("채팅방에 참가했습니다.");
+            // 새로운 방 생성 전 확인 모달 띄우기
+            setModalTitle("랜덤 채팅 시작");
+            setModalMessage(
+                `랜덤 채팅방(${capacity}명, ${matchedGender})을 참가하시겠습니까?`
+            );
+            setModalButtons([
+                {
+                    text: "생성",
+                    action: async () => {
+                        try {
+                            const room = await createChatRoom("random", capacity, matchedGender, ageGroup);
+                            await joinChatRoom(room._id, userId);
+                            navigate(`/chat/${room._id}/${userId}`);
+                        } catch {
+                            setModalTitle("에러");
+                            setModalMessage("랜덤 채팅방 참가에 실패했습니다.");
+                            setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
+                            setModalOpen(true);
+                        }
+                    }
+                }
+            ]);
+            setModalOpen(true);
+            // eslint-disable-next-line no-unused-vars
         } catch (error) {
-            console.error("랜덤 채팅방 참가에 실패:", error);
             setModalTitle("에러");
             setModalMessage("랜덤 채팅방 참가에 실패했습니다.");
             setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
@@ -175,18 +200,20 @@ const RandomChatComponent = () => {
         }
     };
 
-    if (loading) {
-        return <LoadingComponent message="대기 중입니다... 채팅방을 찾고 있습니다." />;
-    }
-
-    if (error) {
-        return <div>{error}</div>;
-    }
+    if (loading) return <LoadingComponent message="대기 중입니다... 채팅방을 찾고 있습니다." />;
+    if (error) return <div>{error}</div>;
 
     return (
         <div className="max-w-4xl mx-auto p-6">
-            <h2 className="text-2xl font-semibold mb-4">랜덤 채팅 시작</h2>
-
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold">랜덤 채팅 시작</h2>
+                <button
+                    onClick={() => setShowBlockedModal(true)}
+                    className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none"
+                >
+                    차단 목록
+                </button>
+            </div>
             <div className="mb-4">
                 <p>닉네임: {userInfo.nickname}</p>
                 <p>성별: {userInfo.gender}</p>
@@ -194,26 +221,18 @@ const RandomChatComponent = () => {
             </div>
 
             <div className="mb-4">
-                <input
-                    type="text"
-                    placeholder="참여 인원 (2~5명)"
+                <select
                     value={capacity}
-                    onChange={(e) => {
-                        const value = parseInt(e.target.value, 10);
-                        if (!isNaN(value) && value >= 2 && value <= 5) {
-                            setCapacity(value);
-                        } else {
-                            setCapacity("");
-                        }
-                    }}
+                    onChange={e => setCapacity(Number(e.target.value))}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                >
+                    {[2,3,4,5].map(n => <option key={n} value={n}>{n}명</option>)}
+                </select>
             </div>
-
             <div className="mb-4">
                 <select
                     value={matchedGender}
-                    onChange={(e) => setMatchedGender(e.target.value)}
+                    onChange={e => setMatchedGender(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                     <option value="any">상관없음</option>
@@ -233,13 +252,45 @@ const RandomChatComponent = () => {
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
                 title={modalTitle}
-                onConfirm={() => {
-                    setModalOpen(false);
-                    modalButtons[0].action();
-                }}
+                onConfirm={() => { setModalOpen(false); modalButtons[0].action(); }}
                 buttons={modalButtons}
             >
                 <p>{modalMessage}</p>
+            </CommonModal>
+
+            <CommonModal
+                isOpen={showBlockedModal}
+                onClose={() => setShowBlockedModal(false)}
+                title="차단 목록"
+                showCancel={false}
+                onConfirm={() => setShowBlockedModal(false)}
+            >
+                {blockedUsers.length > 0 ? (
+                    <ul className="space-y-2 max-h-64 overflow-y-auto">
+                        {blockedUsers.map(u => (
+                            <li key={u._id} className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                    {u.photo?.[0] && (
+                                        <img
+                                            src={u.photo[0]}
+                                            alt={u.nickname}
+                                            className="w-8 h-8 rounded-full object-cover"
+                                        />
+                                    )}
+                                    <span>{u.nickname}</span>
+                                </div>
+                                <button
+                                    onClick={() => handleUnblock(u._id)}
+                                    className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 focus:outline-none"
+                                >
+                                    차단 해제
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p>차단된 사용자가 없습니다.</p>
+                )}
             </CommonModal>
         </div>
     );

@@ -47,12 +47,24 @@ function GlobalFriendChatOverlay() {
                             <button
                                 key={chat.roomId}
                                 onClick={() => handleSwapChat(chat.roomId)}
-                                className="block my-[5px] p-[5px] bg-[#eee] border border-[#ccc] rounded-full w-[40px] h-[40px] text-center cursor-pointer"
-                                title={chat.friend ? chat.friend.nickname || chat.friend.name : "채팅"}
+                                className="block my-[5px] w-[40px] h-[40px] bg-[#eee] border border-[#ccc] rounded-full overflow-hidden cursor-pointer"
+                                title={chat.friend?.nickname || chat.friend?.name || "채팅"}
                             >
-                                {chat.friend && chat.friend.nickname ? chat.friend.nickname[0] : "채팅"}
+                                {chat.friend?.photo?.length > 0 ? (
+                                    <img
+                                        src={chat.friend.photo[0]}
+                                        alt={chat.friend.nickname || chat.friend.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <span className="flex items-center justify-center w-full h-full text-sm font-medium text-gray-700">
+          {chat.friend?.nickname?.[0] || "?"}
+        </span>
+                                )}
                             </button>
-                        ))}
+                        ))
+                    }
+
                 </div>
             )}
         </>

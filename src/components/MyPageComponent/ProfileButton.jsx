@@ -1,4 +1,3 @@
-// src/components/ProfileButton.jsx
 import React, { useState, useEffect } from 'react';
 import { getUserInfo } from '../../api/userAPI.js';
 import useAuthStore from '../../stores/authStore.js';
@@ -6,7 +5,6 @@ import SimpleProfileModal from './SimpleProfileModal.jsx';
 
 const ProfileButton = ({ profile: externalProfile }) => {
     const authUser = useAuthStore((state) => state.user);
-    // externalProfile prop이 전달되면 해당 데이터를 사용하고, 그렇지 않으면 내 프로필 정보를 가져옵니다.
     const [profile, setProfile] = useState(externalProfile || null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -27,36 +25,24 @@ const ProfileButton = ({ profile: externalProfile }) => {
         <div>
             <button
                 onClick={handleOpenModal}
-                style={{
-                    border: 'none',
-                    background: 'none',
-                    padding: 0,
-                    cursor: 'pointer'
-                }}
+                className="p-0 bg-transparent border-none cursor-pointer"
             >
-                {profile && profile.photo && profile.photo.length > 0 ? (
+                {profile?.photo?.length > 0 ? (
                     <img
                         src={profile.photo[0]}
                         alt="메인 프로필 사진"
-                        style={{
-                            width: '50px',
-                            height: '50px',
-                            borderRadius: '50%',
-                            objectFit: 'cover'
-                        }}
+                        className="w-12 h-12 rounded-full object-cover"
                     />
                 ) : (
                     <div
-                        style={{
-                            width: '50px',
-                            height: '50px',
-                            borderRadius: '50%',
-                            backgroundColor: 'lightgray'
-                        }}
+                        className="w-12 h-12 rounded-full bg-gray-300"
                     />
                 )}
             </button>
-            {isModalOpen && <SimpleProfileModal profile={profile} onClose={handleCloseModal} />}
+
+            {isModalOpen && (
+                <SimpleProfileModal profile={profile} onClose={handleCloseModal} />
+            )}
         </div>
     );
 };

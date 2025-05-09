@@ -1,261 +1,199 @@
 import React, { useState } from 'react';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
 import useAuthStore from '../../stores/authStore';
-import { sendFriendRequest } from "../../api/userAPI.js";
+import { sendFriendRequest, blockUser } from "../../api/userAPI.js";
 import CommonModal from '../../common/CommonModal.jsx';
 
 const SimpleProfileModal = ({ profile, onClose }) => {
-    const authUser = useAuthStore((state) => state.user);
+    const authUser = useAuthStore(state => state.user);
     const [isReportModalVisible, setIsReportModalVisible] = useState(false);
-    // alert 모달 상태 추가
     const [alertModalOpen, setAlertModalOpen] = useState(false);
     const [alertModalMessage, setAlertModalMessage] = useState("");
+    const [confirmBlockOpen, setConfirmBlockOpen] = useState(false);
 
     if (!profile) return null;
 
-    const mainPhoto = profile.photo && profile.photo[0];
-    const subPhotos = profile.photo ? profile.photo.slice(1, 6) : [];
-
     const handleFriendRequest = async () => {
-        if (!authUser || !profile) return;
+        if (!authUser) return;
         try {
             await sendFriendRequest(authUser._id, profile._id);
             setAlertModalMessage("친구 요청을 보냈습니다.");
-            setAlertModalOpen(true);
         } catch (error) {
-            console.error("친구 요청 보내기 실패:", error);
-            // error.response가 있는 경우 상세 에러 메시지를 추출
-            const detailedMessage = error.response && error.response.data
-                ? error.response.data.errorMessage ||
-                error.response.data.message ||
-                JSON.stringify(error.response.data)
-                : error.message;
-            setAlertModalMessage(`${detailedMessage}`);
-            setAlertModalOpen(true);
+            setAlertModalMessage(error.response?.data?.message || error.message);
         }
+        setAlertModalOpen(true);
+    };
+
+    const handleBlockUser = async () => {
+        try {
+            await blockUser(authUser._id, profile._id);
+            setAlertModalMessage("사용자를 차단했습니다.");
+        } catch (error) {
+            setAlertModalMessage(error.response?.data?.message || error.message);
+        }
+        setAlertModalOpen(true);
+        onClose();
     };
 
     return (
         <div
+            className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50"
             onClick={onClose}
-            style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0,0,0,0.6)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1000,
-            }}
         >
             <div
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                    position: 'relative',
-                    background: 'white',
-                    width: '400px',
-                    padding: '20px',
-                    borderRadius: '8px',
-                    boxShadow: '0 0 10px rgba(0,0,0,0.3)',
-                }}
+                className="bg-white w-96 p-6 rounded-lg shadow-lg relative"
+                onClick={e => e.stopPropagation()}
             >
+                {/* 닫기 버튼 */}
                 <button
                     onClick={onClose}
-                    style={{
-                        position: 'absolute',
-                        top: '10px',
-                        right: '10px',
-                        background: 'transparent',
-                        border: 'none',
-                        fontSize: '20px',
-                        color: 'gray',
-                        cursor: 'pointer',
-                    }}
+                    className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
                 >
                     ×
                 </button>
-                <div style={{ width: '100%', height: '200px', marginBottom: '10px' }}>
-                    {mainPhoto ? (
-                        <img
-                            src={mainPhoto}
-                            alt="메인 프로필"
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover',
-                                borderRadius: '8px',
-                            }}
-                        />
-                    ) : (
-                        <div
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                                borderRadius: '8px',
-                                backgroundColor: '#ccc',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#666',
-                            }}
-                        >
-                            사진
+
+                {/* 메인 사진 */}
+                <div className="w-full h-48 mb-4 rounded-lg overflow-hidden bg-gray-200">
+                    {profile.photo?.[0]
+                        ? <img src={profile.photo[0]} alt="메인 프로필" className="w-full h-full object-cover" />
+                        : <div className="flex items-center justify-center h-full text-gray-500">사진</div>
+                    }
+                </div>
+
+                {/* 서브 사진 */}
+                <div className="flex gap-2 mb-4">
+                    {profile.photo?.slice(1, 6).map((url, i) => (
+                        <div key={i} className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden">
+                            <img src={url} alt="" className="w-full h-full object-cover" />
                         </div>
-                    )}
+                    )) || Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="w-12 h-12 bg-gray-100 rounded-md" />
+                    ))}
                 </div>
-                <div style={{ display: 'flex', gap: '5px', marginBottom: '10px' }}>
-                    {subPhotos.length > 0 ? (
-                        subPhotos.map((photoUrl, idx) => (
-                            <div
-                                key={idx}
-                                style={{
-                                    width: '50px',
-                                    height: '50px',
-                                    backgroundColor: '#eee',
-                                    borderRadius: '4px',
-                                    overflow: 'hidden',
-                                }}
-                            >
-                                <img
-                                    src={photoUrl}
-                                    alt={`프로필 추가 사진 ${idx + 1}`}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                            </div>
-                        ))
-                    ) : (
-                        Array.from({ length: 5 }).map((_, idx) => (
-                            <div
-                                key={idx}
-                                style={{
-                                    width: '50px',
-                                    height: '50px',
-                                    backgroundColor: '#eee',
-                                    borderRadius: '4px',
-                                }}
-                            ></div>
-                        ))
-                    )}
+
+                {/* 프로필 정보 */}
+                <div className="mb-4 space-y-1">
+                    <p><strong>닉네임:</strong> {profile.nickname || '없음'}</p>
+                    <p><strong>롤 닉네임:</strong> {profile.lolNickname || '없음'}</p>
+                    <p><strong>성별:</strong> {profile.gender || '없음'}</p>
+                    <p><strong>별점:</strong> {profile.star || 0}</p>
                 </div>
-                <div style={{ marginBottom: '8px' }}>
-                    <strong>닉네임:</strong> {profile.nickname || '닉네임 없음'}
-                    <br />
-                    <strong>롤 닉네임:</strong> {profile.lolNickname || '미입력'}
-                    <br />
-                    <strong>성별:</strong> {profile.gender || '미입력'}
-                    <br />
-                    <strong>별점:</strong> {profile.star || 0}
-                </div>
-                <div style={{ marginBottom: '10px' }}>
-                    <strong>자기소개</strong>
-                    <div
-                        style={{
-                            border: '1px solid #ccc',
-                            borderRadius: '4px',
-                            padding: '8px',
-                            minHeight: '60px',
-                            marginTop: '4px',
-                            whiteSpace: 'pre-wrap',
-                        }}
-                    >
+
+                {/* 자기소개 */}
+                <div className="mb-6">
+                    <p className="font-medium mb-1">자기소개</p>
+                    <div className="border border-gray-300 rounded-md p-3 min-h-[60px] whitespace-pre-wrap">
                         {profile.info || '자기소개가 없습니다.'}
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+
+                {/* 액션 버튼 */}
+                <div className="flex gap-3">
                     <button
-                        style={{
-                            flex: '1',
-                            backgroundColor: '#4caf50',
-                            color: 'white',
-                            border: 'none',
-                            padding: '10px',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                        }}
                         onClick={handleFriendRequest}
+                        className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-md"
                     >
                         친구신청
                     </button>
                     <button
-                        style={{
-                            flex: '1',
-                            backgroundColor: '#f44336',
-                            color: 'white',
-                            border: 'none',
-                            padding: '10px',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                        }}
+                        onClick={() => setConfirmBlockOpen(true)}
+                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md"
+                    >
+                        차단
+                    </button>
+                    <button
                         onClick={() => setIsReportModalVisible(true)}
+                        className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md"
                     >
                         신고
                     </button>
                 </div>
-                {isReportModalVisible && (
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            backgroundColor: 'rgba(0,0,0,0.6)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 2000,
-                        }}
-                    >
-                        <div
-                            style={{
-                                position: 'relative',
-                                background: 'white',
-                                padding: '20px',
-                                borderRadius: '8px',
-                                boxShadow: '0 0 10px rgba(0,0,0,0.3)',
-                                width: 'auto',
-                                maxWidth: '90%',
-                            }}
-                        >
-                            <button
-                                onClick={() => setIsReportModalVisible(false)}
-                                style={{
-                                    position: 'absolute',
-                                    top: '10px',
-                                    left: '10px',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    fontSize: '16px',
-                                    color: 'gray',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                ← 뒤로가기
-                            </button>
-                            <ReportForm
-                                onClose={() => setIsReportModalVisible(false)}
-                                reportedUser={profile}
-                                onReportCreated={() => {}}
-                            />
-                        </div>
-                    </div>
-                )}
-                {/* alert 대신 CommonModal 사용 */}
-                {alertModalOpen && (
-                    <CommonModal
-                        isOpen={alertModalOpen}
-                        onClose={() => setAlertModalOpen(false)}
-                        title="알림"
-                        onConfirm={() => setAlertModalOpen(false)}
-                        showCancel={false}
-                    >
-                        {alertModalMessage}
-                    </CommonModal>
-                )}
             </div>
+
+            {/* 신고 모달 */}
+            {isReportModalVisible && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-60"
+                    // overlay 클릭으로도 신고 모달만 닫히도록, 이벤트 버블링 차단 후 setIsReportModalVisible
+                    onClick={e => {
+                        e.stopPropagation();
+                        setIsReportModalVisible(false);
+                    }}
+                >
+                    <div
+                        className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-md relative"
+                        // content 영역 클릭은 overlay close도 막기
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={() => setIsReportModalVisible(false)}
+                            className="absolute top-3 left-3 text-gray-500 hover:text-gray-700"
+                        >
+                            ← 뒤로
+                        </button>
+                        <ReportForm
+                            onClose={() => setIsReportModalVisible(false)}
+                            reportedUser={profile}
+                            onReportCreated={() => setIsReportModalVisible(false)}
+                        />
+                    </div>
+                </div>
+            )}
+
+
+            {/* 확인 모달: 차단 */}
+            {confirmBlockOpen && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-60"
+                    // overlay 클릭 시 차단 모달만 닫고, 부모 onClose는 호출하지 않음
+                    onClick={e => {
+                        e.stopPropagation();
+                        setConfirmBlockOpen(false);
+                    }}
+                >
+                    <div
+                        className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-sm relative"
+                        // content 내부 클릭은 overlay onClick도 막음
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <CommonModal
+                            isOpen={confirmBlockOpen}
+                            onClose={() => setConfirmBlockOpen(false)}
+                            title="사용자 차단"
+                            showCancel={true}
+                            onConfirm={handleBlockUser}
+                        >
+                            <p>정말 이 사용자를 차단하시겠습니까?</p>
+                        </CommonModal>
+                    </div>
+                </div>
+            )}
+
+            {/* 알림 모달: 친구신청 결과 or 차단 완료 */}
+            {alertModalOpen && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-60"
+                    onClick={e => {
+                        e.stopPropagation();
+                        setAlertModalOpen(false);
+                    }}
+                >
+                    <div
+                        className="bg-white p-6 rounded-lg shadow-lg w-80 relative"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <CommonModal
+                            isOpen={alertModalOpen}
+                            onClose={() => setAlertModalOpen(false)}
+                            title="알림"
+                            showCancel={false}
+                            onConfirm={() => setAlertModalOpen(false)}
+                        >
+                            <p>{alertModalMessage}</p>
+                        </CommonModal>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
