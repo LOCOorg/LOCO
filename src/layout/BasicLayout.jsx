@@ -1,8 +1,8 @@
-// src/layout/BasicLayout.jsx
-import { Link } from 'react-router-dom';
+// src/layouts/BasicLayout.jsx
+import { Link, Outlet } from 'react-router-dom';
+import ChatNotification from "../components/chatcomponents/ChatNotification.jsx";
 import useAuthStore from '../stores/authStore';
 import FriendChatDropdown from '../components/MyPageComponent/FriendChatDropdown.jsx';
-import ChatNotification from '../components/chatcomponents/ChatNotification.jsx';
 import FriendRequestNotification from '../components/MyPageComponent/FriendRequestNotification.jsx';
 
 
@@ -30,8 +30,14 @@ const BasicLayout = ({ children }) => {
                     <FriendRequestNotification />
                 </div>
             </header>
-            <main className="flex-1 p-4">{children}</main>
-            <footer className="bg-gray-100 text-center py-2">© 2025 LOCO. All rights reserved.</footer>
+
+            <main className="flex-1 p-4">{children}
+                <Outlet />
+            </main>
+
+            <footer className="bg-gray-100 text-center py-2">
+                © 2025 LOCO. All rights reserved.
+            </footer>
         </div>
     );
 };
