@@ -562,7 +562,7 @@ const CommunityDetail = () => {
                     <h1 className="text-3xl font-bold mb-2">{community.communityTitle}</h1>
                     <div className="text-sm text-gray-600 mb-4 space-x-2">
           <span>
-              <ProfileButton profile={postProfile} />
+              <ProfileButton profile={postProfile}/>
             작성자:{' '}
               <span className="font-semibold text-red-500">{postWriterNickname}</span>
           </span>
@@ -626,7 +626,7 @@ const CommunityDetail = () => {
                                             key={comment._id}
                                             className="flex space-x-3 p-3 border border-gray-200 rounded hover:bg-gray-50 transition duration-200"
                                         >
-                                            <ProfileButton profile={profileMap[comment.userId]} />
+                                            <ProfileButton profile={profileMap[comment.userId]}/>
 
                                             <div className="flex-1">
                                                 <div className="flex items-center space-x-2 mb-1">
@@ -674,7 +674,8 @@ const CommunityDetail = () => {
                                                                 <li key={reply._id}>
                                                                     <div className="flex items-start space-x-2">
                                                                         {/* 대댓글 작성자 프로필 버튼 */}
-                                                                        <ProfileButton profile={profileMap[reply.userId]} />
+                                                                        <ProfileButton
+                                                                            profile={profileMap[reply.userId]}/>
                                                                         <div className="text-xs text-gray-500">
                                     <span
                                         className={`text-sm font-semibold ${reply.userId === community.userId ? 'text-red-500' : ''}`}>
@@ -683,6 +684,21 @@ const CommunityDetail = () => {
                                                                             <span className="ml-2 text-gray-400">
                                       {formatRelativeTime(reply.commentRegDate)}
                                     </span>
+                                                                            {reply.userId === currentUserId ? (
+                                                                                <button
+                                                                                    onClick={() => openReplyDeleteModal(comment._id, reply._id)}
+                                                                                    className="text-red-500 text-xs ml-2 hover:underline"
+                                                                                >
+                                                                                    삭제
+                                                                                </button>
+                                                                            ) : (
+                                                                                <button
+                                                                                    onClick={() => handleReplyReport(reply)}
+                                                                                    className="text-purple-500 text-xs ml-2 hover:underline"
+                                                                                >
+                                                                                    신고
+                                                                                </button>
+                                                                            )}
                                                                             <div className="text-gray-800 mt-1">
                                                                                 {reply.commentContents}
                                                                             </div>
@@ -700,59 +716,27 @@ const CommunityDetail = () => {
                                                                                     />
                                                                                 </div>
                                                                             )}
-                                                                            {reply.userId === currentUserId ? (
-                                                                                <button
-                                                                                    onClick={() => openReplyDeleteModal(comment._id, reply._id)}
-                                                                                    className="text-red-500 text-xs ml-2 hover:underline"
-                                                                                >
-                                                                                    삭제
-                                                                                </button>
-                                                                            ) : (
-                                                                                <button
-                                                                                    onClick={() => handleReplyReport(reply)}
-                                                                                    className="text-purple-500 text-xs ml-2 hover:underline"
-                                                                                >
-                                                                                    신고
-                                                                                </button>
-                                                                            )}
                                                                         </div>
                                                                     </div>
+
                                                                     {reply.subReplies && reply.subReplies.length > 0 && (
                                                                         <ul className="ml-4 mt-1 space-y-2 border-l pl-2">
                                                                             {reply.subReplies.map((subReply) => {
                                                                                 const subReplyNickname = userMap[subReply.userId] || subReply.userId;
                                                                                 return (
                                                                                     <li key={subReply._id}>
+                                                                                        {/* — 헤더: 프로필, 닉네임, 시간, 삭제/신고 버튼 */}
                                                                                         <div
-                                                                                            className="text-xs text-gray-500">
-                                                                                            {/* 대대댓글 작성자 프로필 버튼 */}
-                                                                                            <ProfileButton profile={profileMap[subReply.userId]} />
-                                            <span
-                                                className={`text-sm font-semibold ${subReply.userId === community.userId ? 'text-red-500' : ''}`}>
-                                              {subReplyNickname}
-                                            </span>
+                                                                                            className="flex items-center space-x-2 text-xs text-gray-500">
+                                                                                            <ProfileButton
+                                                                                                profile={profileMap[subReply.userId]}/>
                                                                                             <span
-                                                                                                className="ml-2 text-gray-400">
-                                              {formatRelativeTime(subReply.commentRegDate)}
-                                            </span>
-                                                                                            <div
-                                                                                                className="text-gray-800 mt-1">
-                                                                                                {subReply.commentContents}
-                                                                                            </div>
-                                                                                            {subReply.subReplyImage && (
-                                                                                                <div className="mt-1">
-                                                                                                    <img
-                                                                                                        src={
-                                                                                                            subReply.subReplyImage.startsWith('http') ||
-                                                                                                            subReply.subReplyImage.startsWith('data:')
-                                                                                                                ? subReply.subReplyImage
-                                                                                                                : `${import.meta.env.VITE_API_HOST}${subReply.subReplyImage}`
-                                                                                                        }
-                                                                                                        alt="대대댓글 이미지"
-                                                                                                        className="w-20 h-auto"
-                                                                                                    />
-                                                                                                </div>
-                                                                                            )}
+                                                                                                className={`text-sm font-semibold ${
+                                                                                                    subReply.userId === community.userId ? 'text-red-500' : ''
+                                                                                                }`}
+                                                                                            >{subReplyNickname} </span>
+                                                                                            <span
+                                                                                                className="ml-2 text-gray-400">{formatRelativeTime(subReply.commentRegDate)}</span>
                                                                                             {subReply.userId === currentUserId ? (
                                                                                                 <button
                                                                                                     onClick={() =>
@@ -765,17 +749,40 @@ const CommunityDetail = () => {
                                                                                             ) : (
                                                                                                 <button
                                                                                                     onClick={() => handleSubReplyReport(subReply)}
-                                                                                                    className="text-purple-500 text-xs ml-2 hover:underline"
+                                                                                                    className="hover:underline"
                                                                                                 >
                                                                                                     신고
                                                                                                 </button>
                                                                                             )}
                                                                                         </div>
+
+                                                                                        {/* — 본문 */}
+                                                                                        <div
+                                                                                            className="text-gray-800 text-sm">
+                                                                                            {subReply.commentContents}
+                                                                                        </div>
+
+                                                                                        {/* — 이미지 */}
+                                                                                        {subReply.subReplyImage && (
+                                                                                            <div className="mt-1">
+                                                                                                <img
+                                                                                                    src={
+                                                                                                        subReply.subReplyImage.startsWith('http') ||
+                                                                                                        subReply.subReplyImage.startsWith('data:')
+                                                                                                            ? subReply.subReplyImage
+                                                                                                            : `${import.meta.env.VITE_API_HOST}${subReply.subReplyImage}`
+                                                                                                    }
+                                                                                                    alt="대대댓글 이미지"
+                                                                                                    className="w-20 h-auto"
+                                                                                                />
+                                                                                            </div>
+                                                                                        )}
                                                                                     </li>
                                                                                 );
                                                                             })}
                                                                         </ul>
                                                                     )}
+
                                                                     <button
                                                                         onClick={() => toggleSubReplyForm(reply._id, replyNickname)}
                                                                         className="text-blue-500 text-xs mt-1 hover:underline"
@@ -1004,6 +1011,7 @@ const CommunityDetail = () => {
                             </button>
                         </form>
                     </div>
+
                     {community.userId === currentUserId && (
                         <div className="mt-6 flex space-x-4">
                             <button

@@ -142,21 +142,46 @@ const RandomChatComponent = () => {
                 return;
             }
 
-            let room;
             if (availableRooms.length > 0) {
-                room = availableRooms[Math.floor(Math.random() * availableRooms.length)];
+                const room = availableRooms[Math.floor(Math.random() * availableRooms.length)];
+                // 즉시 참여
                 setModalTitle("알림");
-                setModalMessage(`랜덤 채팅방(${capacity}명, ${matchedGender} 매칭, ${ageGroup})에 참가했습니다.`);
-                setModalButtons([{ text: "확인", action: () => navigate(`/chat/${room._id}/${userId}`) }]);
-            } else {
-                room = await createChatRoom("random", capacity, matchedGender, ageGroup);
-                setModalTitle("알림");
-                setModalMessage(`새로운 랜덤 채팅방(${capacity}명, ${matchedGender} 매칭, ${ageGroup})을 생성했습니다.`);
-                setModalButtons([{ text: "확인", action: () => navigate(`/chat/${room._id}/${userId}`) }]);
+                setModalMessage(`랜덤 채팅방(${capacity}명, ${matchedGender})에 참가합니다.`);
+                setModalButtons([{
+                    text: "확인",
+                    action: async () => {
+                        await joinChatRoom(room._id, userId);
+                        navigate(`/chat/${room._id}/${userId}`);
+                    }
+                }]);
+                setModalOpen(true);
+                return;
             }
 
+            // 새로운 방 생성 전 확인 모달 띄우기
+            setModalTitle("랜덤 채팅 시작");
+            setModalMessage(
+                `랜덤 채팅방(${capacity}명, ${matchedGender})을 참가하시겠습니까?`
+            );
+            setModalButtons([
+                {
+                    text: "생성",
+                    action: async () => {
+                        try {
+                            const room = await createChatRoom("random", capacity, matchedGender, ageGroup);
+                            await joinChatRoom(room._id, userId);
+                            navigate(`/chat/${room._id}/${userId}`);
+                        } catch {
+                            setModalTitle("에러");
+                            setModalMessage("랜덤 채팅방 참가에 실패했습니다.");
+                            setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
+                            setModalOpen(true);
+                        }
+                    }
+                }
+            ]);
             setModalOpen(true);
-            await joinChatRoom(room._id, userId);
+            // eslint-disable-next-line no-unused-vars
         } catch (error) {
             setModalTitle("에러");
             setModalMessage("랜덤 채팅방 참가에 실패했습니다.");
