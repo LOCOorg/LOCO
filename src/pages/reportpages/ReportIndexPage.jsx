@@ -1,14 +1,8 @@
-import {Outlet} from "react-router-dom";
-import BasicLayout from "../../layout/BasicLayout.jsx";
+// src/pages/report/ReportIndexPage.jsx
+import { Outlet } from "react-router-dom";
 
 function ReportIndexPage() {
-    return (
-        <>
-            <BasicLayout>
-                <Outlet/>
-            </BasicLayout>
-        </>
-    );
+    return <Outlet />;
 }
 
 export default ReportIndexPage;

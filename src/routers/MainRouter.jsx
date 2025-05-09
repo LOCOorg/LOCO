@@ -1,4 +1,6 @@
 import {createBrowserRouter} from "react-router-dom";
+import BasicLayout from "../layout/BasicLayout.jsx";
+
 import IndexPage from "../pages/IndexPage.jsx";
 import ChatRouter from "./ChatRouter.jsx";
 import CommunityRouter from "./CommunityRouter.jsx";
@@ -17,31 +19,24 @@ import DeveloperRouter from "./DeveloperRouter.jsx";
 const MainRouter = createBrowserRouter([
     {
         path: "/",
-        element: <IndexPage/>
+        element: <BasicLayout />,
+        children: [
+            { index: true,                     element: <IndexPage /> },
+            { path: "signupPage",              element: <SignupPage /> },
+            { path: "auth/callback",           element: <LoginHandler /> },
+            { path: "auth/naver/callback",     element: <NaverLoginHandler /> },
+            CommunityRouter,
+            ChatRouter,
+            LoginRouter,
+            AdminProductRouter,
+            ProductShowcaseRouter,
+            QnaRouter,
+            ReportRouter,
+            MyPageRouter,
+            PRRouter,
+            DeveloperRouter,
+        ],
     },
-    {
-        path: "/signupPage",
-        element: <SignupPage/>
-    },
-    {
-        path: "/auth/callback",                    // (추가) OAuth 콜백 처리 경로
-        element: <LoginHandler/>                   // 카카오 로그인 핸들러 컴포넌트 렌더링 (추가)
-    },
-    {
-        path: "/auth/naver/callback",
-        element: <NaverLoginHandler/>  // 네이버 로그인 콜백 처리
-    },
-    CommunityRouter,
-    ChatRouter,
-    LoginRouter,
-    AdminProductRouter,
-    ProductShowcaseRouter,
-    QnaRouter,
-    ReportRouter,
-    QnaRouter,
-    MyPageRouter,
-    PRRouter,
-    DeveloperRouter,
-])
+]);
 
 export default MainRouter;

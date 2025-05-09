@@ -1,17 +1,31 @@
-// File: /src/components/DeveloperComponent/UserListItem.jsx
-// 이 컴포넌트는 검색 결과 목록의 각 유저 항목을 렌더링하며, 클릭 시 해당 유저의 상세 정보를 표시합니다.
+// src/components/DeveloperComponent/UserListItem.jsx
 import React from "react";
 
 const UserListItem = ({ user, onClick }) => {
+    // 소셜에서 가져온 카카오/네이버 성별(raw)
+    const kakaoRaw = user.social?.kakao?.gender || "";
+    const naverRaw = user.social?.naver?.gender || "";
+
+    // 빈값일 때 대체값
+    const kakaoDisplay = kakaoRaw || "-";
+    const naverDisplay = naverRaw || "-";
+
+    // 최종 표시할 소셜 성별 문자열
+    const socialGenderText = `(K: ${kakaoDisplay}, N: ${naverDisplay})`;
+
     return (
         <div
             onClick={onClick}
             className="cursor-pointer p-3 border-b border-gray-100 hover:bg-gray-100 transition-colors"
         >
-            <strong>{user.name}</strong><br />
-            <span>Nickname: {user.nickname}</span><br />
-            <span>Phone: {user.phone}</span><br />
-            <span>Gender: {user.gender}</span>
+            <p><strong>이름:</strong> {user.name || "-"}</p>
+            <p><strong>닉네임:</strong> {user.nickname || "-"}</p>
+            <p><strong>전화번호:</strong> {user.phone || "-"}</p>
+            <p><strong>생년월일:</strong> {user.birthdate || "-"}</p>
+            <p>
+                <strong>성별:</strong> {user.gender || "비공개"}{" "}
+                <span className="text-gray-500">{socialGenderText}</span>
+            </p>
         </div>
     );
 };

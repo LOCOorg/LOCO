@@ -1,36 +1,13 @@
-// src/components/pr/PRProfileGrid.jsx
+// src/components/pr/PRProfileCardGrid.jsx
 import React from "react";
+import PRProfileCard from "./PRProfileCard";
 
-const PRProfileGrid = ({ allUsers }) => {
-    return (
-        <div
-            style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(5, 1fr)",
-                gap: "10px",
-            }}
-        >
-            {allUsers.map((user) => (
-                <div
-                    key={user._id}
-                    style={{
-                        border: "1px solid #ccc",
-                        padding: "10px",
-                        textAlign: "center",
-                    }}
-                >
-                    <img
-                        src={user.photo?.[0] || "https://via.placeholder.com/150"}
-                        alt={user.nickname}
-                        style={{ width: "100%" }}
-                    />
-                    <p>{user.nickname}</p>
-                    <p>별점: {user.star}</p>
-                    <p>성별: {user.gender}</p>
-                </div>
-            ))}
-        </div>
-    );
-};
+const PRProfileGrid = ({ allUsers }) => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 mt-6">
+        {allUsers.map((user) => (
+            <PRProfileCard key={user._id} user={user} />
+        ))}
+    </div>
+);
 
 export default PRProfileGrid;
