@@ -3,21 +3,8 @@ import { useState, useEffect } from 'react';
 import { fetchReports, deleteReport } from '../../api/reportAPI.js';
 import ReportDetailModal from './ReportDetailModal';
 import CommonModal from '../../common/CommonModal.jsx';
-import {useNavigate} from "react-router-dom";
-import useAuthStore from "../../stores/authStore.js";
 
 const ReportListComponent = () => {
-
-    const { user } = useAuthStore();
-    const navigate = useNavigate();
-
-    // 사용자 권한 체크
-    useEffect(() => {
-        if (!user || user.userLv < 2) {
-            navigate('/');
-        }
-    }, [user, navigate]);
-
     const [pageData, setPageData] = useState(null);
     const [error, setError] = useState(null);
     const [selectedReport, setSelectedReport] = useState(null);
@@ -55,22 +42,10 @@ const ReportListComponent = () => {
         }
     };
 
-    // 필터/페이지 변경 시 데이터 로드 (권한 있을 때만)
+    // currentPage, filterArea, filterCategory, filterStatus가 바뀔 때마다 목록을 다시 불러옴
     useEffect(() => {
-        // userLv 2 이상일 때만 목록 불러오기
-        if (user && user.userLv >= 2) {
-            loadReports(currentPage);
-        }
-    }, [currentPage, filterArea, filterCategory, filterStatus, keyword, searchType, user]);
-
-    // 렌더링 직전 접근 방어
-    if (!user || user.userLv < 2) {
-        return (
-            <div className="max-w-4xl mx-auto p-6">
-                <p className="text-red-500 text-center">접근 권한이 없습니다.</p>
-            </div>
-        );
-    }
+        loadReports(currentPage);
+    }, [currentPage, filterArea, filterCategory, filterStatus]);
 
     const handleDeleteClick = (id) => {
         setReportToDelete(id);
