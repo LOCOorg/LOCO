@@ -10,7 +10,7 @@ import {
     addSubReply,
     deleteComment,
     deleteReply,
-    deleteSubReply, fetchTopViewed, fetchTopCommented,
+    deleteSubReply, fetchTopViewed, fetchTopCommented, cancelRecommendCommunity,
 } from '../../api/communityApi.js';
 import {getUserInfo} from '../../api/userAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
@@ -20,6 +20,8 @@ import LeftSidebar from "../../layout/CommunityLayout/LeftSidebar.jsx";
 import RightSidebar from "../../layout/CommunityLayout/RightSidebar.jsx";
 import ReportForm from "../reportcomponents/ReportForm.jsx";
 import ProfileButton from '../../components/MyPageComponent/ProfileButton.jsx';
+import { FaThumbsUp } from 'react-icons/fa'
+import clsx from 'clsx'
 
 // 상대 시간 포맷 함수
 const formatRelativeTime = (dateString) => {
@@ -43,6 +45,8 @@ const formatRelativeTime = (dateString) => {
 const CommunityDetail = () => {
     const {id} = useParams();
     const navigate = useNavigate();
+
+    const [isRecommended, setIsRecommended] = useState(false)
 
     const [postProfile, setPostProfile] = useState(null);
     const [profileMap, setProfileMap] = useState({});
@@ -190,6 +194,27 @@ const CommunityDetail = () => {
         fetchUserNames();
     }, [community]);
 
+    // 1) 커뮤니티 데이터 로드 후, 내가 추천했는지 초기 상태 설정
+    useEffect(() => {
+        if (community && community.recommendedUsers) {
+            setIsRecommended(community.recommendedUsers.includes(currentUserId))
+        }
+    }, [community, currentUserId])
+
+    // 2) 클릭 시 추천·추천취소 API 호출 및 토글
+    const handleToggleRecommend = async () => {
+        try {
+            if (isRecommended) {
+                await cancelRecommendCommunity(community._id, currentUserId)
+            } else {
+                await recommendCommunity(community._id, currentUserId)
+            }
+            setIsRecommended(!isRecommended)
+        } catch (err) {
+            console.error('추천 처리 에러', err)
+        }
+    }
+
     // 커뮤니티 삭제 (게시글 자체)
     const handleDelete = () => {
         setModalTitle('삭제 확인');
@@ -208,21 +233,6 @@ const CommunityDetail = () => {
             setModalContent('게시글 삭제에 실패했습니다.');
             setRecommendModalOpen(true);
             console.log(err);
-        }
-    };
-
-    // 추천 처리
-    const handleRecommend = async () => {
-        try {
-            const updated = await recommendCommunity(community._id, currentUserId);
-            setCommunity(updated);
-            setModalTitle('추천 완료');
-            setModalContent('추천이 완료되었습니다.');
-            setRecommendModalOpen(true);
-        } catch (err) {
-            setModalTitle('추천 실패');
-            setModalContent(err.response?.data?.message || '추천 처리에 실패했습니다.');
-            setRecommendModalOpen(true);
         }
     };
 
@@ -502,15 +512,6 @@ const CommunityDetail = () => {
                 >
                     {modalContent}
                 </CommonModal>
-                {/* 추천 결과 모달 */}
-                <CommonModal
-                    isOpen={recommendModalOpen}
-                    onClose={() => setRecommendModalOpen(false)}
-                    title={modalTitle}
-                    onConfirm={() => setRecommendModalOpen(false)}
-                >
-                    {modalContent}
-                </CommonModal>
                 {/* 댓글 삭제 확인 모달 */}
                 <CommonModal
                     isOpen={commentDeleteModalOpen}
@@ -607,12 +608,20 @@ const CommunityDetail = () => {
                                 신고
                             </button>
                         )}
-                        <button
-                            onClick={handleRecommend}
-                            className="bg-green-500 text-white font-semibold py-2 px-4 rounded hover:bg-green-600 transition duration-200"
-                        >
-                            추천하기
-                        </button>
+
+                            <button
+                                onClick={handleToggleRecommend}
+                                aria-label="추천하기"
+                                className={clsx(
+                                    'w-10 h-10 rounded-full border flex items-center justify-center transition-colors',
+                                    {
+                                        'bg-blue-500 border-blue-500 text-white': isRecommended,
+                                        'bg-transparent border-gray-300 text-gray-500 hover:bg-gray-100': !isRecommended,
+                                    }
+                                )}
+                            >
+                                <FaThumbsUp size={20} />
+                            </button>
                     </div>
                     <div className="mt-6">
                         <h3 className="text-xl font-semibold mb-3">댓글</h3>
