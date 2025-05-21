@@ -8,7 +8,8 @@ export const createChatRoom = async (roomType, capacity, matchedGender, ageGroup
         const response = await axios.post(`${host}/rooms`, { roomType, capacity, matchedGender, ageGroup });
         return response.data;
     } catch (error) {
-        console.error("채팅방 생성 중 오류 발생:", error);
+        console.error("채팅방 생성 중 오류 발생:", error.response?.data || error.message);
+        throw error;     // ← 반드시 던져서 호출 측에서 잡을 수 있도록
     }
 };
 

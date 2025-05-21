@@ -1,14 +1,8 @@
+// src/pages/IndexPage.jsx
 import MainComponent from "../components/MainComponent.jsx";
-import BasicLayout from "../layout/BasicLayout.jsx";
 
 const IndexPage = () => {
-    return (
-        <>
-            <BasicLayout>
-            <MainComponent/>
-                </BasicLayout>
-        </>
-    );
+    return <MainComponent />;
 };
 
 export default IndexPage;

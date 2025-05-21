@@ -20,7 +20,7 @@ const RandomChatComponent = () => {
     const [showBlockedModal, setShowBlockedModal] = useState(false); // 차단 목록 모달 상태
     const navigate = useNavigate();
     const authUser = useAuthStore((state) => state.user);
-    const userId = authUser?._id;
+    const userId = authUser?._id; // authStore에서 받아온 사용자 ID
 
     // 생년월일을 이용한 나이 계산 함수
     const calculateAge = (birthdate) => {
@@ -47,7 +47,9 @@ const RandomChatComponent = () => {
     };
 
     useEffect(() => {
-        if (userId) fetchUserInfoAsync(userId);
+        if (userId) {
+            fetchUserInfoAsync(userId);
+        }
     }, [userId]);
 
     // 차단 해제
@@ -74,13 +76,16 @@ const RandomChatComponent = () => {
                 setModalMessage("참여 인원은 2~5명 사이로 입력해주세요.");
                 setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
                 setModalOpen(true);
+                //setLoading(false);
                 return;
             }
+
             if (!userInfo) {
                 setModalTitle("경고");
                 setModalMessage("유저 정보를 불러오는 중입니다.");
                 setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
                 setModalOpen(true);
+                //setLoading(false);
                 return;
             }
 
@@ -90,6 +95,7 @@ const RandomChatComponent = () => {
                 setModalMessage("채팅횟수가 부족하여 랜덤 채팅을 이용할 수 없습니다.");
                 setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
                 setModalOpen(true);
+                //setLoading(false);
                 return;
             }
             // 신고로 인한 제한: reportStatus가 active가 아니고, reportTimer가 현재 시간보다 미래인 경우
@@ -98,6 +104,7 @@ const RandomChatComponent = () => {
                 setModalMessage("신고로 인해 현재 랜덤 채팅 이용이 제한되어 있습니다.");
                 setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
                 setModalOpen(true);
+                //setLoading(false);
                 return;
             }
 
@@ -139,6 +146,7 @@ const RandomChatComponent = () => {
                 setModalMessage("이미 참여중인 채팅방으로 이동합니다.");
                 setModalButtons([{ text: "확인", action: () => navigate(`/chat/${existingRoom._id}/${userId}`) }]);
                 setModalOpen(true);
+                //setLoading(false);
                 return;
             }
 
@@ -211,6 +219,7 @@ const RandomChatComponent = () => {
                 <p>성별: {userInfo.gender}</p>
                 <p>생년월일: {userInfo.birthdate}</p>
             </div>
+
             <div className="mb-4">
                 <select
                     value={capacity}
@@ -231,6 +240,7 @@ const RandomChatComponent = () => {
                     <option value="same">동성</option>
                 </select>
             </div>
+
             <button
                 onClick={() => findOrCreateRandomRoom(capacity, matchedGender)}
                 className="w-full px-4 py-2 bg-purple-500 text-white rounded-lg shadow-md hover:bg-purple-600 focus:outline-none"

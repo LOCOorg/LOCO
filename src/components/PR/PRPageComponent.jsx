@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { getPRTopUsers, getPRUserList } from "../../api/prAPI";
 import PRTopSlider from "./PRTopSlider";
 import PRFilter from "./PRFilter";
-import PRProfileGrid from "./PRProfileCardGrid.jsx";
+import PRProfileGrid from "./PRProfileCardGrid";
 import PRLoadMore from "./PRLoadMore";
 
 const PRPageComponent = () => {
@@ -12,65 +12,27 @@ const PRPageComponent = () => {
     const [sort, setSort] = useState("star|desc");
     const [gender, setGender] = useState("all");
     const [page, setPage] = useState(1);
-    const limit = 30;
+    const limit = 5;             // ← 한 번에 5개씩
     const [loading, setLoading] = useState(false);
     const [sliderIndex, setSliderIndex] = useState(0);
 
-    // 상단 Top 10 사용자 로드
+    // Top 10 불러오기 (unchanged)
     useEffect(() => {
-        const fetchTopUsers = async () => {
-            try {
-                const result = await getPRTopUsers();
-                setTopUsers(result.data || []);
-            } catch (err) {
-                console.error("TopUsers 로드 실패:", err);
-            }
-        };
-        fetchTopUsers();
+        getPRTopUsers().then(res => setTopUsers(res.data || []))
+            .catch(console.error);
     }, []);
 
-    // 하단 유저 목록 로드 (필터/페이지네이션)
+    // allUsers 불러오기 (sort, gender, page 바뀔 때마다)
     useEffect(() => {
-        const fetchUsers = async () => {
-            setLoading(true);
-            try {
-                const result = await getPRUserList({ sort, gender, page, limit });
-                if (page === 1) {
-                    setAllUsers(result.data);
-                } else {
-                    setAllUsers((prev) => [...prev, ...result.data]);
-                }
-            } catch (err) {
-                console.error("Users 로드 실패:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchUsers();
+        setLoading(true);
+        getPRUserList({ sort, gender, page, limit })
+            .then(res => {
+                const next = res.data || [];
+                setAllUsers(prev => page === 1 ? next : [...prev, ...next]);
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false));
     }, [sort, gender, page]);
-
-    // 슬라이더 조작
-    const handlePrev = () => {
-        setSliderIndex((prev) => Math.max(prev - 5, 0));
-    };
-    const handleNext = () => {
-        setSliderIndex((prev) => Math.min(prev + 5, 5));
-    };
-
-    // 필터 변경 시 페이지 초기화
-    const handleSortChange = (e) => {
-        setPage(1);
-        setSort(e.target.value);
-    };
-
-    const handleGenderChange = (e) => {
-        setPage(1);
-        setGender(e.target.value);
-    };
-
-    const handleShowMore = () => {
-        setPage((prev) => prev + 1);
-    };
 
     return (
         <div>
@@ -78,17 +40,19 @@ const PRPageComponent = () => {
             <PRTopSlider
                 topUsers={topUsers}
                 sliderIndex={sliderIndex}
-                handlePrev={handlePrev}
-                handleNext={handleNext}
+                handlePrev={() => setSliderIndex(i => Math.max(i - 5, 0))}
+                handleNext={() => setSliderIndex(i => Math.min(i + 5, 5))}
             />
             <PRFilter
-                sort={sort}
-                gender={gender}
-                handleSortChange={handleSortChange}
-                handleGenderChange={handleGenderChange}
+                sort={sort} gender={gender}
+                handleSortChange={e => { setPage(1); setSort(e.target.value); }}
+                handleGenderChange={e => { setPage(1); setGender(e.target.value); }}
             />
             <PRProfileGrid allUsers={allUsers} />
-            <PRLoadMore loading={loading} handleShowMore={handleShowMore} />
+            <PRLoadMore
+                loading={loading}
+                handleShowMore={() => setPage(p => p + 1)}
+            />
         </div>
     );
 };
