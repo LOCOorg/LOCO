@@ -1,8 +1,9 @@
-//새로고침 로그인 유지
+//src/components/authComponent/AuthInit.jsx
 
 import { useEffect } from 'react';
 import { fetchCurrentUser } from '../../api/authAPI.js';
 import useAuthStore from '../../stores/authStore.js';
+
 
 const AuthInit = () => {
     const setUser = useAuthStore((state) => state.setUser);

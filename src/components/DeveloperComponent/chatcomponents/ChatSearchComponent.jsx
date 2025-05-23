@@ -7,6 +7,7 @@ import ChatMessageView from "./ChatMessageView.jsx";
 import DeveloperComponent from "../DeveloperComponent.jsx";
 import { useChatConversation } from "../../../hooks/useChatConversation";  // 공통 훅
 
+
 const ChatSearchComponent = () => {
     const [mode, setMode] = useState("chat");       // "user" 또는 "chat"
     const [chatUser, setChatUser] = useState(null);

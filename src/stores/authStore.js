@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 
 const useAuthStore = create((set) => ({
-    user: null,
+    user: undefined,
     setUser: (user) => set({ user }),
     logout: () => set({ user: null }),
 }));
