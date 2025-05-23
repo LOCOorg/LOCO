@@ -1,16 +1,16 @@
-import { useEffect, useState, useRef } from "react";
-import { useSocket } from "../../hooks/useSocket.js";
-import { fetchMessages, deleteMessage, leaveChatRoom, getChatRoomInfo } from "../../api/chatAPI.js";
+import {useEffect, useState, useRef} from "react";
+import {useSocket} from "../../hooks/useSocket.js";
+import {fetchMessages, deleteMessage, leaveChatRoom, getChatRoomInfo} from "../../api/chatAPI.js";
 import PropTypes from "prop-types";
-import { useNavigate } from "react-router-dom";
-import { decrementChatCount, getUserInfo, rateUser, getLeagueRecord } from "../../api/userAPI.js";
+import {useNavigate} from "react-router-dom";
+import {decrementChatCount, getUserInfo, rateUser, getLeagueRecord} from "../../api/userAPI.js";
 import CommonModal from "../../common/CommonModal.jsx";
 import ReportForm from "../../components/reportcomponents/ReportForm.jsx";
 // 프로필 모달을 위한 ProfileButton 컴포넌트를 import합니다.
 import ProfileButton from "../../components/MyPageComponent/ProfileButton.jsx";
 import LeagueRecordSection from "./LeagueRecordSection.jsx";
 
-const ChatRoom = ({ roomId, userId }) => {
+const ChatRoom = ({roomId, userId}) => {
     const [messages, setMessages] = useState([]);
     const [messageIds, setMessageIds] = useState(new Set());
     const [text, setText] = useState("");
@@ -38,7 +38,7 @@ const ChatRoom = ({ roomId, userId }) => {
     const formatTime = (textTime) => {
         if (!textTime) return "";
         const date = new Date(textTime);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
     };
 
     const getUserName = async () => {
@@ -59,7 +59,7 @@ const ChatRoom = ({ roomId, userId }) => {
             try {
                 const user = await getUserInfo(message.sender);
                 if (user && user.nickname) {
-                    message.sender = { _id: message.sender, ...user };
+                    message.sender = {_id: message.sender, ...user};
                 } else {
                     console.error("수신 메시지의 sender 정보 조회 실패");
                     return;
@@ -136,7 +136,7 @@ const ChatRoom = ({ roomId, userId }) => {
             if (response.success) {
                 // 채팅 횟수 감소 API 호출 추가
                 await decrementChatCount(userId);
-                navigate("/chat", { replace: true });
+                navigate("/chat", {replace: true});
             } else {
                 console.error("채팅방 나가기 실패:", response.message);
             }
@@ -157,11 +157,11 @@ const ChatRoom = ({ roomId, userId }) => {
             return;
         }
 
-        const message = { chatRoom: roomId, sender: { _id: userId, nickname: userName }, text };
+        const message = {chatRoom: roomId, sender: {_id: userId, nickname: userName}, text};
         socket.emit("sendMessage", message, (response) => {
             if (response.success) {
                 // 백엔드에서는 textTime 필드를 사용하도록 설정되어 있습니다.
-                const sentMessage = { ...message, _id: response.message._id, textTime: response.message.textTime };
+                const sentMessage = {...message, _id: response.message._id, textTime: response.message.textTime};
                 setMessages((prevMessages) => [
                     ...prevMessages.filter((msg) => msg._id !== sentMessage._id),
                     sentMessage,
@@ -177,11 +177,11 @@ const ChatRoom = ({ roomId, userId }) => {
         try {
             await deleteMessage(messageId);
             setMessages((prevMessages) =>
-                prevMessages.map((msg) => (msg._id === messageId ? { ...msg, isDeleted: true } : msg))
+                prevMessages.map((msg) => (msg._id === messageId ? {...msg, isDeleted: true} : msg))
             );
 
             if (socket) {
-                socket.emit("deleteMessage", { messageId, roomId });
+                socket.emit("deleteMessage", {messageId, roomId});
             }
         } catch (error) {
             console.error("메시지 삭제 중 오류 발생:", error);
@@ -221,13 +221,13 @@ const ChatRoom = ({ roomId, userId }) => {
             socket.emit("joinRoom", roomId);
             socket.on("receiveMessage", handleReceiveMessage);
             socket.on("roomJoined", handleUserJoined);
-            socket.on("userLeft", ({ userId }) => {
+            socket.on("userLeft", ({userId}) => {
                 console.log(`사용자 ${userId}가 채팅방을 떠났습니다.`);
             });
 
-            socket.on("messageDeleted", ({ messageId }) => {
+            socket.on("messageDeleted", ({messageId}) => {
                 setMessages((prevMessages) =>
-                    prevMessages.map((msg) => (msg._id === messageId ? { ...msg, isDeleted: true } : msg))
+                    prevMessages.map((msg) => (msg._id === messageId ? {...msg, isDeleted: true} : msg))
                 );
             });
 
@@ -262,14 +262,14 @@ const ChatRoom = ({ roomId, userId }) => {
             otherIds.map(async participantId => {
                 try {
                     const userInfo = await getUserInfo(participantId);
-                    const { riotGameName, riotTagLine } = userInfo;
+                    const {riotGameName, riotTagLine} = userInfo;
                     if (!riotGameName || !riotTagLine) {
                         throw new Error("Riot ID 정보가 없습니다.");
                     }
                     const leagueRecord = await getLeagueRecord(riotGameName, riotTagLine);
-                    return { participantId, userInfo, leagueRecord, error: null };
+                    return {participantId, userInfo, leagueRecord, error: null};
                 } catch (err) {
-                    return { participantId, userInfo: null, leagueRecord: null, error: err.message };
+                    return {participantId, userInfo: null, leagueRecord: null, error: err.message};
                 }
             })
         )
@@ -285,74 +285,135 @@ const ChatRoom = ({ roomId, userId }) => {
     }, [participants, userId]);
 
     return (
-        <div className="max-w-6xl mx-auto h-screen flex flex-col md:flex-row p-4 space-y-6 md:space-y-0 md:space-x-6">
+        <div
+            className="max-w-6xl mx-auto h-screen flex flex-col md:flex-row p-6 space-y-6 md:space-y-0 md:space-x-8 bg-gradient-to-br from-indigo-50 to-purple-50">
             {/* ─── 채팅 섹션 ─── */}
-            <section className="flex-1 flex flex-col bg-white shadow-lg rounded-lg overflow-hidden">
-                <header className="sticky top-0 bg-blue-600 text-white p-4 font-semibold">
+            <section className="flex-1 flex flex-col bg-white shadow-2xl rounded-xl overflow-hidden">
+                <header
+                    className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 font-bold tracking-wide text-lg">
                     채팅방 {roomId}
                 </header>
+
                 {isLoading ? (
-                    <div className="flex justify-center items-center h-32 text-xl text-gray-500">
-                        <span>다른 사용자 기다리는중...</span>
+                    <div className="flex-grow flex flex-col justify-center items-center text-gray-400">
+                        {/* 애니메이션 스피너 */}
+                        <svg
+                            className="animate-spin h-10 w-10 mb-4 text-blue-500"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                            ></circle>
+                            <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                            ></path>
+                        </svg>
+                        <span className="text-xl">다른 사용자를 기다리는 중…</span>
                     </div>
                 ) : (
                     <>
-                <div
-                    ref={messagesContainerRef}
-                    className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
-                >
-                    {messages.map(msg => (
                         <div
-                            key={`${msg._id}-${msg.textTime}`}
-                            className={`flex items-start space-x-3 p-3 rounded-lg ${
-                                msg.sender._id === userId
-                                    ? "bg-blue-100 justify-end"
-                                    : "bg-white"
-                            } shadow`}
+                            ref={messagesContainerRef}
+                            className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"
                         >
-                            {msg.sender._id !== userId && <ProfileButton profile={msg.sender} />}
-                            <div className="flex flex-col space-y-1">
-                                <span className="text-sm font-medium text-blue-700">{msg.sender.nickname}</span>
-                                <p className="text-gray-800">{msg.isDeleted ? "삭제된 메시지입니다." : msg.text}</p>
-                                <span className="text-xs text-gray-500">{formatTime(msg.textTime)}</span>
-                            </div>
-                            {msg.sender._id === userId && <ProfileButton profile={msg.sender} />}
-                            {msg.sender._id === userId && !msg.isDeleted && (
-                                <button
-                                    onClick={() => handleDeleteMessage(msg._id)}
-                                    className="ml-2 text-red-600 hover:text-red-800 focus:outline-none"
-                                >
-                                    삭제
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                </div>
-                <form onSubmit={handleSendMessage} className="sticky bottom-0 bg-white border-t p-4 flex space-x-2">
-                    <input
-                        type="text"
-                        value={text}
-                        onChange={e => setText(e.target.value)}
-                        placeholder="메시지를 입력하세요…"
-                        className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
-                    <button
-                        type="submit"
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none"
+                            {messages.map(msg => {
+                                const isMe = msg.sender._id === userId;
+                                return (
+                                    <div
+                                        key={`${msg._id}-${msg.textTime}`}
+                                        className={`flex items-end ${isMe ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                        {/* 프로필 */}
+                                        {!isMe && (
+                                            <ProfileButton
+                                                profile={msg.sender}
+                                                className="w-10 h-10 rounded-full overflow-hidden mr-3"
+                                            />
+                                        )}
+
+                                        {/* 메시지 박스 */}
+                                        <div
+                                            className={`max-w-[70%] p-4 rounded-2xl shadow ${
+                                                isMe ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'
+                                            }`}
+                                        >
+                                            <div className="flex items-center mb-1">
+                    <span
+                        className={`text-sm font-semibold ${
+                            isMe ? 'text-blue-200' : 'text-blue-700'
+                        }`}
                     >
-                        전송
-                    </button>
-                </form>
+                      {msg.sender.nickname}
+                    </span>
+                                                <span className="ml-2 text-xs text-gray-300">
+                      {formatTime(msg.textTime)}
+                    </span>
+                                            </div>
+                                            <p className="whitespace-pre-wrap">
+                                                {msg.isDeleted ? '삭제된 메시지입니다.' : msg.text}
+                                            </p>
+                                        </div>
+
+                                        {/* 내 메시지일 때 프로필 & 삭제 버튼 */}
+                                        {isMe && (
+                                            <ProfileButton
+                                                profile={msg.sender}
+                                                className="w-10 h-10 rounded-full overflow-hidden ml-3"
+                                            />
+                                        )}
+                                        {isMe && !msg.isDeleted && (
+                                            <button
+                                                onClick={() => handleDeleteMessage(msg._id)}
+                                                className="ml-2 text-red-600 hover:text-red-800 focus:outline-none"
+                                                title="메시지 삭제"
+                                            >
+                                                🗑️
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* 입력 폼 */}
+                        <form
+                            onSubmit={handleSendMessage}
+                            className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex items-center space-x-3"
+                        >
+                            <input
+                                type="text"
+                                value={text}
+                                onChange={e => setText(e.target.value)}
+                                placeholder="메시지를 입력하세요…"
+                                className="flex-1 border border-gray-300 rounded-full px-5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+                            />
+                            <button
+                                type="submit"
+                                className="inline-flex items-center px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full shadow-lg hover:from-indigo-600 hover:to-purple-600 focus:outline-none transition"
+                            >
+                                전송
+                            </button>
+                        </form>
                     </>
                 )}
             </section>
 
-
+            {/* 채팅 종료 버튼 */}
             <button
                 onClick={handleLeaveRoom}
-                className="fixed bottom-6 right-6 bg-red-500 text-white p-3 rounded-full shadow-lg hover:bg-red-600 focus:outline-none z-50"
+                className="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-full shadow-2xl hover:bg-red-600 focus:outline-none transition"
+                title="채팅 종료"
             >
-                채팅 종료
+                🚪 나가기
             </button>
 
             <CommonModal
@@ -434,11 +495,11 @@ const ChatRoom = ({ roomId, userId }) => {
                 </div>
             )}
             {/* ─── 전적 섹션 ─── */}
-                      <LeagueRecordSection
-                        partnerRecords={partnerRecords}
-                        loading={recordsLoading}
-                        error={recordsError}
-                      />
+            <LeagueRecordSection
+                partnerRecords={partnerRecords}
+                loading={recordsLoading}
+                error={recordsError}
+            />
         </div>
     );
 };
