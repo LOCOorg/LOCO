@@ -15,3 +15,8 @@ export const fetchCurrentUser = async () => {
         return null;
     }
 };
+
+export const logoutAPI = async () => {
+    // withCredentials: true 는 axiosInstance에 이미 설정되어 있습니다.
+    await instance.post("/api/auth/logout");
+};
