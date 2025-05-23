@@ -8,10 +8,14 @@ import ChatUserSearchPanel from "./chatcomponents/ChatUserSearchPanel.jsx";
 import ChatRoomListPanel from "./chatcomponents/ChatRoomListPanel.jsx";
 import ChatMessageView from "./chatcomponents/ChatMessageView.jsx";
 import { useChatConversation } from "../../hooks/useChatConversation";  // 공통 훅
+import { useLv } from "../../hooks/useLv";
+import { Navigate } from "react-router-dom";
 
 const PAGE_SIZE = 30;
 
 const DeveloperComponent = () => {
+
+
     // 1) 사용자 검색 훅 (유저 모드)
     const {
         data: users,
@@ -40,6 +44,17 @@ const DeveloperComponent = () => {
         setSelectedRoom,
         messages
     } = useChatConversation(chatUser, mode);
+//lv에따라 접근 차단
+    // const { currentUser } = useLv();
+    // // 아직 로딩 중인 경우 (user === null) 빈 화면 또는 로더 처리 가능
+    // if (currentUser === null) {
+    //     return null;
+    // }
+    // if (currentUser.userLv < 3) {
+    //     window.alert("접근 권한이 없습니다.");
+    //     return <Navigate to="/" replace />;
+    // }
+
 
     return (
         <div className="flex flex-col h-screen bg-gray-100">
