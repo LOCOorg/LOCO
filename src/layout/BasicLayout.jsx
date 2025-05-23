@@ -4,7 +4,8 @@ import ChatNotification from "../components/chatcomponents/ChatNotification.jsx"
 import useAuthStore from '../stores/authStore';
 import FriendChatDropdown from '../components/MyPageComponent/FriendChatDropdown.jsx';
 import FriendRequestNotification from '../components/MyPageComponent/FriendRequestNotification.jsx';
-
+import React from "react";
+import LogoutButton from '../components/authComponent/LogoutButton.jsx';
 
 const BasicLayout = ({ children }) => {
     const { user } = useAuthStore();
@@ -22,12 +23,26 @@ const BasicLayout = ({ children }) => {
                         {user && user.userLv >= 2 && (
                             <li><Link to="/report/list" className="hover:text-gray-300">관리자</Link></li>
                         )}
+                        {user && user.userLv >= 3 && (
+                            <li><Link to="/adminproducts" className="hover:text-gray-300">상품등록</Link></li>
+                        )}
+                        {user && user.userLv >= 3 && (
+                            <li><Link to="/developer" className="hover:text-gray-300">개발자</Link></li>
+                        )}
                     </ul>
+
                 </nav>
                 <div className="flex items-center space-x-4">
                     <FriendChatDropdown />
                     <ChatNotification />
                     <FriendRequestNotification />
+                    {user ? (
+                        <LogoutButton />
+                    ) : (
+                        <Link to="/login">
+                            <button className="hover:text-gray-300">로그인</button>
+                        </Link>
+                    )}
                 </div>
             </header>
 
