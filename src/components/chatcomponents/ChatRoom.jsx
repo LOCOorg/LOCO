@@ -8,6 +8,7 @@ import CommonModal from "../../common/CommonModal.jsx";
 import ReportForm from "../../components/reportcomponents/ReportForm.jsx";
 // 프로필 모달을 위한 ProfileButton 컴포넌트를 import합니다.
 import ProfileButton from "../../components/MyPageComponent/ProfileButton.jsx";
+import LeagueRecordSection from "./LeagueRecordSection.jsx";
 
 const ChatRoom = ({ roomId, userId }) => {
     const [messages, setMessages] = useState([]);
@@ -433,53 +434,11 @@ const ChatRoom = ({ roomId, userId }) => {
                 </div>
             )}
             {/* ─── 전적 섹션 ─── */}
-            <aside className="w-full md:w-1/3 bg-gray-50 shadow-inner rounded-lg overflow-y-auto p-6">
-                <h3 className="text-xl font-bold mb-4">상대방 전적</h3>
-
-                {recordsLoading && <p>로딩 중…</p>}
-                {recordsError && <p className="text-red-500">{recordsError}</p>}
-
-                {partnerRecords.map(({ participantId, userInfo, leagueRecord, error }) => (
-                    <div key={participantId} className="mb-6 border-b pb-4">
-                        {error ? (
-                            <p className="text-red-500">{userInfo?.nickname || "사용자"}: {error}</p>
-                        ) : (
-                            <>
-                                <div className="mb-2">
-                                    <span className="font-medium">{userInfo.nickname}</span>
-                                    <span className="text-sm text-gray-600 ml-2">
-                    ({userInfo.riotGameName}#{userInfo.riotTagLine})
-                  </span>
-                                </div>
-                                <div className="text-center mb-2">
-                                    <p className="text-lg">
-                                        <strong>티어:</strong> {leagueRecord.tier} {leagueRecord.rank} ({leagueRecord.leaguePoints} LP)
-                                    </p>
-                                    <p className="text-2xl text-blue-600">
-                                        <strong>승률:</strong> {leagueRecord.overallWinRate}%
-                                    </p>
-                                </div>
-                                {leagueRecord.recentRanked.length > 0 ? (
-                                    <ul className="space-y-2 text-sm">
-                                        {leagueRecord.recentRanked.map(game => (
-                                            <li key={game.matchId} className="flex justify-between bg-white p-2 rounded shadow-sm">
-                                                <span><strong>{game.champion}</strong> {game.win ? "승" : "패"}</span>
-                                                <div className="flex space-x-2">
-                                                    <span>KDA {game.kda}</span>
-                                                    <span>CS {game.cs}</span>
-                                                    <span>{Math.floor(game.duration/60)}:{String(game.duration % 60).padStart(2, "0")}</span>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <p className="text-center text-gray-500">아직 랭크전 전적이 없습니다.</p>
-                                )}
-                            </>
-                        )}
-                    </div>
-                ))}
-            </aside>
+                      <LeagueRecordSection
+                        partnerRecords={partnerRecords}
+                        loading={recordsLoading}
+                        error={recordsError}
+                      />
         </div>
     );
 };
