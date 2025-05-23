@@ -6,7 +6,6 @@ import FriendListPanel from './MyPageComponent/FriendListPanel.jsx';
 import MyPageButton    from './MyPageComponent/MyPageButton.jsx';
 import PlanButton      from './product/PlanButton.jsx';
 import PRButton        from './PR/PRButton.jsx';
-import DeveloperButton from './DeveloperComponent/DeveloperButton.jsx';
 import PaymentStatusModal     from './pay/PaymentStatusModal.jsx';
 import ReportNotificationModal from './reportcomponents/ReportNotificationModal.jsx';
 
@@ -48,15 +47,9 @@ function MainComponent() {
                     >
                         {authUser ? '로그아웃' : '로그인'}
                     </button>
-                    <button
-                        onClick={() => navigate('/adminproducts')}
-                        className="px-6 py-3 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 focus:ring-2 focus:ring-green-500"
-                    >
-                        상품등록
-                    </button>
+
                     <PlanButton />
                     <PRButton />
-                    <DeveloperButton />
                 </div>
 
                 {/* 오른쪽: 분리된 사이드바 (lg 이상에서만 표시) */}
