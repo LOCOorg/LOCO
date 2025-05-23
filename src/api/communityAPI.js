@@ -82,6 +82,18 @@ export const recommendCommunity = async (id, userId) => {
     }
 };
 
+// 추천 취소
+export const cancelRecommendCommunity = async (id, userId) => {
+    try {
+        const response = await axios.delete(`${host}/${id}/recommend`,{ data: { userId }
+        });
+        return response.data;
+    } catch (error) {
+        console.error("cancelRecommendCommunity error:", error);
+        throw error;
+    }
+};
+
 // 댓글 추가 API 호출 함수
 export const addComment = async (communityId, commentData) => {
     try {
