@@ -21,6 +21,7 @@ const ChatRoom = ({roomId, userId}) => {
     const [isLoading, setIsLoading] = useState(true);
     const [ratings, setRatings] = useState({});
     const [participants, setParticipants] = useState([]);
+    const [capacity, setCapacity] = useState(0);
 
     // 신고 모달 관련 상태
     const [showReportModal, setShowReportModal] = useState(false);
@@ -214,6 +215,7 @@ const ChatRoom = ({roomId, userId}) => {
             if (roomInfo && roomInfo.chatUsers) {
                 // ① participants 상태에 저장
                 setParticipants(roomInfo.chatUsers);
+                setCapacity(roomInfo.capacity);
                 // ② capacity 충족 여부에 따라 로딩 해제
                 if (roomInfo.chatUsers.length >= roomInfo.capacity) {
                     setIsLoading(false);
@@ -312,7 +314,7 @@ const ChatRoom = ({roomId, userId}) => {
                 <header className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6">
                     {/* 채팅방 제목 & 인원 수 */}
                     <h2 className="font-bold tracking-wide text-lg">
-                        채팅방 ({participants.length}명)
+                        채팅방 ({participants.length}/{capacity}명)
                     </h2>
 
                     {/* 참가자 리스트 */}
