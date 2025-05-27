@@ -3,9 +3,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/authStore.js';
 import FriendListPanel from './MyPageComponent/FriendListPanel.jsx';
-import MyPageButton    from './MyPageComponent/MyPageButton.jsx';
-import PlanButton      from './product/PlanButton.jsx';
-import PRButton        from './PR/PRButton.jsx';
 import PaymentStatusModal     from './pay/PaymentStatusModal.jsx';
 import ReportNotificationModal from './reportcomponents/ReportNotificationModal.jsx';
 
