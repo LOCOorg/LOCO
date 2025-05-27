@@ -18,6 +18,7 @@ const BasicLayout = ({ children }) => {
                     <ul className="flex space-x-4">
                         <li><Link to="/chat" className="hover:text-gray-300">랜덤채팅</Link></li>
                         <li><Link to="/products" className="hover:text-gray-300">플랜보기</Link></li>
+                        <li><Link to="/PR" className="hover:text-gray-300">P R</Link></li>
                         <li><Link to="/community" className="hover:text-gray-300">커뮤니티</Link></li>
                         <li><Link to="/qna" className="hover:text-gray-300">QNA</Link></li>
                         {user && user.userLv >= 2 && (
@@ -36,6 +37,8 @@ const BasicLayout = ({ children }) => {
                     <FriendChatDropdown />
                     <ChatNotification />
                     <FriendRequestNotification />
+                    <Link to="/mypage" className="hover:text-gray-300">my</Link>
+
                     {user ? (
                         <LogoutButton />
                     ) : (
