@@ -11,6 +11,7 @@ import ReportNotificationModal from './reportcomponents/ReportNotificationModal.
 
 import RightSidebar from '../layout/CommunityLayout/RightSidebar.jsx';
 import useSidebarData from '../hooks/useSidebarData.js';
+import RandomChatComponent from "./chatcomponents/RandomChatComponent.jsx";
 
 function MainComponent() {
     const navigate = useNavigate();
@@ -28,6 +29,10 @@ function MainComponent() {
             <div className="flex flex-col lg:flex-row items-start justify-start min-h-screen bg-gray-50 p-6 lg:space-x-6">
                 {/* 왼쪽: 친구 목록 */}
                 <FriendListPanel />
+
+                <div className="w-full lg:w-1/3">
+                    <RandomChatComponent />
+                </div>
 
                 {/* 중앙: 주요 액션 버튼 */}
                 <div className="flex flex-col items-center lg:items-start space-y-4 flex-1">
