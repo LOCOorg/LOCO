@@ -322,6 +322,9 @@ const ChatRoom = ({roomId, userId}) => {
                             const userId   = typeof user === "object" ? (user._id || user.id) : user;
                             const nickname = typeof user === "object" ? user.nickname : user;
 
+                            // ProfileButton 에 넘겨줄 프로필 객체
+                            //  - 이미 user._id 가 있다면 user 전체를 넘기고
+                            //  - 문자열 ID 만 있을 땐 {_id: userId} 형태로 감싸 줍니다
                             const profileProp = typeof user === "object"
                                 ? user
                                 : { _id: userId };
@@ -331,10 +334,12 @@ const ChatRoom = ({roomId, userId}) => {
                                     key={userId}
                                     className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1"
                                 >
-                                  <span className="transform scale-75 origin-left mr-1">
-                                    <ProfileButton profile={profileProp} />
-                                  </span>
-                                    <span>{nickname}</span>
+                                    <ProfileButton
+                                        profile={profileProp}
+                                        className="mr-1"  // 필요하다면 여기에 추가 스타일
+                                    />
+                                    <span className="mr-1">{nickname}</span>
+
                                 </div>
                             );
                         })}
