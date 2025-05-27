@@ -3,9 +3,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/authStore.js';
 import FriendListPanel from './MyPageComponent/FriendListPanel.jsx';
-import MyPageButton    from './MyPageComponent/MyPageButton.jsx';
-import PlanButton      from './product/PlanButton.jsx';
-import PRButton        from './PR/PRButton.jsx';
 import PaymentStatusModal     from './pay/PaymentStatusModal.jsx';
 import ReportNotificationModal from './reportcomponents/ReportNotificationModal.jsx';
 
@@ -36,25 +33,7 @@ function MainComponent() {
 
                 {/* 중앙: 주요 액션 버튼 */}
                 <div className="flex flex-col items-center lg:items-start space-y-4 flex-1">
-                    <MyPageButton />
-                    <button
-                        onClick={() => navigate('/chat')}
-                        className="px-6 py-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 focus:ring-2 focus:ring-blue-500"
-                    >
-                        랜덤 채팅
-                    </button>
-                    <button
-                        onClick={() => {
-                            if (authUser) logout();
-                            navigate('/loginPage');
-                        }}
-                        className="px-6 py-3 bg-purple-500 text-white rounded-lg shadow-md hover:bg-purple-600 focus:ring-2 focus:ring-purple-500"
-                    >
-                        {authUser ? '로그아웃' : '로그인'}
-                    </button>
 
-                    <PlanButton />
-                    <PRButton />
                 </div>
 
                 {/* 오른쪽: 분리된 사이드바 (lg 이상에서만 표시) */}
