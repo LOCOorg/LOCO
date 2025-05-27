@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fortawesome/react-fontawesome": "^0.1.14",
+    "@heroicons/react": "^2.2.0",
     "axios": "^1.7.9",
     "clsx": "^2.1.1",
     "js-cookie": "^3.0.5",

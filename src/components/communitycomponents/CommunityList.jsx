@@ -158,30 +158,50 @@ const CommunityList = () => {
 
     return (
         <CommunityLayout
-            leftSidebar={<LeftSidebar selectedCategory={selectedCategory} handleCategoryClick={handleCategoryClick} />}
-            rightSidebar={<RightSidebar sideTab={sideTab} setSideTab={setSideTab} topViewed={topViewed} topCommented={topCommented} />}
+            leftSidebar={
+                <LeftSidebar
+                    selectedCategory={selectedCategory}
+                    handleCategoryClick={handleCategoryClick}
+                />
+            }
+            rightSidebar={
+                <RightSidebar
+                    sideTab={sideTab}
+                    setSideTab={setSideTab}
+                    topViewed={topViewed}
+                    topCommented={topCommented}
+                />
+            }
         >
-            <div>
-                <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-2xl font-bold">커뮤니티 목록 ({selectedCategory})</h1>
-                    <div>
+            <div className="space-y-8">
+                {/* 헤더: 카테고리명 + 정렬 버튼 */}
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+                        커뮤니티 목록<span className="text-blue-600"> ({selectedCategory})</span>
+                    </h1>
+                    <div className="inline-flex space-x-2">
                         {['최신순', '인기순'].map((option) => (
                             <button
                                 key={option}
                                 onClick={() => handleSortChange(option)}
-                                className={`ml-2 px-3 py-2 rounded ${selectedSort === option ? 'bg-blue-500 text-white' : 'hover:bg-gray-100'}`}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                    selectedSort === option
+                                        ? 'bg-blue-500 text-white'
+                                        : 'text-gray-600 hover:bg-gray-100'
+                                }`}
                             >
                                 {option}
                             </button>
                         ))}
                     </div>
                 </div>
-                {/* ── 검색폼 ── */}
-                <div className="flex items-center mb-4 space-x-2">
+
+                {/* 검색폼 + 새 글 버튼 */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <select
                         value={searchType}
-                        onChange={e => setSearchType(e.target.value)}
-                        className="border rounded px-3 py-1 bg-white"
+                        onChange={(e) => setSearchType(e.target.value)}
+                        className="w-full sm:w-auto border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
                     >
                         <option value="title">제목</option>
                         <option value="content">내용</option>
@@ -193,93 +213,134 @@ const CommunityList = () => {
                         <input
                             type="text"
                             value={keyword}
-                            onChange={e => setKeyword(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                            placeholder="검색어 입력"
-                            className="w-full border rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            onChange={(e) => setKeyword(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            placeholder="검색어를 입력하세요"
+                            className="w-full border border-gray-300 rounded-full pl-4 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
                         />
                         <button
                             onClick={handleSearch}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
                         >
-                            {/* Heroicon 검색 아이콘 */}
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                 className="h-5 w-5"
-                                 fill="none"
-                                 viewBox="0 0 24 24"
-                                 stroke="currentColor"
+                            {/* Heroicon: Search */}
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
                             >
-                                <path strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M8 16l4-4m0 0l4-4m-4 4H3m13 4h5m-5-8h5" />
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1116.65 16.65z"
+                                />
                             </svg>
                         </button>
                     </div>
-                </div>
-                <div className="mt-6">
+
                     <button
                         onClick={() => navigate('/community/new')}
-                        className="inline-block bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200"
+                        className="w-full sm:w-auto bg-blue-500 text-white px-5 py-2 rounded-md hover:bg-blue-600 transition-colors"
                     >
                         새 게시글 작성
                     </button>
                 </div>
-                <br/>
+
+                {/* 게시글 리스트 */}
                 {filteredCommunities.length === 0 ? (
-                    <p className="text-gray-600">게시글이 없습니다.</p>
+                    <div className="p-6 text-center text-gray-500 bg-gray-50 rounded-md">
+                        게시글이 없습니다.
+                    </div>
                 ) : (
-                    <ul className="space-y-4">
+                    <ul className="grid grid-cols-1 gap-4">
                         {filteredCommunities.map((community) => (
                             <li
                                 key={community._id}
-                                className="border border-gray-200 p-4 rounded shadow-sm hover:shadow-md transition duration-200 flex"
+                                className="flex bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
                             >
+                                {/* 썸네일 */}
                                 {community.communityImage && (
-                                    <div className="w-20 h-20 mr-4 flex-shrink-0">
+                                    <div className="w-24 h-24 flex-shrink-0 mr-4">
                                         <img
-                                            src={community.communityImage.startsWith('http') || community.communityImage.startsWith('data:')
-                                                ? community.communityImage
-                                                : `${import.meta.env.VITE_API_HOST}${community.communityImage}`}
+                                            src={
+                                                community.communityImage.startsWith('http') ||
+                                                community.communityImage.startsWith('data:')
+                                                    ? community.communityImage
+                                                    : `${import.meta.env.VITE_API_HOST}${community.communityImage}`
+                                            }
                                             alt="게시글 이미지"
-                                            className="w-full h-full object-cover rounded"
+                                            className="object-cover w-full h-full rounded-md"
                                         />
                                     </div>
                                 )}
-                                <div className="flex-1">
+
+                                {/* 콘텐츠 */}
+                                <div className="flex-1 flex flex-col justify-between">
                                     <button
                                         onClick={() => navigate(`/community/${community._id}`)}
-                                        className="text-blue-500 font-medium hover:underline"
+                                        className="text-lg font-semibold text-blue-600 hover:underline text-left"
                                     >
-                                        {community.communityTitle} ({community.communityCategory})
+                                        {community.communityTitle}{' '}
+                                        <span className="text-sm text-gray-500">
+                    ({community.communityCategory})
+                  </span>
                                     </button>
-                                    <p className="mt-2 text-sm text-gray-600">
-                                        작성일:{' '}
-                                        <span className="font-semibold">{formatRelativeTime(community.communityRegDate)}</span>{' '}
-                                        | 조회수:{' '}
-                                        <span className="font-semibold">{community.communityViews}</span>{' '}
-                                        | 추천:{' '}
-                                        <span className="font-semibold">{community.recommended}</span>{' '}
-                                        | 댓글:{' '}
-                                        <span className="font-semibold">
-                                            {community.commentCount || (community.comments ? community.comments.length : 0)}
-                                        </span>
-                                    </p>
-                                    <p className="text-sm text-gray-600">
+
+                                    <div className="mt-2 text-xs text-gray-500 flex flex-wrap gap-2">
+                  <span>
+                    작성일{' '}
+                      <span className="font-medium text-gray-700">
+                      {formatRelativeTime(community.communityRegDate)}
+                    </span>
+                  </span>
+                                        <span>
+                    조회수{' '}
+                                            <span className="font-medium text-gray-700">
+                      {community.communityViews}
+                    </span>
+                  </span>
+                                        <span>
+                    추천{' '}
+                                            <span className="font-medium text-gray-700">
+                      {community.recommended}
+                    </span>
+                  </span>
+                                        <span>
+                    댓글{' '}
+                                            <span className="font-medium text-gray-700">
+                      {community.commentCount ||
+                          (community.comments ? community.comments.length : 0)}
+                    </span>
+                  </span>
+                                    </div>
+
+                                    <div className="mt-1 text-xs text-gray-500">
                                         작성자:{' '}
-                                        <span className="font-semibold">{userMap[community.userId] || community.userId}</span>
-                                    </p>
+                                        <span className="font-medium text-gray-700">
+                    {userMap[community.userId] || community.userId}
+                  </span>
+                                    </div>
                                 </div>
                             </li>
                         ))}
                     </ul>
                 )}
+
+                {/* 페이지네이션 */}
                 {pageResponse && (
-                    <PageComponent pageResponse={pageResponse} changePage={changePage}/>
+                    <div className="mt-6">
+                        <PageComponent
+                            pageResponse={pageResponse}
+                            changePage={changePage}
+                        />
+                    </div>
                 )}
             </div>
         </CommunityLayout>
     );
+
 };
 
 export default CommunityList;
