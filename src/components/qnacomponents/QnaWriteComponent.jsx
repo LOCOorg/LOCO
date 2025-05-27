@@ -21,8 +21,6 @@ function QnaWriteComponent() {
     const [userData, setUserData] = useState(null);
     const navigate = useNavigate();
     const { user } = useAuthStore();
-
-    // 제출 확인 모달 상태
     const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
     useEffect(() => {
@@ -40,7 +38,6 @@ function QnaWriteComponent() {
         });
     };
 
-    // 실제 제출 함수: CommonModal의 확인 버튼 클릭 시 호출됨
     const confirmSubmit = async () => {
         setLoading(true);
         setError('');
@@ -50,9 +47,8 @@ function QnaWriteComponent() {
             setIsSubmitModalOpen(false);
             return;
         }
-        const newQnaData = { ...qnaData, userId: user._id };
         try {
-            await createQna(newQnaData);
+            await createQna({ ...qnaData, userId: user._id });
             setIsSubmitModalOpen(false);
             navigate('/qna');
         } catch (err) {
@@ -61,65 +57,90 @@ function QnaWriteComponent() {
         setLoading(false);
     };
 
-    // 폼 제출 이벤트 핸들러: 바로 제출하지 않고 모달을 오픈
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsSubmitModalOpen(true);
     };
 
     return (
-        <div className="p-6 max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold mb-4">새로운 QnA 문의 작성</h2>
-            {error && <p className="text-red-500 mb-4">{error}</p>}
-            <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                    <label htmlFor="qnaTitle" className="block text-gray-700 font-medium mb-2">
-                        제목
-                    </label>
-                    <input
-                        type="text"
-                        id="qnaTitle"
-                        name="qnaTitle"
-                        value={qnaData.qnaTitle}
-                        onChange={handleChange}
-                        className="w-full p-2 border border-gray-300 rounded"
-                        placeholder="QnA 제목을 입력하세요"
-                        required
-                    />
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="qnaContents" className="block text-gray-700 font-medium mb-2">
-                        내용
-                    </label>
-                    <textarea
-                        id="qnaContents"
-                        name="qnaContents"
-                        value={qnaData.qnaContents}
-                        onChange={handleChange}
-                        className="w-full p-2 border border-gray-300 rounded"
-                        placeholder="QnA 내용을 입력하세요"
-                        rows="5"
-                        required
-                    ></textarea>
-                </div>
-                <div className="flex space-x-4">
-                    <button
-                        type="submit"
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-                        disabled={loading}
-                    >
-                        {loading ? '작성 중...' : '작성'}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => navigate('/qna')}
-                        className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
-                    >
-                        취소
-                    </button>
-                </div>
-            </form>
+        <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl mx-auto bg-white shadow-lg rounded-xl p-8">
+                <h2 className="text-3xl font-extrabold text-gray-900 mb-6 text-center">
+                    새로운 Q&A 문의 작성
+                </h2>
 
+                {error && (
+                    <p className="text-red-600 bg-red-50 border border-red-200 rounded-md p-3 mb-6">
+                        {error}
+                    </p>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* 제목 */}
+                    <div>
+                        <label
+                            htmlFor="qnaTitle"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                            제목
+                        </label>
+                        <input
+                            type="text"
+                            id="qnaTitle"
+                            name="qnaTitle"
+                            value={qnaData.qnaTitle}
+                            onChange={handleChange}
+                            placeholder="문의 제목을 입력하세요"
+                            required
+                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 transition"
+                        />
+                    </div>
+
+                    {/* 내용 */}
+                    <div>
+                        <label
+                            htmlFor="qnaContents"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                            내용
+                        </label>
+                        <textarea
+                            id="qnaContents"
+                            name="qnaContents"
+                            value={qnaData.qnaContents}
+                            onChange={handleChange}
+                            placeholder="문의 내용을 입력하세요"
+                            rows={6}
+                            required
+                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 transition"
+                        />
+                    </div>
+
+                    {/* 버튼 그룹 */}
+                    <div className="flex justify-end space-x-3">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/qna')}
+                            className="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
+                        >
+                            취소
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className={`inline-flex items-center px-6 py-2 rounded-md text-white transition ${
+                                loading
+                                    ? 'bg-indigo-300 cursor-not-allowed'
+                                    : 'bg-indigo-600 hover:bg-indigo-700'
+                            }`}
+                        >
+                            {loading ? '작성 중...' : '작성하기'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {/* 제출 확인 모달 */}
             {isSubmitModalOpen && (
                 <CommonModal
                     isOpen={isSubmitModalOpen}
@@ -127,7 +148,7 @@ function QnaWriteComponent() {
                     title="작성 확인"
                     onConfirm={confirmSubmit}
                 >
-                    이 문의를 작성하시겠습니까?
+                    <p className="text-gray-800">이 문의를 작성하시겠습니까?</p>
                 </CommonModal>
             )}
         </div>
