@@ -10,6 +10,9 @@ export default function LogoutButton() {
 
     const handleLogout = async () => {
         try {
+
+            logoutAPI().catch(console.error);
+
             // 1) 카카오 계정 로그아웃 (kauth.kakao.com 세션 쿠키 삭제)
             const kakaoLogoutUrl = new URL("https://kauth.kakao.com/oauth/logout");
             kakaoLogoutUrl.searchParams.set(
@@ -21,6 +24,8 @@ export default function LogoutButton() {
                 "logout_redirect_uri",
                 `${import.meta.env.VITE_API_HOST}/api/auth/logout-redirect`
             );
+
+
 
             // 브라우저 네비게이션으로 카카오 로그아웃 호출
             window.location.href = kakaoLogoutUrl.toString();

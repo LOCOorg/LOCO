@@ -39,7 +39,7 @@ const BasicLayout = ({ children }) => {
                     {user ? (
                         <LogoutButton />
                     ) : (
-                        <Link to="/login">
+                        <Link to="/loginPage">
                             <button className="hover:text-gray-300">로그인</button>
                         </Link>
                     )}
