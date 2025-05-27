@@ -67,7 +67,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                 const normalizedMessage = {
                     ...message,
                     sender: message.sender.id
-                        ? { _id: message.sender.id, name: message.sender.name }
+                        ? { _id: message.sender.id, name: message.sender.name, nickname: message.sender.nickname }
                         : message.sender,
                 };
 
@@ -184,7 +184,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                                 return (
                                     <li key={message._id} className={`flex ${isMyMessage ? "justify-end" : "justify-start"} mb-2`}>
                                         <div className={`${isMyMessage ? "bg-[#0084ff] text-white" : "bg-[#e4e6eb] text-black"} py-2 px-3 rounded-[16px] max-w-[70%]`}>
-                                            <strong className="text-xs">{message.sender.name}</strong>
+                                            <strong className="text-xs">{message.sender.nickname}</strong>
                                             <div className="text-sm mt-1">
                                                 {message.text}
                                             </div>
