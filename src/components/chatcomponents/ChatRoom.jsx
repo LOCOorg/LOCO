@@ -34,6 +34,9 @@ const ChatRoom = ({roomId, userId}) => {
     const [recordsError, setRecordsError] = useState(null);
     const participantsRef = useRef(false);
 
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteTargetId, setDeleteTargetId] = useState(null);
+
     // 메시지 전송 시간을 포맷하는 헬퍼 함수 (시간:분 형식)
     const formatTime = (textTime) => {
         if (!textTime) return "";
@@ -173,20 +176,37 @@ const ChatRoom = ({roomId, userId}) => {
         });
     };
 
-    const handleDeleteMessage = async (messageId) => {
-        try {
-            await deleteMessage(messageId);
-            setMessages((prevMessages) =>
-                prevMessages.map((msg) => (msg._id === messageId ? {...msg, isDeleted: true} : msg))
-            );
+// 삭제 버튼 클릭 시 모달 열기
+    const onDeleteButtonClick = (messageId) => {
+        setDeleteTargetId(messageId);
+        setShowDeleteModal(true);
+    };
 
+// 모달에서 “확인” 클릭 시 실제 삭제
+    const confirmDelete = async () => {
+        try {
+            await deleteMessage(deleteTargetId);
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg._id === deleteTargetId ? { ...msg, isDeleted: true } : msg
+                )
+            );
             if (socket) {
-                socket.emit("deleteMessage", {messageId, roomId});
+                socket.emit("deleteMessage", { messageId: deleteTargetId, roomId });
             }
         } catch (error) {
             console.error("메시지 삭제 중 오류 발생:", error);
         }
+        setShowDeleteModal(false);
+        setDeleteTargetId(null);
     };
+
+// 모달에서 “취소” 클릭 시 닫기
+    const cancelDelete = () => {
+        setShowDeleteModal(false);
+        setDeleteTargetId(null);
+    };
+
 
     const getChatRoomDetails = async () => {
         try {
@@ -372,7 +392,7 @@ const ChatRoom = ({roomId, userId}) => {
                                         )}
                                         {isMe && !msg.isDeleted && (
                                             <button
-                                                onClick={() => handleDeleteMessage(msg._id)}
+                                                onClick={() => onDeleteButtonClick(msg._id)}
                                                 className="ml-2 text-red-600 hover:text-red-800 focus:outline-none"
                                                 title="메시지 삭제"
                                             >
@@ -383,6 +403,16 @@ const ChatRoom = ({roomId, userId}) => {
                                 );
                             })}
                         </div>
+
+                        <CommonModal
+                            isOpen={showDeleteModal}
+                            onClose={cancelDelete}
+                            title="메시지 삭제 확인"
+                            onConfirm={confirmDelete}
+                        >
+                            <p>이 메시지를 정말 삭제하시겠습니까?</p>
+                        </CommonModal>
+
 
                         {/* 입력 폼 */}
                         <form
@@ -413,7 +443,7 @@ const ChatRoom = ({roomId, userId}) => {
                 className="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-full shadow-2xl hover:bg-red-600 focus:outline-none transition"
                 title="채팅 종료"
             >
-                🚪 나가기
+                🚪 채팅 종료
             </button>
 
             <CommonModal
