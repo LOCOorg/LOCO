@@ -309,9 +309,36 @@ const ChatRoom = ({roomId, userId}) => {
             className="max-w-6xl mx-auto h-screen flex flex-col md:flex-row p-6 space-y-6 md:space-y-0 md:space-x-8 bg-gradient-to-br from-indigo-50 to-purple-50">
             {/* ─── 채팅 섹션 ─── */}
             <section className="flex-1 flex flex-col bg-white shadow-2xl rounded-xl overflow-hidden">
-                <header
-                    className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 font-bold tracking-wide text-lg">
-                    채팅방 {roomId}
+                <header className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6">
+                    {/* 채팅방 제목 & 인원 수 */}
+                    <h2 className="font-bold tracking-wide text-lg">
+                        채팅방 ({participants.length}명)
+                    </h2>
+
+                    {/* 참가자 리스트 */}
+                    <div className="mt-2 flex flex-wrap gap-2 text-sm">
+                        {participants.map((user) => {
+                            // user 객체 형태: { _id?, id?, nickname? } 또는 단순 ID 문자열
+                            const userId   = typeof user === "object" ? (user._id || user.id) : user;
+                            const nickname = typeof user === "object" ? user.nickname : user;
+
+                            const profileProp = typeof user === "object"
+                                ? user
+                                : { _id: userId };
+
+                            return (
+                                <div
+                                    key={userId}
+                                    className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1"
+                                >
+                                  <span className="transform scale-75 origin-left mr-1">
+                                    <ProfileButton profile={profileProp} />
+                                  </span>
+                                    <span>{nickname}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </header>
 
                 {isLoading ? (
