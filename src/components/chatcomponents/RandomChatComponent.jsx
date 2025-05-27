@@ -22,6 +22,12 @@ const RandomChatComponent = () => {
     const authUser = useAuthStore((state) => state.user);
     const userId = authUser?._id; // authStore에서 받아온 사용자 ID
 
+    const genderLabels = {
+        any: "상관없음",
+        same: "동성",
+        opposite: "이성"
+    };
+
     // 생년월일을 이용한 나이 계산 함수
     const calculateAge = (birthdate) => {
         const today = new Date();
@@ -116,6 +122,7 @@ const RandomChatComponent = () => {
                 roomType: "random",
                 ...(matchedGender !== "any" && { matchedGender }),
                 ageGroup,
+                capacity,
                 userId
             };
 
@@ -154,7 +161,7 @@ const RandomChatComponent = () => {
                 const room = availableRooms[Math.floor(Math.random() * availableRooms.length)];
                 // 즉시 참여
                 setModalTitle("알림");
-                setModalMessage(`랜덤 채팅방(${capacity}명, ${matchedGender})에 참가합니다.`);
+                setModalMessage(`랜덤 채팅방(${capacity}명, ${genderLabels[matchedGender]})에 참가합니다.`);
                 setModalButtons([{
                     text: "확인",
                     action: async () => {
@@ -169,7 +176,7 @@ const RandomChatComponent = () => {
             // 새로운 방 생성 전 확인 모달 띄우기
             setModalTitle("랜덤 채팅 시작");
             setModalMessage(
-                `랜덤 채팅방(${capacity}명, ${matchedGender})을 참가하시겠습니까?`
+                `랜덤 채팅방(${capacity}명, ${genderLabels[matchedGender]})을 참가하시겠습니까?`
             );
             setModalButtons([
                 {
