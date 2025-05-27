@@ -3,6 +3,7 @@ import AdminProductPage from "../pages/adminProductPage/AdminProductPage.jsx";
 //접근제한
 import { Navigate } from 'react-router-dom';
 import useAuthStore from '../stores/authStore.js';
+import LoadingComponent from "../common/LoadingComponent.jsx";
 
 /**
  * AdminProductGuard
@@ -11,7 +12,10 @@ import useAuthStore from '../stores/authStore.js';
  */
 function AdminProductGuard() {
     const user = useAuthStore(state => state.user);
-
+    const isLoading = useAuthStore(state => state.isLoading);
+    if (isLoading) {
+        return <LoadingComponent message="로딩 중..." />;
+    }
     // 아직 사용자 정보 로딩 중 또는 비로그인 시
     if (!user) {
         return <Navigate to="/loginPage" replace />;
