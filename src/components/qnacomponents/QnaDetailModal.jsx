@@ -59,7 +59,7 @@ function QnaDetailModal({ qna, onClose }) {
                 <p className="text-sm text-gray-500 mb-4">
                     작성자: {qna.userId?.nickname || '알 수 없음'}
                     <span className="ml-4">
-                                            답변자: {qna.answerUserId?.nickname || '알 수 없음'}
+                                            답변자: {qna.answerUserId?.nickname || ' '}
                                         </span>
                 </p>
                 <p className="mb-4">{qna.qnaContents}</p>

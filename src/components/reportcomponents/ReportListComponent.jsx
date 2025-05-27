@@ -185,25 +185,25 @@ const ReportListComponent = () => {
                     onClick={() => handleStatusFilterChange("pending")}
                     className={`px-3 py-1 rounded ${filterStatus === "pending" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
-                    대기중
+                    대기
                 </button>
                 <button
                     onClick={() => handleStatusFilterChange("reviewed")}
                     className={`px-3 py-1 rounded ${filterStatus === "reviewed" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
-                    검토됨
+                    검토
                 </button>
                 <button
                     onClick={() => handleStatusFilterChange("resolved")}
                     className={`px-3 py-1 rounded ${filterStatus === "resolved" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
-                    해결됨
+                    해결
                 </button>
                 <button
                     onClick={() => handleStatusFilterChange("dismissed")}
                     className={`px-3 py-1 rounded ${filterStatus === "dismissed" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
-                    기각됨
+                    경고처리
                 </button>
             </div>
 

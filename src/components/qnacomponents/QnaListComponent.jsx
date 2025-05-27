@@ -24,7 +24,7 @@ function QnaListComponent() {
     const [answeredPagination, setAnsweredPagination] = useState(null);
     const [answeredPage, setAnsweredPage] = useState(1);
 
-    const [pageSize] = useState(5);
+    const [pageSize] = useState(6);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [selectedQna, setSelectedQna] = useState(null);
@@ -135,118 +135,127 @@ function QnaListComponent() {
            };
 
     return (
-        <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">QnA 목록</h2>
-                {user && user.userLv === 1 && (
+        <div className="bg-gray-50 min-h-screen p-6">
+            {/* 헤더 */}
+            <div className="flex justify-between items-center mb-8">
+                <h2 className="text-3xl font-extrabold text-gray-900">QnA 목록</h2>
+                {user?.userLv === 1 && (
                     <button
                         onClick={handleNewQna}
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+                        className="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-full shadow-lg hover:from-blue-600 hover:to-indigo-700 transition"
                     >
                         새 QnA 문의
                     </button>
                 )}
             </div>
-            {/* 탭 전환 버튼 */}
-            <div className="flex justify-center space-x-4 mb-6">
-                <button
-                    onClick={() => setActiveTab("답변대기")}
-                    className={`px-4 py-2 rounded transition ${activeTab === "답변대기" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
-                >
-                    답변대기
-                </button>
-                <button
-                    onClick={() => setActiveTab("답변완료")}
-                    className={`px-4 py-2 rounded transition ${activeTab === "답변완료" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
-                >
-                    답변완료
-                </button>
+
+            {/* 탭 */}
+            <div role="tablist" className="flex justify-center space-x-6 mb-8">
+                {["답변대기", "답변완료"].map((tab) => (
+                    <button
+                        key={tab}
+                        role="tab"
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-6 py-2 font-medium rounded-full transition 
+            ${
+                            activeTab === tab
+                                ? "bg-blue-600 text-white shadow"
+                                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-100"
+                        }`}
+                    >
+                        {tab}
+                    </button>
+                ))}
             </div>
 
-            {/* 검색 입력: 옵션   단일 입력창 */}
-            <div className="mb-6 flex items-center space-x-2">
-                <select
-                    value={searchType}
-                    onChange={e => setSearchType(e.target.value)}
-                    className="border rounded px-3 py-2"
-                >
-                    <option value="title">제목</option>
-                    <option value="contents">내용</option>
-                    <option value="both">제목 내용</option>
-                    <option value="author">작성자</option>
-                    <option value="answerer">답변자</option>
-                </select>
-                <input
-                    type="text"
-                    placeholder={
-                        searchType === 'title'     ? '제목 검색...'
-                            : searchType === 'contents'  ? '내용 검색...'
-                                : searchType === 'author'    ? '작성자 검색...'
-                                    : searchType === 'answerer'  ? '답변자 검색...'
-                                        : '제목 내용 검색...'
-                    }
-                    value={inputKeyword}
-                    onChange={e => setInputKeyword(e.target.value)}
-                    onKeyDown={handleSearchKeyDown}
-                    className="px-4 py-2 border rounded flex-grow"
-                />
+            {/* 검색 & 필터 */}
+            <div className="flex flex-col md:flex-row items-center gap-4 mb-8 justify-center">
+                <div className="flex items-center bg-white border border-gray-200 rounded-lg shadow px-4 py-2 w-full md:w-1/2">
+                    <select
+                        value={searchType}
+                        onChange={e => setSearchType(e.target.value)}
+                        className="bg-transparent mr-2 text-gray-600 outline-none"
+                    >
+                        <option value="title">제목</option>
+                        <option value="contents">내용</option>
+                        <option value="both">제목+내용</option>
+                        <option value="author">작성자</option>
+                        <option value="answerer">답변자</option>
+                    </select>
+                    <input
+                        type="text"
+                        placeholder={
+                            searchType === "title" ? "제목 검색"
+                                : searchType === "contents" ? "내용 검색"
+                                    : searchType === "author" ? "작성자 검색"
+                                        : searchType === "answerer" ? "답변자 검색"
+                                            : "제목+내용 검색"
+                        }
+                        value={inputKeyword}
+                        onChange={e => setInputKeyword(e.target.value)}
+                        onKeyDown={handleSearchKeyDown}
+                        className="flex-grow px-3 py-2 placeholder-gray-400 focus:outline-none"
+                    />
+                    {inputKeyword && (
+                        <button onClick={() => setInputKeyword("")} className="text-gray-400 hover:text-gray-600">
+                            ✕
+                        </button>
+                    )}
+                </div>
                 <button
                     onClick={handleSearch}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                    className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white font-medium rounded-lg shadow hover:bg-blue-700 transition"
                 >
                     검색
                 </button>
             </div>
 
-
-            {loading && <p>로딩 중...</p>}
-            {error && <p className="text-red-500">에러: {error}</p>}
+            {/* 콘텐츠 */}
+            {loading && <p className="text-center text-gray-500">로딩 중...</p>}
+            {error && <p className="text-center text-red-600">에러: {error}</p>}
 
             {activeTab === "답변대기" && (
                 <>
                     {waitingQnas.length > 0 ? (
-                        <ul className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {waitingQnas.map((qna) => (
-                                <li
+                                <div
                                     key={qna._id}
-                                    className="p-4 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 transition"
                                     onClick={() => handleQnaClick(qna)}
+                                    className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-xl transform hover:scale-105 transition p-6 cursor-pointer"
                                 >
-                                    <h3 className="text-xl font-semibold">{qna.qnaTitle}</h3>
-                                    <p className="text-sm text-gray-500">
-                                        작성자: {qna.userId?.nickname || '알 수 없음'}
+                                    <h3 className="text-xl font-semibold text-gray-800 mb-2">{qna.qnaTitle}</h3>
+                                    <p className="text-sm text-gray-500 mb-4">작성자: {qna.userId?.nickname || "알 수 없음"}</p>
+                                    <p className="text-gray-600 leading-relaxed mb-6">
+                                        {qna.qnaContents.substring(0, 100)}…
                                     </p>
-                                    <p className="text-gray-600">{qna.qnaContents.substring(0, 100)}...</p>
-                                    <div className="mt-2 flex items-center justify-between">
-                                        <p>
-                                            <span className="font-medium">상태: </span>
-                                            {qna.qnaStatus}
-                                        </p>
-                                        {user && (user.userLv >= 2 || user._id === (qna.userId?._id || qna.userId)) && (
+                                    <div className="flex justify-between items-center text-sm">
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                    {qna.qnaStatus}
+                  </span>
+                                        {(user?.userLv >= 2 || user?._id === qna.userId?._id) && (
                                             <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    requestDelete(qna._id);
-                                                }}
-                                                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+                                                onClick={e => { e.stopPropagation(); requestDelete(qna._id); }}
+                                                className="px-3 py-1 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition"
                                             >
                                                 삭제
                                             </button>
                                         )}
                                     </div>
-                                </li>
+                                </div>
                             ))}
-                        </ul>
+                        </div>
                     ) : (
-                        <p className="text-gray-500">검색 조건에 맞는 문의가 없습니다.</p>
+                        <p className="text-center text-gray-500">검색 조건에 맞는 문의가 없습니다.</p>
                     )}
 
+                    {/* 페이지네이션 */}
                     {waitingPagination && (
-                        <div className="mt-6 flex items-center justify-center space-x-2">
+                        <div className="mt-8 flex justify-center items-center space-x-2">
                             {waitingPagination.prev && (
                                 <button
                                     onClick={() => setWaitingPage(waitingPagination.prevPage)}
-                                    className="px-3 py-1 border rounded hover:bg-gray-200"
+                                    className="px-3 py-1 border border-gray-300 rounded-full hover:bg-gray-100"
                                 >
                                     이전
                                 </button>
@@ -255,7 +264,12 @@ function QnaListComponent() {
                                 <button
                                     key={page}
                                     onClick={() => setWaitingPage(page)}
-                                    className={`px-3 py-1 border rounded hover:bg-gray-200 ${page === waitingPage ? 'bg-blue-500 text-white' : ''}`}
+                                    className={`px-3 py-1 border rounded-full transition 
+                  ${
+                                        page === waitingPage
+                                            ? "bg-blue-600 text-white border-blue-600"
+                                            : "border-gray-300 hover:bg-gray-100"
+                                    }`}
                                 >
                                     {page}
                                 </button>
@@ -263,7 +277,7 @@ function QnaListComponent() {
                             {waitingPagination.next && (
                                 <button
                                     onClick={() => setWaitingPage(waitingPagination.nextPage)}
-                                    className="px-3 py-1 border rounded hover:bg-gray-200"
+                                    className="px-3 py-1 border border-gray-300 rounded-full hover:bg-gray-100"
                                 >
                                     다음
                                 </button>
@@ -276,51 +290,47 @@ function QnaListComponent() {
             {activeTab === "답변완료" && (
                 <>
                     {answeredQnas.length > 0 ? (
-                        <ul className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {answeredQnas.map((qna) => (
-                                <li
+                                <div
                                     key={qna._id}
-                                    className="p-4 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 transition"
                                     onClick={() => handleQnaClick(qna)}
+                                    className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-xl transform hover:scale-105 transition p-6 cursor-pointer"
                                 >
-                                    <h3 className="text-xl font-semibold">{qna.qnaTitle}</h3>
-                                    <p className="text-sm text-gray-500">
-                                        작성자: {qna.userId?.nickname || '알 수 없음'}
-                                        <span className="ml-4">
-                                            답변자: {qna.answerUserId?.nickname || '알 수 없음'}
-                                        </span>
+                                    <h3 className="text-xl font-semibold text-gray-800 mb-2">{qna.qnaTitle}</h3>
+                                    <p className="text-sm text-gray-500 mb-4">
+                                        작성자: {qna.userId?.nickname || "알 수 없음"}
+                                        <span className="ml-4">답변자: {qna.answerUserId?.nickname || "알 수 없음"}</span>
                                     </p>
-                                    <p className="text-gray-600">{qna.qnaContents.substring(0, 100)}...</p>
-                                    <div className="mt-2 flex items-center justify-between">
-                                        <p>
-                                            <span className="font-medium">상태: </span>
-                                            {qna.qnaStatus}
-                                        </p>
-                                        {user && (user.userLv >= 2 || user._id === (qna.userId?._id || qna.userId)) && (
+                                    <p className="text-gray-600 leading-relaxed mb-6">
+                                        {qna.qnaContents.substring(0, 100)}…
+                                    </p>
+                                    <div className="flex justify-between items-center text-sm">
+                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                    {qna.qnaStatus}
+                  </span>
+                                        {(user?.userLv >= 2 || user?._id === qna.userId?._id) && (
                                             <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    requestDelete(qna._id);
-                                                }}
-                                                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+                                                onClick={e => { e.stopPropagation(); requestDelete(qna._id); }}
+                                                className="px-3 py-1 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition"
                                             >
                                                 삭제
                                             </button>
                                         )}
                                     </div>
-                                </li>
+                                </div>
                             ))}
-                        </ul>
+                        </div>
                     ) : (
-                        <p className="text-gray-500">검색 조건에 맞는 문의가 없습니다.</p>
+                        <p className="text-center text-gray-500">검색 조건에 맞는 문의가 없습니다.</p>
                     )}
 
                     {answeredPagination && (
-                        <div className="mt-6 flex items-center justify-center space-x-2">
+                        <div className="mt-8 flex justify-center items-center space-x-2">
                             {answeredPagination.prev && (
                                 <button
                                     onClick={() => setAnsweredPage(answeredPagination.prevPage)}
-                                    className="px-3 py-1 border rounded hover:bg-gray-200"
+                                    className="px-3 py-1 border border-gray-300 rounded-full hover:bg-gray-100"
                                 >
                                     이전
                                 </button>
@@ -329,7 +339,12 @@ function QnaListComponent() {
                                 <button
                                     key={page}
                                     onClick={() => setAnsweredPage(page)}
-                                    className={`px-3 py-1 border rounded hover:bg-gray-200 ${page === answeredPage ? 'bg-blue-500 text-white' : ''}`}
+                                    className={`px-3 py-1 border rounded-full transition 
+                  ${
+                                        page === answeredPage
+                                            ? "bg-blue-600 text-white border-blue-600"
+                                            : "border-gray-300 hover:bg-gray-100"
+                                    }`}
                                 >
                                     {page}
                                 </button>
@@ -337,7 +352,7 @@ function QnaListComponent() {
                             {answeredPagination.next && (
                                 <button
                                     onClick={() => setAnsweredPage(answeredPagination.nextPage)}
-                                    className="px-3 py-1 border rounded hover:bg-gray-200"
+                                    className="px-3 py-1 border border-gray-300 rounded-full hover:bg-gray-100"
                                 >
                                     다음
                                 </button>

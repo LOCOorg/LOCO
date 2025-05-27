@@ -189,3 +189,22 @@ export const getBlockedUsers = async (userId) => {
         throw new Error(error.response?.data.message || error.message);
     }
 };
+
+/**
+ * Riot ID(gameName, tagLine)로 PUUID 기반 전적 조회
+ * @param {string} gameName – Riot ID의 게임명 부분
+ * @param {string} tagLine – Riot ID의 태그라인 부분
+ */
+export const getLeagueRecord = async (gameName, tagLine) => {
+    try {
+        const encodedGameName = encodeURIComponent(gameName);
+        const encodedTagLine = encodeURIComponent(tagLine);
+        const response = await axios.get(
+            `${host}/lol/${encodedGameName}/${encodedTagLine}`
+        );
+        return response.data.data; // { summoner: {...}, matches: [...] }
+    } catch (error) {
+        console.error("getLeagueRecord API 호출 중 오류:", error);
+        throw new Error("전적을 불러오는 데 실패했습니다.");
+    }
+};

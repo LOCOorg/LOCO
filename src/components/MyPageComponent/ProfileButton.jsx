@@ -5,18 +5,31 @@ import SimpleProfileModal from './SimpleProfileModal.jsx';
 
 const ProfileButton = ({ profile: externalProfile }) => {
     const authUser = useAuthStore((state) => state.user);
-    const [profile, setProfile] = useState(externalProfile || null);
+    const [profile, setProfile] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
-        if (externalProfile) {
-            setProfile(externalProfile);
-        } else if (authUser && !externalProfile) {
-            getUserInfo(authUser._id)
-                .then((data) => setProfile(data))
-                .catch((err) => console.error('프로필 정보 오류:', err));
-        }
-    }, [authUser, externalProfile]);
+        // 사용할 사용자 ID 결정
+        const userId = externalProfile?._id || authUser?._id;
+        if (!userId) return;
+
+        let cancelled = false;
+        // 전체 프로필 정보 가져오기
+        getUserInfo(userId)
+            .then((data) => {
+                if (!cancelled) {
+                    setProfile(data);
+                }
+            })
+            .catch((err) => {
+                console.error('프로필 정보 오류:', err);
+            });
+
+        // 컴포넌트 언마운트 혹은 userId 변경 시 이전 요청 무시
+        return () => {
+            cancelled = true;
+        };
+    }, [externalProfile, authUser]);
 
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
@@ -34,9 +47,7 @@ const ProfileButton = ({ profile: externalProfile }) => {
                         className="w-12 h-12 rounded-full object-cover"
                     />
                 ) : (
-                    <div
-                        className="w-12 h-12 rounded-full bg-gray-300"
-                    />
+                    <div className="w-12 h-12 rounded-full bg-gray-300" />
                 )}
             </button>
 
