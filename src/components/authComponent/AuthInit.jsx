@@ -1,31 +1,35 @@
 //src/components/authComponent/AuthInit.jsx
 
-import { useEffect } from 'react';
+import {useEffect, useRef} from 'react';
 import { refresh, fetchCurrentUser } from '../../api/authAPI.js';
 import useAuthStore from '../../stores/authStore.js';
 
 
 const AuthInit = () => {
+    const triedOnce = useRef(false);
     const setUser        = useAuthStore(s => s.setUser);
     const setAccessToken = useAuthStore(s => s.setAccessToken);
 
     useEffect(() => {
-        (async () => {
-            try {
-                // 1) Refresh → Access Token
-                const token = await refresh();
-                setAccessToken(token);
+        if (triedOnce.current) return;       // ← 이미 호출했으면 무시
+        triedOnce.current = true;
 
-                // 2) 새 토큰으로 내정보 조회
-                const user = await fetchCurrentUser();
-                setUser(user);
-            } catch {
-                // 실패 시 명시적으로 “비로그인” 상태
-                setUser(null);
-            }
-        })();
-    }, [setAccessToken, setUser]);
-
+        refresh()
+              .then(token => {
+                  // ① refresh()가 반환하는 토큰 문자열을 바로 상태에 저장
+                  setAccessToken(token);
+                  // ② 사용자 정보 조회
+                  return fetchCurrentUser();
+                  })
+             .then(user => {
+                 // ③ fetchCurrentUser()가 반환하는 user 객체를 상태에 저장
+                 setUser(user);
+             })
+              .catch(() => {
+                   // 네트워크 오류·401·파싱 오류 등 모두 비로그인 처리
+                  setUser(null);
+              });
+    }, []);
     return null;
 
     // useEffect(() => {
