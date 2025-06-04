@@ -81,11 +81,6 @@ function QnaDetailModal({ qna, onClose }) {
 
                 {error && <p className="text-red-500 mb-4">{error}</p>}
 
-                {/* Status */}
-                <p className="mb-4">
-                    <span className="font-medium">상태:</span> {qna.qnaStatus}
-                </p>
-
                 {/* 답변 작성/수정 버튼 & 폼 */}
                 {user?.userLv >= 2 && (
                     <>
