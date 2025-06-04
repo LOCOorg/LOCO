@@ -241,22 +241,6 @@ const ChatRoom = ({roomId, userId}) => {
 
         if (socket) {
             socket.emit("joinRoom", roomId);
-            // 참가자 입장 시: ID → { _id, nickname } 형태로 변환
-            socket.on("roomJoined", async ({ chatUsers, capacity }) => {
-                try {
-                    const participantsWithNames = await Promise.all(
-                        chatUsers.map(async u => {
-                            const id = typeof u === "object" ? u._id : u;
-                            const userInfo = await getUserInfo(id);
-                            return { _id: id, nickname: userInfo.nickname || "알 수 없음" };
-                        })
-                    );
-                    setParticipants(participantsWithNames);
-                    setCapacity(capacity);
-                } catch (err) {
-                    console.error("참가자 정보 조회 오류:", err);
-                }
-            });
             socket.on("receiveMessage", handleReceiveMessage);
             socket.on("roomJoined", handleUserJoined);
             socket.on("userLeft", ({userId}) => {
@@ -270,7 +254,6 @@ const ChatRoom = ({roomId, userId}) => {
             });
 
             return () => {
-                socket.off("roomJoined");
                 socket.off("receiveMessage", handleReceiveMessage);
                 socket.off("messageDeleted");
                 socket.off("userLeft");
@@ -336,14 +319,33 @@ const ChatRoom = ({roomId, userId}) => {
 
                     {/* 참가자 리스트 */}
                     <div className="mt-2 flex flex-wrap gap-2 text-sm">
-                        {participants.map(user => (
-                            <div key={user._id} className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1">
-                                <ProfileButton profile={user} className="mr-1"/>
-                                <span>{user.nickname}</span>
-                            </div>
-                        ))}
-                    </div>
+                        {participants.map((user) => {
+                            // user 객체 형태: { _id?, id?, nickname? } 또는 단순 ID 문자열
+                            const userId   = typeof user === "object" ? (user._id || user.id) : user;
+                            const nickname = typeof user === "object" ? user.nickname : user;
 
+                            // ProfileButton 에 넘겨줄 프로필 객체
+                            //  - 이미 user._id 가 있다면 user 전체를 넘기고
+                            //  - 문자열 ID 만 있을 땐 {_id: userId} 형태로 감싸 줍니다
+                            const profileProp = typeof user === "object"
+                                ? user
+                                : { _id: userId };
+
+                            return (
+                                <div
+                                    key={userId}
+                                    className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1"
+                                >
+                                    <ProfileButton
+                                        profile={profileProp}
+                                        className="mr-1"  // 필요하다면 여기에 추가 스타일
+                                    />
+                                    <span className="mr-1">{nickname}</span>
+
+                                </div>
+                            );
+                        })}
+                    </div>
                 </header>
 
                 {isLoading ? (
