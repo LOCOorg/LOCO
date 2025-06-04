@@ -72,7 +72,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                 </div>
 
                 {/* 프로필 정보 */}
-                <div className="mb-4 space-y-1">
+                <div className="mb-4 space-y-1 text-black">
                     <p><strong>닉네임:</strong> {profile.nickname || '없음'}</p>
                     <p><strong>롤 닉네임:</strong> {profile.lolNickname || '없음'}</p>
                     <p><strong>성별:</strong> {profile.gender || '없음'}</p>
@@ -80,7 +80,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                 </div>
 
                 {/* 자기소개 */}
-                <div className="mb-6">
+                <div className="mb-6 text-black">
                     <p className="font-medium mb-1">자기소개</p>
                     <div className="border border-gray-300 rounded-md p-3 min-h-[60px] whitespace-pre-wrap">
                         {profile.info || '자기소개가 없습니다.'}
