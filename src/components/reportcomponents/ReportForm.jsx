@@ -97,7 +97,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser }) => {
 
     return (
         <div>
-            <h2 className="text-2xl font-bold mb-4 text-center">신고 생성</h2>
+            <h2 className="text-2xl font-bold mb-4 text-center text-black">신고 생성</h2>
             {error && <p className="text-red-500 mb-4">{error}</p>}
             <form onSubmit={handleSubmit}>
                 <div className="mb-4">

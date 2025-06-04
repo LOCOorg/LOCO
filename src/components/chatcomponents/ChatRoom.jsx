@@ -21,6 +21,7 @@ const ChatRoom = ({roomId, userId}) => {
     const [isLoading, setIsLoading] = useState(true);
     const [ratings, setRatings] = useState({});
     const [participants, setParticipants] = useState([]);
+    const [capacity, setCapacity] = useState(0);
 
     // 신고 모달 관련 상태
     const [showReportModal, setShowReportModal] = useState(false);
@@ -33,6 +34,9 @@ const ChatRoom = ({roomId, userId}) => {
     const [recordsLoading, setRecordsLoading] = useState(true);
     const [recordsError, setRecordsError] = useState(null);
     const participantsRef = useRef(false);
+
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteTargetId, setDeleteTargetId] = useState(null);
 
     // 메시지 전송 시간을 포맷하는 헬퍼 함수 (시간:분 형식)
     const formatTime = (textTime) => {
@@ -173,20 +177,37 @@ const ChatRoom = ({roomId, userId}) => {
         });
     };
 
-    const handleDeleteMessage = async (messageId) => {
-        try {
-            await deleteMessage(messageId);
-            setMessages((prevMessages) =>
-                prevMessages.map((msg) => (msg._id === messageId ? {...msg, isDeleted: true} : msg))
-            );
+// 삭제 버튼 클릭 시 모달 열기
+    const onDeleteButtonClick = (messageId) => {
+        setDeleteTargetId(messageId);
+        setShowDeleteModal(true);
+    };
 
+// 모달에서 “확인” 클릭 시 실제 삭제
+    const confirmDelete = async () => {
+        try {
+            await deleteMessage(deleteTargetId);
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg._id === deleteTargetId ? { ...msg, isDeleted: true } : msg
+                )
+            );
             if (socket) {
-                socket.emit("deleteMessage", {messageId, roomId});
+                socket.emit("deleteMessage", { messageId: deleteTargetId, roomId });
             }
         } catch (error) {
             console.error("메시지 삭제 중 오류 발생:", error);
         }
+        setShowDeleteModal(false);
+        setDeleteTargetId(null);
     };
+
+// 모달에서 “취소” 클릭 시 닫기
+    const cancelDelete = () => {
+        setShowDeleteModal(false);
+        setDeleteTargetId(null);
+    };
+
 
     const getChatRoomDetails = async () => {
         try {
@@ -194,6 +215,7 @@ const ChatRoom = ({roomId, userId}) => {
             if (roomInfo && roomInfo.chatUsers) {
                 // ① participants 상태에 저장
                 setParticipants(roomInfo.chatUsers);
+                setCapacity(roomInfo.capacity);
                 // ② capacity 충족 여부에 따라 로딩 해제
                 if (roomInfo.chatUsers.length >= roomInfo.capacity) {
                     setIsLoading(false);
@@ -289,9 +311,41 @@ const ChatRoom = ({roomId, userId}) => {
             className="max-w-6xl mx-auto h-screen flex flex-col md:flex-row p-6 space-y-6 md:space-y-0 md:space-x-8 bg-gradient-to-br from-indigo-50 to-purple-50">
             {/* ─── 채팅 섹션 ─── */}
             <section className="flex-1 flex flex-col bg-white shadow-2xl rounded-xl overflow-hidden">
-                <header
-                    className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 font-bold tracking-wide text-lg">
-                    채팅방 {roomId}
+                <header className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6">
+                    {/* 채팅방 제목 & 인원 수 */}
+                    <h2 className="font-bold tracking-wide text-lg">
+                        채팅방 ({participants.length}/{capacity}명)
+                    </h2>
+
+                    {/* 참가자 리스트 */}
+                    <div className="mt-2 flex flex-wrap gap-2 text-sm">
+                        {participants.map((user) => {
+                            // user 객체 형태: { _id?, id?, nickname? } 또는 단순 ID 문자열
+                            const userId   = typeof user === "object" ? (user._id || user.id) : user;
+                            const nickname = typeof user === "object" ? user.nickname : user;
+
+                            // ProfileButton 에 넘겨줄 프로필 객체
+                            //  - 이미 user._id 가 있다면 user 전체를 넘기고
+                            //  - 문자열 ID 만 있을 땐 {_id: userId} 형태로 감싸 줍니다
+                            const profileProp = typeof user === "object"
+                                ? user
+                                : { _id: userId };
+
+                            return (
+                                <div
+                                    key={userId}
+                                    className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1"
+                                >
+                                    <ProfileButton
+                                        profile={profileProp}
+                                        className="mr-1"  // 필요하다면 여기에 추가 스타일
+                                    />
+                                    <span className="mr-1">{nickname}</span>
+
+                                </div>
+                            );
+                        })}
+                    </div>
                 </header>
 
                 {isLoading ? (
@@ -372,7 +426,7 @@ const ChatRoom = ({roomId, userId}) => {
                                         )}
                                         {isMe && !msg.isDeleted && (
                                             <button
-                                                onClick={() => handleDeleteMessage(msg._id)}
+                                                onClick={() => onDeleteButtonClick(msg._id)}
                                                 className="ml-2 text-red-600 hover:text-red-800 focus:outline-none"
                                                 title="메시지 삭제"
                                             >
@@ -383,6 +437,16 @@ const ChatRoom = ({roomId, userId}) => {
                                 );
                             })}
                         </div>
+
+                        <CommonModal
+                            isOpen={showDeleteModal}
+                            onClose={cancelDelete}
+                            title="메시지 삭제 확인"
+                            onConfirm={confirmDelete}
+                        >
+                            <p>이 메시지를 정말 삭제하시겠습니까?</p>
+                        </CommonModal>
+
 
                         {/* 입력 폼 */}
                         <form
@@ -413,7 +477,7 @@ const ChatRoom = ({roomId, userId}) => {
                 className="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-full shadow-2xl hover:bg-red-600 focus:outline-none transition"
                 title="채팅 종료"
             >
-                🚪 나가기
+                🚪 채팅 종료
             </button>
 
             <CommonModal
