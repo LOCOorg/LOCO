@@ -35,7 +35,7 @@ export const refresh = () =>
 // 인증된 Access Token 으로 현재 사용자 정보 조회
 export const fetchCurrentUser = () =>
     instance.get('/api/auth/me')
-        .then((res) => res.data.user);
+        .then((res) => res.data);
 
 
 

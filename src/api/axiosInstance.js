@@ -9,9 +9,11 @@ const instance = axios.create({
 });
 
 // 요청마다 Authorization 헤더에 Access Token 추가
-instance.interceptors.request.use(config => {
+instance.interceptors.request.use((config) => {
     const token = useAuthStore.getState().accessToken;
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
 });
 
@@ -21,47 +23,53 @@ let subscribers  = [];
 
 // 토큰 갱신 후 대기 중인 요청에 헤더 심어주기
 function onRefreshed(token) {
-    subscribers.forEach(cb => cb(token));
+    subscribers.forEach((cb) => cb(token));
     subscribers = [];
 }
 
 // 큐에 추가
-function addSubscriber(cb) {
-    subscribers.push(cb);
+function addSubscriber(callback) {
+    subscribers.push(callback);
 }
 // 401 응답 시 한 번만 silent refresh → 재시도
 instance.interceptors.response.use(
-    res => res,
-    async err => {
-        const { config, response } = err;
+    (response) => response,
+    async (error) => {
+        const { config, response } = error;
         if (response?.status === 401 && !config._retry) {
             config._retry = true;
 
             if (!isRefreshing) {
                 isRefreshing = true;
                 try {
+                    // ① 쿠키에 담긴 리프레시 토큰으로 새 액세스 토큰 발급
                     const newToken = await refresh();
                     // const newToken = res.data.accessToken;
                     useAuthStore.getState().setAccessToken(newToken);
+                    // ② 대기 중인 요청들을 모두 새로운 토큰으로 재실행
                     onRefreshed(newToken);
-                } catch (e) {
+                } catch (errRefresh) {
+                    // ③ 리프레시 실패 시, 큐를 비우고 로그아웃
+                    subscribers = [];
                     useAuthStore.getState().logout();
                     // window.location.href = '/';
-                    return Promise.reject(e);
+                    return Promise.reject(errRefresh);
                 } finally {
                     isRefreshing = false;
                 }
             }
 
+
+            // ④ 이미 isRefreshing이 true인 경우, 큐에 콜백만 등록
             // 기존 요청은 Promise에 묶어 두었다가 토큰 갱신 후 재시도
-            return new Promise(resolve => {
-                addSubscriber(token => {
+            return new Promise((resolve) => {
+                addSubscriber((token) => {
                     config.headers.Authorization = `Bearer ${token}`;
                     resolve(instance(config));
                 });
             });
         }
-        return Promise.reject(err);
+        return Promise.reject(error);
     }
 );
 
