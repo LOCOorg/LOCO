@@ -1,7 +1,8 @@
 // src/components/MyPageComponent.jsx
-import { useEffect, useState } from 'react';
+import {useEffect, useRef, useState} from 'react';
 import { getUserInfo, updateUserProfile, getFriendRequestList, acceptFriendRequest, declineFriendRequest } from "../../api/userAPI"; // declineFriendRequest 추가됨
 import { uploadFile } from "../../api/fileUploadAPI";
+
 import useAuthStore from '../../stores/authStore';
 import CommonModal from '../../common/CommonModal.jsx';
 
@@ -13,6 +14,9 @@ const MyPageContent = ({ overrideProfile }) => {
     const [friendRequests, setFriendRequests] = useState([]);
     const [alertModalOpen, setAlertModalOpen] = useState(false);
     const [alertModalMessage, setAlertModalMessage] = useState("");
+
+
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         if (overrideProfile) {
@@ -61,31 +65,67 @@ const MyPageContent = ({ overrideProfile }) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    // 사용자가 + 박스를 클릭했을 때 숨겨진 파일 입력을 열어주는 함수
+    const handleAddPhotoClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
     const handlePhotoChange = async (e) => {
         const files = Array.from(e.target.files);
+
         const currentCount = formData.photo.length;
+
         if (currentCount + files.length > 6) {
             setAlertModalMessage("최대 6장까지 업로드 가능합니다.");
             setAlertModalOpen(true);
             return;
         }
-        const newPhotoURLs = [];
-        for (const file of files) {
-            try {
+
+        try {
+            // 1) 파일 각각 uploadFile() 호출 → 서버에 저장되고, URL을 받아온다.
+            const newPhotoURLs = [];
+            for (const file of files) {
                 const url = await uploadFile(file);
                 newPhotoURLs.push(url);
-            } catch (err) {
-                console.error('파일 업로드 중 에러 발생:', err);
             }
+
+            // 2) formData에 URL 배열을 누적
+            const updatedPhotos = [...formData.photo, ...newPhotoURLs];
+            setFormData((prev) => ({ ...prev, photo: updatedPhotos }));
+
+            // 3) updateUserProfile() 호출 → 서버에 profile.photo 필드가 갱신된다.
+            const updatedProfile = await updateUserProfile(authUser._id, {
+                ...formData,
+                photo: updatedPhotos,
+            });
+            setProfile(updatedProfile);
+        } catch (err) {
+            console.error('사진 업로드 중 에러 발생:', err);
+            setAlertModalMessage("사진 업로드 중 오류가 발생했습니다.");
+            setAlertModalOpen(true);
         }
-        setFormData(prev => ({ ...prev, photo: [...prev.photo, ...newPhotoURLs] }));
+
+        // 같은 파일을 다시 고를 때에도 이벤트가 트리거되도록 초기화
+        e.target.value = null;
     };
 
-    const handleRemovePhoto = (index) => {
-        setFormData(prev => {
-            const newPhotos = prev.photo.filter((_, idx) => idx !== index);
-            return { ...prev, photo: newPhotos };
-        });
+    const handleRemovePhoto = async (index) => {
+        const filteredPhotos = formData.photo.filter((_, idx) => idx !== index);
+        setFormData((prev) => ({ ...prev, photo: filteredPhotos }));
+
+        try {
+            const updatedProfile = await updateUserProfile(authUser._id, {
+                ...formData,
+                photo: filteredPhotos
+            });
+            setProfile(updatedProfile);
+        } catch (error) {
+            console.error('사진 삭제 중 에러 발생:', error);
+            setAlertModalMessage("사진 삭제 중 오류가 발생했습니다.");
+            setAlertModalOpen(true);
+        }
     };
 
     const handleSave = async () => {
@@ -131,6 +171,7 @@ const MyPageContent = ({ overrideProfile }) => {
             <h2 className="text-2xl font-bold mb-2">프로필 정보</h2>
             <p className="mb-4">로코 코인: {profile.coinLeft}</p>
             <p className="mb-4">내 별점: {profile.star}</p>
+
             <div className="mb-6">
                 <h3 className="text-xl font-semibold">친구 요청 목록</h3>
                 {friendRequests.length > 0 ? (
@@ -161,6 +202,7 @@ const MyPageContent = ({ overrideProfile }) => {
             </div>
             <div className="mb-4">
                 <h3 className="text-xl font-semibold">프로필 사진 (최대 6장)</h3>
+
                 <div className="flex flex-wrap gap-2">
                     {formData.photo && formData.photo.length > 0 ? (
                         formData.photo.slice(0, 6).map((url, idx) => (
@@ -170,10 +212,11 @@ const MyPageContent = ({ overrideProfile }) => {
                                     alt={`프로필 사진 ${idx + 1}`}
                                     className="w-20 h-20 object-cover rounded cursor-pointer"
                                 />
-                                {isOwnProfile && editMode && (
+                                {isOwnProfile && (
                                     <button
                                         onClick={() => handleRemovePhoto(idx)}
                                         className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+                                        title="사진 삭제"
                                     >
                                         ×
                                     </button>
@@ -183,13 +226,31 @@ const MyPageContent = ({ overrideProfile }) => {
                     ) : (
                         <p>프로필 사진이 없습니다.</p>
                     )}
+
+                    {/* + 박스: editMode와 상관없이, 본인 프로필이고 사진이 6장 미만일 때 노출 */}
+                    {isOwnProfile && formData.photo.length < 6 && (
+                        <div
+                            onClick={handleAddPhotoClick}
+                            className="w-20 h-20 border-2 border-dashed border-gray-400 flex items-center justify-center rounded cursor-pointer"
+                            title="사진 추가"
+                        >
+                            <span className="text-2xl font-bold text-gray-500">+</span>
+                        </div>
+                    )}
                 </div>
-                {isOwnProfile && editMode && (
-                    <div className="mt-2">
-                        <input type="file" accept="image/*" multiple onChange={handlePhotoChange}/>
-                    </div>
-                )}
+
+                {/* 숨겨진 파일 입력: 실제 클릭은 + 박스 클릭으로 대체 */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                />
             </div>
+
+            {/* 닉네임, 소개, 기타 필드 */}
             <div className="mb-2">
                 <strong>닉네임:</strong>
                 {isOwnProfile && editMode ? (
