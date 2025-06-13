@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, {useMemo, useState} from 'react';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
 import useAuthStore from '../../stores/authStore';
-import { sendFriendRequest, blockUser } from "../../api/userAPI.js";
+import {sendFriendRequest, blockUser, deleteFriend} from "../../api/userAPI.js";
 import CommonModal from '../../common/CommonModal.jsx';
 
 const SimpleProfileModal = ({ profile, onClose }) => {
@@ -10,6 +10,13 @@ const SimpleProfileModal = ({ profile, onClose }) => {
     const [alertModalOpen, setAlertModalOpen] = useState(false);
     const [alertModalMessage, setAlertModalMessage] = useState("");
     const [confirmBlockOpen, setConfirmBlockOpen] = useState(false);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const setUser    = useAuthStore((s) => s.setUser);
+
+    const isFriend = useMemo(
+        () => !!authUser?.friends?.includes(profile?._id),
+        [authUser, profile?._id]
+    );
 
     if (!profile) return null;
 
@@ -22,6 +29,26 @@ const SimpleProfileModal = ({ profile, onClose }) => {
             setAlertModalMessage(error.response?.data?.message || error.message);
         }
         setAlertModalOpen(true);
+    };
+
+    const handleDeleteFriend = async () => {
+        try {
+            await deleteFriend(authUser._id, profile._id);    // 서버 삭제[1]
+
+            // 로컬 상태 즉시 갱신
+            const updatedUser = {
+                ...authUser,
+                friends: authUser.friends.filter((id) => id !== profile._id),
+            };
+            setUser(updatedUser);                            // Zustand 스토어 업데이트[4]
+
+            setAlertModalMessage("친구를 삭제했습니다.");
+        } catch (error) {
+            setAlertModalMessage(error.response?.data?.message || error.message);
+        }finally {
+            setConfirmDeleteOpen(false);                      // 확인 모달 닫기
+            setAlertModalOpen(true);                          // 알림 모달 열기
+        }
     };
 
     const handleBlockUser = async () => {
@@ -89,12 +116,21 @@ const SimpleProfileModal = ({ profile, onClose }) => {
 
                 {/* 액션 버튼 */}
                 <div className="flex gap-3">
-                    <button
-                        onClick={handleFriendRequest}
-                        className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-md"
-                    >
-                        친구신청
-                    </button>
+                    {isFriend ? (
+                        <button
+                            onClick={() => setConfirmDeleteOpen(true)}
+                            className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md"
+                        >
+                            친구 삭제
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleFriendRequest}
+                            className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-md"
+                        >
+                            친구 신청
+                        </button>
+                    )}
                     <button
                         onClick={() => setConfirmBlockOpen(true)}
                         className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md"
@@ -190,6 +226,32 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                             onConfirm={() => setAlertModalOpen(false)}
                         >
                             <p>{alertModalMessage}</p>
+                        </CommonModal>
+                    </div>
+                </div>
+            )}
+
+            {/* ---------- 친구 삭제 확인 모달 ---------- */}
+            {confirmDeleteOpen && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-60"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteOpen(false);
+                    }}
+                >
+                    <div
+                        className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-sm relative"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <CommonModal
+                            isOpen={confirmDeleteOpen}
+                            onClose={() => setConfirmDeleteOpen(false)}
+                            title="친구 삭제"
+                            showCancel={true}
+                            onConfirm={handleDeleteFriend}
+                        >
+                            <p>정말 이 친구를 삭제하시겠습니까?</p>
                         </CommonModal>
                     </div>
                 </div>

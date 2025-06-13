@@ -1,6 +1,6 @@
 // src/components/FriendListPanel.jsx
 import { useEffect, useState } from "react";
-import { getUserInfo, deleteFriend } from "../../api/userAPI.js";
+import { getUserInfo } from "../../api/userAPI.js";
 import {
     fetchChatRooms,
     createFriendRoom,
@@ -15,8 +15,7 @@ const FriendListPanel = () => {
     const [user, setUser] = useState(null);
     const [friends, setFriends] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [friendToDelete, setFriendToDelete] = useState(null);
+
     const [errorModalOpen, setErrorModalOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
@@ -67,28 +66,6 @@ const FriendListPanel = () => {
         } catch (error) {
             console.error("친구 채팅 시작 오류:", error);
         }
-    };
-
-    const openDeleteModal = (friend) => {
-        setFriendToDelete(friend);
-        setIsDeleteModalOpen(true);
-    };
-    const confirmDeleteFriend = async () => {
-        try {
-            await deleteFriend(user._id, friendToDelete._id);
-            setFriends(friends.filter((f) => f._id !== friendToDelete._id));
-            setIsDeleteModalOpen(false);
-            setFriendToDelete(null);
-        } catch (error) {
-            setErrorMessage(error.message || "삭제 실패");
-            setErrorModalOpen(true);
-            setIsDeleteModalOpen(false);
-            setFriendToDelete(null);
-        }
-    };
-    const cancelDelete = () => {
-        setIsDeleteModalOpen(false);
-        setFriendToDelete(null);
     };
     const closeErrorModal = () => {
         setErrorModalOpen(false);
@@ -142,13 +119,6 @@ const FriendListPanel = () => {
                                           </span>
                                         </div>
 
-                                        {/* 삭제 버튼 */}
-                                        <button
-                                            onClick={() => openDeleteModal(friend)}
-                                            className="text-red-500 hover:text-red-700 transition"
-                                        >
-                                            삭제
-                                        </button>
                                     </li>
                                 ))}
                             </ul>
@@ -160,17 +130,6 @@ const FriendListPanel = () => {
                     </div>
                 </>
             ) : null}
-
-            {/* 삭제 확인 모달 */}
-            <CommonModal
-                isOpen={isDeleteModalOpen}
-                onClose={cancelDelete}
-                title="친구 삭제 확인"
-                onConfirm={confirmDeleteFriend}
-            >
-                {friendToDelete &&
-                    `${friendToDelete.nickname}님을 친구 목록에서 삭제하시겠습니까?`}
-            </CommonModal>
 
             {/* 에러 모달 */}
             <CommonModal

@@ -13,6 +13,7 @@ const MyPageContent = ({ overrideProfile }) => {
     const [friendRequests, setFriendRequests] = useState([]);
     const [alertModalOpen, setAlertModalOpen] = useState(false);
     const [alertModalMessage, setAlertModalMessage] = useState("");
+    const setUser  = useAuthStore((s) => s.setUser);
 
     useEffect(() => {
         if (overrideProfile) {
@@ -99,10 +100,19 @@ const MyPageContent = ({ overrideProfile }) => {
     };
 
     // 친구 요청 수락 처리
-    const handleAcceptRequest = async (requestId) => {
+    const handleAcceptRequest = async (requestId, senderId) => {   // ✅ senderId 추가
         try {
-            await acceptFriendRequest(authUser._id, requestId);
+            await acceptFriendRequest(authUser._id, requestId);        // 서버 반영[1]
+
+            // 1) 전역 authUser.friends 배열 즉시 업데이트
+            setUser({
+                ...authUser,
+                friends: [...(authUser.friends || []), senderId],
+            });
+
+            // 2) 현재 페이지 요청 목록에서 제거
             setFriendRequests(prev => prev.filter(req => req._id !== requestId));
+
             setAlertModalMessage("친구 요청을 수락하였습니다.");
             setAlertModalOpen(true);
         } catch (error) {
@@ -141,7 +151,7 @@ const MyPageContent = ({ overrideProfile }) => {
                             </div>
                             <div className="flex">
                                 <button
-                                    onClick={() => handleAcceptRequest(req._id)}
+                                    onClick={() => handleAcceptRequest(req._id, req.sender._id)}
                                     className="px-4 py-1 bg-green-500 text-white rounded mr-2"
                                 >
                                     수락
