@@ -14,8 +14,10 @@ const BasicLayout = ({ children }) => {
         <div className="flex flex-col min-h-screen">
             <header className="sticky top-0 z-50 bg-blue-600 text-white px-4 py-3 flex items-center justify-between shadow-md">
                 <Link to="/" className="text-2xl font-bold">LOCO</Link>
-                <nav>
-                    <ul className="flex space-x-4">
+
+
+                <nav className="overflow-hidden">
+                    <ul className="flex space-x-4 whitespace-nowrap">
                         <li><Link to="/chat" className="hover:text-gray-300">랜덤채팅</Link></li>
                         <li><Link to="/products" className="hover:text-gray-300">플랜보기</Link></li>
                         <li><Link to="/PR" className="hover:text-gray-300">P R</Link></li>
@@ -33,17 +35,21 @@ const BasicLayout = ({ children }) => {
                     </ul>
 
                 </nav>
-                <div className="flex items-center space-x-4">
+
+
+
+                 {/*flex-nowrap whitespace-nowrap overflow-x-auto*/}
+                <div className="flex items-center space-x-4 flex-nowrap whitespace-nowrap flex-shrink-0">
                     <FriendChatDropdown />
                     <ChatNotification />
                     <FriendRequestNotification />
-                    <Link to="/mypage" className="hover:text-gray-300">my</Link>
+                    <Link to="/mypage" className="hover:text-gray-300 whitespace-nowrap">my</Link>
 
                     {user ? (
                         <LogoutButton />
                     ) : (
                         <Link to="/loginPage">
-                            <button className="hover:text-gray-300">로그인</button>
+                            <button className="hover:text-gray-300 whitespace-nowrap">로그인</button>
                         </Link>
                     )}
                 </div>

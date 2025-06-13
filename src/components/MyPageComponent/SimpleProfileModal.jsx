@@ -3,9 +3,13 @@ import ReportForm from '../reportcomponents/ReportForm.jsx';
 import useAuthStore from '../../stores/authStore';
 import {sendFriendRequest, blockUser, deleteFriend} from "../../api/userAPI.js";
 import CommonModal from '../../common/CommonModal.jsx';
+import PhotoGallery from './PhotoGallery.jsx';
+import { useNavigate } from 'react-router-dom';
+
 
 const SimpleProfileModal = ({ profile, onClose }) => {
     const authUser = useAuthStore(state => state.user);
+    const isOwnProfile = authUser && profile._id === authUser._id; // 내 프로필인지 확인
     const [isReportModalVisible, setIsReportModalVisible] = useState(false);
     const [alertModalOpen, setAlertModalOpen] = useState(false);
     const [alertModalMessage, setAlertModalMessage] = useState("");
@@ -17,8 +21,13 @@ const SimpleProfileModal = ({ profile, onClose }) => {
         () => !!authUser?.friends?.includes(profile?._id),
         [authUser, profile?._id]
     );
+    const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
+
+    const navigate = useNavigate();
 
     if (!profile) return null;
+
+    const photos = profile.photo || [];
 
     const handleFriendRequest = async () => {
         if (!authUser) return;
@@ -79,24 +88,13 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                     ×
                 </button>
 
-                {/* 메인 사진 */}
-                <div className="w-full h-48 mb-4 rounded-lg overflow-hidden bg-gray-200">
-                    {profile.photo?.[0]
-                        ? <img src={profile.photo[0]} alt="메인 프로필" className="w-full h-full object-cover" />
-                        : <div className="flex items-center justify-center h-full text-gray-500">사진</div>
-                    }
-                </div>
+                {/*프로필 사진, 서브사진*/}
+                <PhotoGallery
+                    photos={photos}
+                    selectedIndex={selectedPhotoIndex}
+                    onSelect={setSelectedPhotoIndex}
+                />
 
-                {/* 서브 사진 */}
-                <div className="flex gap-2 mb-4">
-                    {profile.photo?.slice(1, 6).map((url, i) => (
-                        <div key={i} className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden">
-                            <img src={url} alt="" className="w-full h-full object-cover" />
-                        </div>
-                    )) || Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="w-12 h-12 bg-gray-100 rounded-md" />
-                    ))}
-                </div>
 
                 {/* 프로필 정보 */}
                 <div className="mb-4 space-y-1 text-black">
@@ -114,35 +112,49 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                     </div>
                 </div>
 
-                {/* 액션 버튼 */}
+                {/* 액션 버튼 본인이면 액션버튼 다르게 보이기*/}
                 <div className="flex gap-3">
-                    {isFriend ? (
-                        <button
-                            onClick={() => setConfirmDeleteOpen(true)}
-                            className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md"
-                        >
-                            친구 삭제
-                        </button>
-                    ) : (
-                        <button
-                            onClick={handleFriendRequest}
-                            className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-md"
-                        >
-                            친구 신청
-                        </button>
-                    )}
-                    <button
-                        onClick={() => setConfirmBlockOpen(true)}
-                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md"
-                    >
-                        차단
-                    </button>
-                    <button
-                        onClick={() => setIsReportModalVisible(true)}
-                        className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md"
-                    >
-                        신고
-                    </button>
+                    {!isOwnProfile
+                        ? (
+                            <>
+                                {isFriend ? (
+                                    <button
+                                        onClick={() => setConfirmDeleteOpen(true)}
+                                        className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md"
+                                    >
+                                        친구 삭제
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleFriendRequest}
+                                        className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-md"
+                                    >
+                                        친구 신청
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setConfirmBlockOpen(true)}
+                                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md"
+                                >
+                                    차단
+                                </button>
+                                <button
+                                    onClick={() => setIsReportModalVisible(true)}
+                                    className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md"
+                                >
+                                    신고
+                                </button>
+                            </>
+                        )
+                        : (
+                            <button
+                                onClick={() => navigate('/mypage')}
+                                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-md"
+                            >
+                                프로필 수정
+                            </button>
+                        )
+                    }
                 </div>
             </div>
 

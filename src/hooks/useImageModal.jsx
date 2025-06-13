@@ -1,4 +1,4 @@
-// src/hooks/useImageModal.jsx
+ // src/hooks/useImageModal.jsx
 import { useState } from 'react';
 
 const useImageModal = () => {
