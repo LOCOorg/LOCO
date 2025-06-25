@@ -34,7 +34,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
     const handleFriendRequest = async () => {
         if (!authUser) return;
         try {
-            await sendFriendRequest("6801ee8c483df1269443ce5c", profile._id);
+            await sendFriendRequest(authUser._id, profile._id);
             setAlertModalMessage("친구 요청을 보냈습니다.");
         } catch (error) {
             setAlertModalMessage(error.response?.data?.message || error.message);
