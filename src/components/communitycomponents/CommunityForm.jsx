@@ -1,8 +1,11 @@
 // src/components/communitycomponents/CommunityForm.jsx
 import {useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createCommunity } from '../../api/communityAPI.js';
-import useAuthStore from '../../stores/authStore.js';  // 추가
+import {createCommunity, fetchTopCommented, fetchTopViewed} from '../../api/communityAPI.js';
+import useAuthStore from '../../stores/authStore.js';
+import LeftSidebar from "../../layout/CommunityLayout/LeftSidebar.jsx";
+import RightSidebar from "../../layout/CommunityLayout/RightSidebar.jsx";
+import CommunityLayout from "../../layout/CommunityLayout/CommunityLayout.jsx";  // 추가
 
 const CommunityForm = () => {
     const [title, setTitle] = useState('');
@@ -16,6 +19,16 @@ const CommunityForm = () => {
     const [previewImage, setPreviewImage] = useState(null);
     const currentUser = useAuthStore((state) => state.user);  // 추가
     const userId = currentUser?._id;
+    const [selectedCategory, setSelectedCategory] = useState('전체');
+    const handleCategoryClick = (cat) => {
+        setSelectedCategory(cat);
+        navigate(cat === '전체' ? '/community'
+            : `/community?category=${cat}`);
+    };
+
+    const [sideTab, setSideTab] = useState('viewed');
+    const [topViewed, setTopViewed] = useState([]);
+    const [topCommented, setTopCommented] = useState([]);
 
     // 선택된 파일로부터 객체 URL을 생성하고 cleanup
     useEffect(() => {
@@ -30,6 +43,26 @@ const CommunityForm = () => {
             URL.revokeObjectURL(objectUrl);
         };
     }, [imageFile]);
+
+    useEffect(() => {
+        const fetchGlobalTop = async () => {
+            try {
+                const viewedData = await fetchTopViewed(); // 커뮤니티 리스트와 동일 API
+                setTopViewed(viewedData);
+            } catch (error) {
+                setTopViewed([]);
+                console.log(error);
+            }
+            try {
+                const commentedData = await fetchTopCommented();
+                setTopCommented(commentedData);
+            } catch (error) {
+                setTopCommented([]);
+                console.log(error);
+            }
+        };
+        fetchGlobalTop();
+    }, []);
 
     const handleFileChange = (e) => {
         setImageFile(e.target.files[0]);
@@ -61,6 +94,22 @@ const CommunityForm = () => {
     };
 
     return (
+        <CommunityLayout
+            leftSidebar={
+                <LeftSidebar
+                    selectedCategory={selectedCategory}
+                    handleCategoryClick={handleCategoryClick}
+                />
+            }
+            rightSidebar={
+                <RightSidebar
+                    sideTab={sideTab}
+                    setSideTab={setSideTab}
+                    topViewed={topViewed}
+                    topCommented={topCommented}
+                />
+            }
+        >
         <div className="container mx-auto px-4 py-8">
             <div className="bg-white shadow-lg rounded-xl overflow-hidden">
                 {/* 헤더 */}
@@ -205,6 +254,7 @@ const CommunityForm = () => {
                 </form>
             </div>
         </div>
+        </CommunityLayout>
     );
 
 };

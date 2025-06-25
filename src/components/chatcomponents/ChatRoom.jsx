@@ -22,6 +22,7 @@ const ChatRoom = ({roomId, userId}) => {
     const [ratings, setRatings] = useState({});
     const [participants, setParticipants] = useState([]);
     const [capacity, setCapacity] = useState(0);
+    const [evaluationUsers,  setEvaluationUsers]= useState([]);  // 매너평가 대상
 
     // 신고 모달 관련 상태
     const [showReportModal, setShowReportModal] = useState(false);
@@ -83,23 +84,22 @@ const ChatRoom = ({roomId, userId}) => {
     // 채팅 종료 버튼 클릭 시 채팅방 정보를 불러와 참가자와 초기 따봉 상태(0)를 세팅
     const handleLeaveRoom = async () => {
         try {
-            const roomInfo = await getChatRoomInfo(roomId);
+            const roomInfo = await getChatRoomInfo(roomId);  // DB에서 전체 인원 재조회
             if (roomInfo && roomInfo.chatUsers) {
-                setParticipants(roomInfo.chatUsers);
-                const initialRatings = {};
-                roomInfo.chatUsers.forEach((user) => {
-                    const participantId = typeof user === "object" ? user._id : user;
-                    if (participantId !== userId) {
-                        initialRatings[participantId] = 0;
-                    }
+                setEvaluationUsers(roomInfo.chatUsers);        // UI-리스트는 그대로 두고
+                const init = {};
+                roomInfo.chatUsers.forEach(u => {
+                    const id = typeof u === "object" ? u._id : u;
+                    if (id !== userId) init[id] = 0;
                 });
-                setRatings(initialRatings);
+                setRatings(init);
             }
-        } catch (error) {
-            console.error("채팅방 정보 가져오기 오류:", error);
+        } catch (err) {
+            console.error("채팅방 정보 가져오기 오류:", err);
         }
         setIsModalOpen(true);
     };
+
 
     // 매너 평가 토글 함수
     const handleRatingToggle = (participantId) => {
@@ -140,6 +140,9 @@ const ChatRoom = ({roomId, userId}) => {
             if (response.success) {
                 // 채팅 횟수 감소 API 호출 추가
                 await decrementChatCount(userId);
+                if (socket) {
+                    socket.emit("leaveRoom", { roomId, userId });
+                }
                 navigate("/chat", {replace: true});
             } else {
                 console.error("채팅방 나가기 실패:", response.message);
@@ -232,6 +235,19 @@ const ChatRoom = ({roomId, userId}) => {
         }
     };
 
+    const handleUserLeft = ({ userId: leftId }) => {
+        setParticipants(prev =>
+            prev.filter(u =>
+                (typeof u === "object" ? u._id : u) !== leftId
+            )
+        );
+    };
+
+    const handleSystemMessage = (msg) => {
+        setMessages(prev => [...prev, msg]);
+    };
+
+
     useEffect(() => {
         fetchMessages(roomId).then((fetchedMessages) => {
             setMessages(fetchedMessages);
@@ -259,10 +275,8 @@ const ChatRoom = ({roomId, userId}) => {
             });
             socket.on("receiveMessage", handleReceiveMessage);
             socket.on("roomJoined", handleUserJoined);
-            socket.on("userLeft", ({userId}) => {
-                console.log(`사용자 ${userId}가 채팅방을 떠났습니다.`);
-            });
-
+            socket.on("userLeft", handleUserLeft);
+            socket.on("systemMessage", handleSystemMessage);
             socket.on("messageDeleted", ({messageId}) => {
                 setMessages((prevMessages) =>
                     prevMessages.map((msg) => (msg._id === messageId ? {...msg, isDeleted: true} : msg))
@@ -273,8 +287,7 @@ const ChatRoom = ({roomId, userId}) => {
                 socket.off("roomJoined");
                 socket.off("receiveMessage", handleReceiveMessage);
                 socket.off("messageDeleted");
-                socket.off("userLeft");
-                socket.off("roomJoined");
+                socket.off("userLeft", handleUserLeft);
             };
         }
 
@@ -378,6 +391,14 @@ const ChatRoom = ({roomId, userId}) => {
                             className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"
                         >
                             {messages.map(msg => {
+                                /* 시스템-메시지라면 중앙 정렬 회색 글씨로 */
+                                if (msg.isSystem) {
+                                    return (
+                                        <div key={msg._id} className="text-center text-gray-500 text-sm">
+                                            {msg.text}
+                                        </div>
+                                    );
+                                }
                                 const isMe = msg.sender._id === userId;
                                 return (
                                     <div
@@ -482,7 +503,7 @@ const ChatRoom = ({roomId, userId}) => {
                 isOpen={isModalOpen}
                 onClose={cancelLeaveRoom}
                 title={
-                    participants.filter((user) => {
+                    evaluationUsers.filter((user) => {
                         const participantId = typeof user === "object" ? user._id : user;
                         return participantId !== userId;
                     }).length > 0
@@ -491,7 +512,7 @@ const ChatRoom = ({roomId, userId}) => {
                 }
                 onConfirm={confirmLeaveRoom}
             >
-                {participants.filter((user) => {
+                {evaluationUsers.filter((user) => {
                     const participantId = typeof user === "object" ? user._id : user;
                     return participantId !== userId;
                 }).length > 0 ? (
@@ -499,7 +520,7 @@ const ChatRoom = ({roomId, userId}) => {
                         <p className="mb-4">
                             채팅 종료 전, 다른 참가자들의 매너를 평가 및 신고해주세요.
                         </p>
-                        {participants
+                        {evaluationUsers
                             .filter((user) => {
                                 const participantId = typeof user === "object" ? user._id : user;
                                 return participantId !== userId;

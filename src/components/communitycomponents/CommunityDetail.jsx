@@ -203,17 +203,32 @@ const CommunityDetail = () => {
 
     // 2) 클릭 시 추천·추천취소 API 호출 및 토글
     const handleToggleRecommend = async () => {
+        if (!community) return;
+
+        // 1) 화면을 즉시 반영
+        const updatedRecommendedUsers = isRecommended
+            ? community.recommendedUsers.filter(uid => uid !== currentUserId) // 취소
+            : [...community.recommendedUsers, currentUserId];                 // 추천
+
+        setCommunity({ ...community, recommendedUsers: updatedRecommendedUsers });
+        setIsRecommended(!isRecommended);
+
         try {
+            // 2) API 호출
             if (isRecommended) {
-                await cancelRecommendCommunity(community._id, currentUserId)
+                await cancelRecommendCommunity(community._id, currentUserId);
             } else {
-                await recommendCommunity(community._id, currentUserId)
+                await recommendCommunity(community._id, currentUserId);
             }
-            setIsRecommended(!isRecommended)
         } catch (err) {
-            console.error('추천 처리 에러', err)
+            console.error('추천 처리 에러', err);
+
+            // 3) 실패 시 롤백
+            setCommunity(community);            // 이전 값으로 되돌림
+            setIsRecommended(isRecommended);    // 이전 값으로 되돌림
         }
-    }
+    };
+
 
     // 커뮤니티 삭제 (게시글 자체)
     const handleDelete = () => {
@@ -583,7 +598,7 @@ const CommunityDetail = () => {
           </span>
                         <span>
             추천:{' '}
-                            <span className="font-medium">{community.recommended}</span>
+                            <span className="font-medium">{community.recommendedUsers.length}</span>
           </span>
                     </div>
                     {community.communityImage && (
@@ -599,16 +614,7 @@ const CommunityDetail = () => {
                         />
                     )}
                     <p className="text-gray-800 mb-4">{community.communityContents}</p>
-                    <div className="mt-4">
-                        {community.userId !== currentUserId && (
-                            <button
-                                onClick={handlePostReport}
-                                className="bg-purple-500 text-white font-semibold py-2 px-4 rounded hover:bg-purple-600 transition duration-200"
-                            >
-                                신고
-                            </button>
-                        )}
-
+                    <div className="mt-4 flex items-center gap-2">
                             <button
                                 onClick={handleToggleRecommend}
                                 aria-label="추천하기"
@@ -622,6 +628,23 @@ const CommunityDetail = () => {
                             >
                                 <FaThumbsUp size={20} />
                             </button>
+
+                        {community.userId !== currentUserId && (
+                            <button
+                                onClick={handlePostReport}
+                                type="button"
+                                className="
+                                      p-0 m-0
+                                      bg-transparent border-none shadow-none
+                                      text-sm font-medium text-gray-500
+                                      hover:text-rose-600 hover:underline
+                                      focus:outline-none focus:underline
+                                      cursor-pointer
+                                    "
+                            >
+                                신고
+                            </button>
+                        )}
                     </div>
                     <div className="mt-6">
                         <h3 className="text-xl font-semibold mb-3">댓글</h3>
@@ -656,7 +679,7 @@ const CommunityDetail = () => {
                                                     ) : (
                                                         <button
                                                             onClick={() => handleCommentReport(comment)}
-                                                            className="text-purple-500 text-xs ml-2 hover:underline"
+                                                            className="text-gray-500 text-xs ml-2 hover:text-rose-600 hover:underline"
                                                         >
                                                             신고
                                                         </button>

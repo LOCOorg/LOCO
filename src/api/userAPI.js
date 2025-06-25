@@ -108,7 +108,7 @@ export const acceptFriendRequest = async (userId, requestId) => {
     try {
         // userId(친구 요청을 수락하는 사용자)를 URL 경로에 추가 (라우터: "/:userId/friend-request/accept")
         const response = await axios.post(`${host}/${userId}/friend-request/accept`, { requestId });
-        return response.data;
+        return response.data.data;
     } catch (error) {
         throw new Error(error.response?.data.message || error.message);
     }

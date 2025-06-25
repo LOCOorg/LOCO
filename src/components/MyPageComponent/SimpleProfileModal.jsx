@@ -5,6 +5,7 @@ import {sendFriendRequest, blockUser, deleteFriend} from "../../api/userAPI.js";
 import CommonModal from '../../common/CommonModal.jsx';
 import PhotoGallery from './PhotoGallery.jsx';
 import { useNavigate } from 'react-router-dom';
+import useFriendListStore from "../../stores/useFriendListStore.js";
 
 
 const SimpleProfileModal = ({ profile, onClose }) => {
@@ -17,9 +18,10 @@ const SimpleProfileModal = ({ profile, onClose }) => {
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const setUser    = useAuthStore((s) => s.setUser);
 
+    const friends = useFriendListStore((s) => s.friends);              // 추가
     const isFriend = useMemo(
-        () => !!authUser?.friends?.includes(profile?._id),
-        [authUser, profile?._id]
+        () => friends.some((f) => f._id === profile?._id),
+        [friends, profile?._id]
     );
     const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
@@ -32,7 +34,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
     const handleFriendRequest = async () => {
         if (!authUser) return;
         try {
-            await sendFriendRequest(authUser._id, profile._id);
+            await sendFriendRequest("6801ee8c483df1269443ce5c", profile._id);
             setAlertModalMessage("친구 요청을 보냈습니다.");
         } catch (error) {
             setAlertModalMessage(error.response?.data?.message || error.message);
@@ -50,6 +52,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                 friends: authUser.friends.filter((id) => id !== profile._id),
             };
             setUser(updatedUser);                            // Zustand 스토어 업데이트[4]
+            useFriendListStore.getState().removeFriend(profile._id);   // 전역 리스트 동기화
 
             setAlertModalMessage("친구를 삭제했습니다.");
         } catch (error) {
@@ -114,8 +117,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
 
                 {/* 액션 버튼 본인이면 액션버튼 다르게 보이기*/}
                 <div className="flex gap-3">
-                    {!isOwnProfile
-                        ? (
+
                             <>
                                 {isFriend ? (
                                     <button
@@ -145,16 +147,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                                     신고
                                 </button>
                             </>
-                        )
-                        : (
-                            <button
-                                onClick={() => navigate('/mypage')}
-                                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-md"
-                            >
-                                프로필 수정
-                            </button>
-                        )
-                    }
+
                 </div>
             </div>
 
