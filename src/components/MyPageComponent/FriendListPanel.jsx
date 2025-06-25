@@ -10,11 +10,14 @@ import ProfileButton from "../MyPageComponent/ProfileButton.jsx";
 import CommonModal from "../../common/CommonModal.jsx";
 import useAuthStore from "../../stores/authStore.js";
 import useFriendChatStore from "../../stores/useFriendChatStore.js";
+import useFriendListStore from "../../stores/useFriendListStore.js";
 
 const FriendListPanel = () => {
     const [user, setUser] = useState(null);
-    const [friends, setFriends] = useState([]);
+
     const [loading, setLoading] = useState(true);
+    const friends        = useFriendListStore((s) => s.friends);
+    const setFriendsList = useFriendListStore((s) => s.setFriends);
 
     const [errorModalOpen, setErrorModalOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -28,10 +31,8 @@ const FriendListPanel = () => {
             try {
                 const userData = await getUserInfo(authUser._id);
                 setUser(userData);
-                const friendsData = await Promise.all(
-                    userData.friends.map((fid) => getUserInfo(fid))
-                );
-                setFriends(friendsData);
+                const friendsData = await Promise.all(userData.friends.map(fid => getUserInfo(fid)));
+                setFriendsList(friendsData);
             } catch (e) {
                 console.error("유저 정보 로드 실패", e);
             } finally {
