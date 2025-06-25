@@ -164,20 +164,31 @@ const ChatRoom = ({roomId, userId}) => {
             return;
         }
 
-        const message = {chatRoom: roomId, sender: {_id: userId, nickname: userName}, text};
-        socket.emit("sendMessage", message, (response) => {
+        // const message = {chatRoom: roomId, sender: {_id: userId, nickname: userName}, text};
+// (1) 소켓으로 보낼 실물 데이터 ― sender: 문자열
+        const emitMessage = { chatRoom: roomId, sender: userId, text };
+
+// (2) 화면에 바로 그려 넣을 로컬 메시지 ― sender: 객체
+        const localMessage = {
+            ...emitMessage,
+            sender: { _id: userId, nickname: userName }
+        };
+
+        socket.emit("sendMessage", emitMessage, (response) => {
             if (response.success) {
-                // 백엔드에서는 textTime 필드를 사용하도록 설정되어 있습니다.
-                const sentMessage = {...message, _id: response.message._id, textTime: response.message.textTime};
-                setMessages((prevMessages) => [
-                    ...prevMessages.filter((msg) => msg._id !== sentMessage._id),
-                    sentMessage,
-                ]);
+                const sentMessage = {
+                    ...localMessage,                 // nickname 포함
+                    _id: response.message._id,
+                    textTime: response.message.textTime
+                };
+                setMessages(prev =>
+                    [...prev.filter(m => m._id !== sentMessage._id), sentMessage]);
                 setText("");
             } else {
                 console.error("메시지 전송 실패", response);
             }
         });
+
     };
 
 // 삭제 버튼 클릭 시 모달 열기
