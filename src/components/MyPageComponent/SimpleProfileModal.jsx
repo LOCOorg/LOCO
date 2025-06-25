@@ -117,7 +117,8 @@ const SimpleProfileModal = ({ profile, onClose }) => {
 
                 {/* 액션 버튼 본인이면 액션버튼 다르게 보이기*/}
                 <div className="flex gap-3">
-
+                    {!isOwnProfile
+                        ? (
                             <>
                                 {isFriend ? (
                                     <button
@@ -147,6 +148,16 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                                     신고
                                 </button>
                             </>
+                        )
+                        : (
+                        <button
+                        onClick={() => navigate('/mypage')}
+                    className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-md"
+                >
+                    프로필 수정
+                </button>
+                )
+                }
 
                 </div>
             </div>
