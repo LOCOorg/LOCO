@@ -4,7 +4,7 @@ import { getUserInfo } from "../../api/userAPI.js";
 import {
     fetchChatRooms,
     createFriendRoom,
-    joinChatRoom,
+    joinChatRoom, toggleFriendRoomActive,
 } from "../../api/chatAPI.js";
 import ProfileButton from "../MyPageComponent/ProfileButton.jsx";
 import CommonModal from "../../common/CommonModal.jsx";
@@ -23,7 +23,7 @@ const FriendListPanel = () => {
     const [errorMessage, setErrorMessage] = useState("");
 
     const authUser = useAuthStore((state) => state.user);
-    const { openFriendChat } = useFriendChatStore();
+    const { openFriendChat, addFriendRoom  } = useFriendChatStore();
 
     useEffect(() => {
         if (!authUser) return;
@@ -64,6 +64,9 @@ const FriendListPanel = () => {
             }
 
             openFriendChat({ roomId: newRoom._id, friend });
+            addFriendRoom({ roomId: newRoom._id, friend });
+            // 드롭다운에 보여야 하므로 isActive true 로 전환
+            try { await toggleFriendRoomActive(newRoom._id, true); } catch (e) { console.error(e); }
         } catch (error) {
             console.error("친구 채팅 시작 오류:", error);
         }

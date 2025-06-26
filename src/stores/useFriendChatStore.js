@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import {toggleFriendRoomActive} from "../api/chatAPI.js";
 
 const useFriendChatStore = create((set) => ({
     friendChats: [],
@@ -10,10 +11,26 @@ const useFriendChatStore = create((set) => ({
             }
             return { friendChats: [...state.friendChats, chatInfo] };
         }),
-    closeFriendChat: (roomId) =>
+    /* ---------- ② 드롭다운 전용: ‘내가 참여한 친구 채팅방’ 목록 ---------- */
+    friendRooms: [],                                           // { roomId, friend }
+    setFriendRooms: (rooms) => set({ friendRooms: rooms }),
+    addFriendRoom: (room) =>
+        set((state) => {
+            if (state.friendRooms.some((r) => r.roomId === room.roomId)) return state;
+            return { friendRooms: [room, ...state.friendRooms] };
+        }),
+    removeFriendRoom: (roomId) =>
         set((state) => ({
-            friendChats: state.friendChats.filter(chat => chat.roomId !== roomId),
+            friendRooms: state.friendRooms.filter((r) => r.roomId !== roomId),
         })),
+    /* 채팅창 닫기  isActive false */
+    closeFriendChat: async (roomId) => {
+        set((state) => ({
+            friendChats : state.friendChats.filter(c => c.roomId !== roomId),
+            friendRooms : state.friendRooms.filter(r => r.roomId !== roomId),
+        }));
+        try { await toggleFriendRoomActive(roomId, false); } catch (e) { console.error(e); }
+    },
     // hidden 영역의 채팅 아이콘 클릭 시 순환 교환 로직
     swapFriendChat: (selectedRoomId, maxWindows) =>
         set((state) => {
