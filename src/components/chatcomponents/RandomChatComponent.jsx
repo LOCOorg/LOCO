@@ -13,18 +13,22 @@ import {
 } from "../../api/chatAPI";
 import CommonModal from "../../common/CommonModal";
 import useAuthStore from "../../stores/authStore.js";
+import useBlockedStore from "../../stores/useBlockedStore.js";
 
 const RandomChatComponent = () => {
     const [capacity, setCapacity] = useState(2);
     const [matchedGender, setMatchedGender] = useState("any");
     const [userInfo, setUserInfo] = useState(null);
-    const [blockedUsers, setBlockedUsers] = useState([]);
     const [error, setError] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [modalMessage, setModalMessage] = useState("");
     const [modalTitle, setModalTitle] = useState("");
     const [modalButtons, setModalButtons] = useState([]);
     const [showBlockedModal, setShowBlockedModal] = useState(false);
+
+    const blockedUsers          = useBlockedStore((s) => s.blockedUsers);
+    const setBlockedUsersStore  = useBlockedStore((s) => s.setBlockedUsers);
+    const removeBlockedUser     = useBlockedStore((s) => s.removeBlockedUser);
 
     const navigate = useNavigate();
     const authUser = useAuthStore((state) => state.user);
@@ -52,7 +56,7 @@ const RandomChatComponent = () => {
             const data = await getUserInfo(userId);
             setUserInfo(data);
             const blocked = await getBlockedUsers(userId);
-            setBlockedUsers(blocked);
+            setBlockedUsersStore(blocked);
         } catch (err) {
             setError(err.message);
         }
@@ -66,9 +70,7 @@ const RandomChatComponent = () => {
     const handleUnblock = async (blockedUserId) => {
         try {
             await unblockUser(userId, blockedUserId);
-            setBlockedUsers((prev) =>
-                prev.filter((u) => u._id !== blockedUserId)
-            );
+            removeBlockedUser(blockedUserId);
         } catch {
             setModalTitle("에러");
             setModalMessage("차단 해제에 실패했습니다.");
@@ -78,10 +80,14 @@ const RandomChatComponent = () => {
     };
 
     // 랜덤 채팅방 찾기 및 생성 함수
+// ────────────────────────────────────────────────────────────────
+//  RandomChatComponent.jsx  –  findOrCreateRandomRoom 교체본
+// ────────────────────────────────────────────────────────────────
     const findOrCreateRandomRoom = async (capacity, matchedGender) => {
         if (!userId) return;
 
         try {
+            /* ─── 1. 사전 유효성 검사 – 기존 로직 그대로 ─── */
             if (capacity < 2 || capacity > 5) {
                 setModalTitle("경고");
                 setModalMessage("참여 인원은 2~5명 사이로 입력해주세요.");
@@ -98,7 +104,6 @@ const RandomChatComponent = () => {
                 return;
             }
 
-            // 채팅횟수가 0인 경우 랜덤 채팅 이용 제한
             if (userInfo.numOfChat === 0) {
                 setModalTitle("경고");
                 setModalMessage("채팅횟수가 부족하여 랜덤 채팅을 이용할 수 없습니다.");
@@ -106,8 +111,12 @@ const RandomChatComponent = () => {
                 setModalOpen(true);
                 return;
             }
-            // 신고로 인한 제한: reportStatus가 active가 아니고, reportTimer가 현재 시간보다 미래인 경우
-            if (userInfo.reportStatus !== "active" && userInfo.reportTimer && new Date(userInfo.reportTimer) > new Date()) {
+
+            if (
+                userInfo.reportStatus !== "active" &&
+                userInfo.reportTimer &&
+                new Date(userInfo.reportTimer) > new Date()
+            ) {
                 setModalTitle("채팅 제한");
                 setModalMessage("신고로 인해 현재 랜덤 채팅 이용이 제한되어 있습니다.");
                 setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
@@ -115,120 +124,141 @@ const RandomChatComponent = () => {
                 return;
             }
 
-            const age = calculateAge(userInfo.birthdate);
-            const ageGroup = age >= 19 ? "adult" : "minor";
+            /* ─── 2. 실제 방 탐색/참가를 담당할 내부 재귀 함수 ─── */
+            const tryMatch = async () => {
+                const age         = calculateAge(userInfo.birthdate);
+                const ageGroup    = age >= 19 ? "adult" : "minor";
+                const blockedIds  = blockedUsers.map((u) => u._id);
 
-            // 백엔드 필터링에 필요한 쿼리 파라미터 구성
-            const query = {
-                roomType: "random",
-                ...(matchedGender !== "any" && { matchedGender }),
-                ageGroup,
-                userId
-            };
+                // (1) 방 목록 조회
+                const query = {
+                    roomType: "random",
+                    ...(matchedGender !== "any" && { matchedGender }),
+                    ageGroup,
+                    userId
+                };
+                const rooms = await fetchChatRooms(query);
 
-            const rooms = await fetchChatRooms(query);
-            console.log("현재 채팅방 목록:", rooms);
+                // (2) 내가 이미 참여중인 방?
+                const leftRooms = await fetchUserLeftRooms(userId);
+                const existingRoom = rooms.find(
+                    (room) =>
+                        room.chatUsers.some((u) => u._id === userId) &&
+                        !leftRooms.includes(room._id) &&
+                        !room.chatUsers.some((u) => blockedIds.includes(u._id))
+                );
+                if (existingRoom) {
+                    setModalTitle("알림");
+                    setModalMessage("이미 참여중인 채팅방으로 이동합니다.");
+                    setModalButtons([
+                        {
+                            text: "확인",
+                            action: () => navigate(`/chat/${existingRoom._id}/${userId}`)
+                        }
+                    ]);
+                    setModalOpen(true);
+                    return;
+                }
 
-            const blockedIds = blockedUsers.map(u => u._id);
-            const availableRooms = rooms.filter(room => {
-                if (room.capacity !== capacity) return false;
-                if (room.chatUsers.length >= room.capacity) return false;
-                if (room.isActive || room.status !== "waiting") return false;
-                if (
-                    matchedGender === "same" &&
-                    (room.matchedGender !== "same" ||
-                        room.chatUsers.some((u) => u.gender !== userInfo.gender))
-                )
-                    return false;
-                if (
-                    matchedGender === "opposite" &&
-                    (room.matchedGender !== "opposite" ||
-                        room.chatUsers.every((u) => u.gender === userInfo.gender))
-                )
-                    return false;
-                if (room.ageGroup !== ageGroup) return false;
-                if (room.chatUsers.some((u) => blockedIds.includes(u._id))) return false;
-                return true;
-            });
+                // (3) 차단된 유저가 없는 대기방 필터링
+                const availableRooms = rooms.filter((room) => {
+                    if (room.capacity !== capacity) return false;
+                    if (room.chatUsers.length >= room.capacity) return false;
+                    if (room.isActive || room.status !== "waiting") return false;
 
-            const leftRooms = await fetchUserLeftRooms(userId);
-            const existingRoom = rooms.find(
-                (room) =>
-                    room.chatUsers.some((u) => u._id === userId) &&
-                    !leftRooms.includes(room._id) &&
-                    !room.chatUsers.some((u) => blockedIds.includes(u._id))
-            );
+                    if (
+                        matchedGender === "same" &&
+                        (room.matchedGender !== "same" ||
+                            room.chatUsers.some((u) => u.gender !== userInfo.gender))
+                    )
+                        return false;
+                    if (
+                        matchedGender === "opposite" &&
+                        (room.matchedGender !== "opposite" ||
+                            room.chatUsers.every((u) => u.gender === userInfo.gender))
+                    )
+                        return false;
 
-            if (existingRoom) {
-                setModalTitle("알림");
-                setModalMessage("이미 참여중인 채팅방으로 이동합니다.");
-                setModalButtons([
-                    {
-                        text: "확인",
-                        action: () => navigate(`/chat/${existingRoom._id}/${userId}`)
-                    }
-                ]);
-                setModalOpen(true);
-                return;
-            }
+                    if (room.ageGroup !== ageGroup) return false;
+                    if (room.chatUsers.some((u) => blockedIds.includes(u._id))) return false;
+                    return true;
+                });
 
-            if (availableRooms.length > 0) {
-                const room =
-                    availableRooms[Math.floor(Math.random() * availableRooms.length)];
-                setModalTitle("알림");
+                // (3-A) 참여 가능한 대기방이 존재할 때
+                if (availableRooms.length) {
+                    const target =
+                        availableRooms[Math.floor(Math.random() * availableRooms.length)];
+                    setModalTitle("알림");
+                    setModalMessage(
+                        `랜덤 채팅방(${capacity}명, ${genderLabels[matchedGender]})에 참가합니다.`
+                    );
+                    setModalButtons([
+                        {
+                            text: "확인",
+                            action: async () => {
+                                try {
+                                    await joinChatRoom(target._id, userId);
+                                    navigate(`/chat/${target._id}/${userId}`);
+                                } catch (err) {
+                                    if (err.response?.status === 403) {
+                                        // 차단 관계 – 모달 닫고 다시 탐색
+                                        setModalOpen(false);
+                                        await tryMatch();
+                                    } else {
+                                        throw err;
+                                    }
+                                }
+                            }
+                        }
+                    ]);
+                    setModalOpen(true);
+                    return;
+                }
+
+                // (3-B) 대기방이 없으면 새 방 생성 안내
+                setModalTitle("랜덤 채팅 시작");
                 setModalMessage(
-                    `랜덤 채팅방(${capacity}명, ${genderLabels[matchedGender]})에 참가합니다.`
+                    `랜덤 채팅방(${capacity}명, ${genderLabels[matchedGender]})을 참가하시겠습니까?`
                 );
                 setModalButtons([
                     {
-                        text: "확인",
+                        text: "생성",
                         action: async () => {
-                            await joinChatRoom(room._id, userId);
-                            navigate(`/chat/${room._id}/${userId}`);
+                            try {
+                                const room = await createChatRoom(
+                                    "random",
+                                    capacity,
+                                    matchedGender,
+                                    ageGroup
+                                );
+                                await joinChatRoom(room._id, userId);
+                                navigate(`/chat/${room._id}/${userId}`);
+                            } catch (err) {
+                                if (err.response?.status === 403) {
+                                    // 생성-직후에도 차단 충돌 – 모달 닫고 다시 탐색
+                                    setModalOpen(false);
+                                    await tryMatch();
+                                } else {
+                                    throw err;
+                                }
+                            }
                         }
                     }
                 ]);
                 setModalOpen(true);
-                return;
-            }
+            };
 
-            // 새로운 방 생성 전 확인 모달 띄우기
-            setModalTitle("랜덤 채팅 시작");
-            setModalMessage(
-                `랜덤 채팅방(${capacity}명, ${genderLabels[matchedGender]})을 참가하시겠습니까?`
-            );
-            setModalButtons([
-                {
-                    text: "생성",
-                    action: async () => {
-                        try {
-                            const room = await createChatRoom(
-                                "random",
-                                capacity,
-                                matchedGender,
-                                ageGroup
-                            );
-                            await joinChatRoom(room._id, userId);
-                            navigate(`/chat/${room._id}/${userId}`);
-                        } catch {
-                            setModalTitle("에러");
-                            setModalMessage("랜덤 채팅방 참가에 실패했습니다.");
-                            setModalButtons([
-                                { text: "확인", action: () => setModalOpen(false) }
-                            ]);
-                            setModalOpen(true);
-                        }
-                    }
-                }
-            ]);
-            setModalOpen(true);
-        } catch {
+            /* ─── 3. 최초 호출 ─── */
+            await tryMatch();
+        } catch (e) {
+            console.error(e);
             setModalTitle("에러");
             setModalMessage("랜덤 채팅방 참가에 실패했습니다.");
             setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
             setModalOpen(true);
         }
     };
+
 
     if (error) return <div>{error}</div>;
 
