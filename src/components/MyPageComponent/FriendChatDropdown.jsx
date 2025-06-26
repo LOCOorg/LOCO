@@ -21,7 +21,8 @@ const FriendChatDropdown = () => {
     const setAuthUser = useAuthStore((s) => s.setUser);
 
     const [showDropdown, setShowDropdown] = useState(false);
-    const [friendRooms, setFriendRooms] = useState([]);
+    const friendRooms   = useFriendChatStore(s => s.friendRooms);
+    const setFriendRooms = useFriendChatStore(s => s.setFriendRooms);
     const [friendRequests, setFriendRequests] = useState([]);
 
 
@@ -30,7 +31,10 @@ const FriendChatDropdown = () => {
         if (!user?._id) return;
         try {
             const rooms = await fetchChatRooms({ roomType: 'friend' });
-            const mapped = rooms.map((r) => ({
+            const myRooms = rooms.filter(r =>
+                r.chatUsers.some(u => u._id === user._id)
+            );
+            const mapped = myRooms.filter(r => r.isActive).map((r) => ({
                 roomId: r._id,
                 friend: r.chatUsers.find((u) => u._id !== user._id),
             }));
@@ -38,7 +42,7 @@ const FriendChatDropdown = () => {
         } catch (e) {
             console.error('친구 채팅방 조회 실패', e);
         }
-    }, [user]);
+    }, [user, setFriendRooms]);
 
     // ⛔ async 함수를 effect 콜백으로 넘기지 않는다
     useEffect(() => {
@@ -132,20 +136,17 @@ const FriendChatDropdown = () => {
 
 
 
-    /* ---------------- 렌더 ---------------- */
-    const hasBadge =
-        notifications.length > 0 || friendRooms.length > 0 || friendRequests.length > 0;
+
 
     return (
         <div className="relative">
-            {hasBadge && (
                 <button
                     onClick={() => setShowDropdown((p) => !p)}
                     className="py-1 px-3 bg-green-500 hover:bg-green-600 rounded text-sm"
                 >
                     친구
                 </button>
-            )}
+
 
             {showDropdown && (
                 <div className="absolute right-0 mt-2 w-72 bg-white rounded shadow-lg p-3 text-black z-50">

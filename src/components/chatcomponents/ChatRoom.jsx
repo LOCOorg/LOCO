@@ -143,7 +143,7 @@ const ChatRoom = ({roomId, userId}) => {
                 if (socket) {
                     socket.emit("leaveRoom", { roomId, userId });
                 }
-                navigate("/chat", {replace: true});
+                navigate("/", {replace: true});
             } else {
                 console.error("채팅방 나가기 실패:", response.message);
             }

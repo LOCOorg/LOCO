@@ -6,6 +6,7 @@ import CommonModal from '../../common/CommonModal.jsx';
 import PhotoGallery from './PhotoGallery.jsx';
 import { useNavigate } from 'react-router-dom';
 import useFriendListStore from "../../stores/useFriendListStore.js";
+import useBlockedStore from "../../stores/useBlockedStore.js";
 
 
 const SimpleProfileModal = ({ profile, onClose }) => {
@@ -16,6 +17,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
     const [alertModalMessage, setAlertModalMessage] = useState("");
     const [confirmBlockOpen, setConfirmBlockOpen] = useState(false);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const addBlockedUser = useBlockedStore((s) => s.addBlockedUser);
     const setUser    = useAuthStore((s) => s.setUser);
 
     const friends = useFriendListStore((s) => s.friends);              // 추가
@@ -66,6 +68,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
     const handleBlockUser = async () => {
         try {
             await blockUser(authUser._id, profile._id);
+            addBlockedUser(profile);
             setAlertModalMessage("사용자를 차단했습니다.");
         } catch (error) {
             setAlertModalMessage(error.response?.data?.message || error.message);
