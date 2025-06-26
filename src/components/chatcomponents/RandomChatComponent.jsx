@@ -180,7 +180,10 @@ const RandomChatComponent = () => {
                         return false;
 
                     if (room.ageGroup !== ageGroup) return false;
-                    if (room.chatUsers.some((u) => blockedIds.includes(u._id))) return false;
+                    if (room.chatUsers.some((u) => blockedIds.includes(u._id))) return false;  // 내가 차단
+                    /* 👇 추가: 상대가 나를 차단한 방도 제외 */
+                    if (room.chatUsers.some((u) => (u.blockedUsers || []).includes(userId))) return false;
+
                     return true;
                 });
 
