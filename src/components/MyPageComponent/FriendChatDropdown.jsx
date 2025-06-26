@@ -30,7 +30,10 @@ const FriendChatDropdown = () => {
         if (!user?._id) return;
         try {
             const rooms = await fetchChatRooms({ roomType: 'friend' });
-            const mapped = rooms.map((r) => ({
+            const myRooms = rooms.filter(r =>
+                r.chatUsers.some(u => u._id === user._id)
+            );
+            const mapped = myRooms.map((r) => ({
                 roomId: r._id,
                 friend: r.chatUsers.find((u) => u._id !== user._id),
             }));
