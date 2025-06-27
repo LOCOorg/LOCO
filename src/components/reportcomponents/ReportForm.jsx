@@ -12,7 +12,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser }) => {
     // 초기 신고 상태: 신고자 ID는 로그인한 사용자, 가해자는 reportedUser가 있을 경우 기본값 설정
     const [newReport, setNewReport] = useState({
         reportTitle: '',
-        reportArea: 'friendChat',
+        reportArea: '친구채팅',
         reportCategory: '욕설, 모욕, 혐오발언',
         reportContants: '',
         // eslint-disable-next-line react/prop-types
@@ -72,7 +72,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser }) => {
             // 폼 초기화 (신고자 ID는 다시 authStore의 값으로 설정하고, reportedUser가 있다면 해당 별칭으로 재설정)
             setNewReport({
                 reportTitle: '',
-                reportArea: 'friendChat',
+                reportArea: '친구채팅',
                 reportCategory: '욕설, 모욕, 혐오발언',
                 reportContants: '',
                 // eslint-disable-next-line react/prop-types
@@ -119,9 +119,9 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser }) => {
                         onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
                     >
-                        <option value="friendChat">친구 채팅</option>
-                        <option value="randomChat">랜덤 채팅</option>
-                        <option value="community">커뮤니티</option>
+                        <option value="친구채팅">친구 채팅</option>
+                        <option value="랜덤채팅">랜덤 채팅</option>
+                        <option value="커뮤니티">커뮤니티</option>
                     </select>
                 </div>
                 <div className="mb-4">
