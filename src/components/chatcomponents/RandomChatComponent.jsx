@@ -286,8 +286,8 @@ const RandomChatComponent = () => {
             {/* 사용자 정보 */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                 <div className="flex flex-col">
-                    <span className="text-sm font-medium text-gray-500">닉네임</span>
-                    <span className="mt-1 text-gray-700">{userInfo?.nickname || "–"}</span>
+                    <span className="text-sm font-medium text-gray-500">별점(추천점수)</span>
+                    <span className="mt-1 text-gray-700">{userInfo?.star || "–"}</span>
                 </div>
                 <div className="flex flex-col">
                     <span className="text-sm font-medium text-gray-500">플랜</span>
