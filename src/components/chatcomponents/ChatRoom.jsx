@@ -421,6 +421,7 @@ const ChatRoom = ({roomId, userId}) => {
                                             <ProfileButton
                                                 profile={msg.sender}
                                                 className="w-10 h-10 rounded-full overflow-hidden mr-3"
+                                                area="랜덤채팅"
                                             />
                                         )}
 
@@ -452,6 +453,7 @@ const ChatRoom = ({roomId, userId}) => {
                                             <ProfileButton
                                                 profile={msg.sender}
                                                 className="w-10 h-10 rounded-full overflow-hidden ml-3"
+                                                area="랜덤채팅"
                                             />
                                         )}
                                         {isMe && !msg.isDeleted && (
