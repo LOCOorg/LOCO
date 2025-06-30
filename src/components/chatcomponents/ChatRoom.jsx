@@ -228,7 +228,7 @@ const ChatRoom = ({roomId, userId}) => {
             const roomInfo = await getChatRoomInfo(roomId);
             if (roomInfo && roomInfo.chatUsers) {
                 // ① participants 상태에 저장
-                setParticipants(roomInfo.chatUsers);
+                setParticipants(roomInfo.activeUsers);
                 setCapacity(roomInfo.capacity);
                 // ② capacity 충족 여부에 따라 로딩 해제
                 if (roomInfo.chatUsers.length >= roomInfo.capacity) {
@@ -269,10 +269,10 @@ const ChatRoom = ({roomId, userId}) => {
         if (socket) {
             socket.emit("joinRoom", roomId);
             // 참가자 입장 시: ID → { _id, nickname } 형태로 변환
-            socket.on("roomJoined", async ({ chatUsers, capacity }) => {
+            socket.on("roomJoined", async ({ activeUsers, capacity }) => {
                 try {
                     const participantsWithNames = await Promise.all(
-                        chatUsers.map(async u => {
+                        activeUsers.map(async u => {
                             const id = typeof u === "object" ? u._id : u;
                             const userInfo = await getUserInfo(id);
                             return { _id: id, nickname: userInfo.nickname || "알 수 없음" };
