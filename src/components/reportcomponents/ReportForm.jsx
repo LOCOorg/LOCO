@@ -150,15 +150,10 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser }) => {
                 </div>
                 <div className="mb-4">
                     <label className="block text-gray-700 text-sm font-bold mb-2">가해자 별칭:</label>
-                    <input
-                        type="text"
-                        name="offenderNickname"
-                        value={newReport.offenderNickname}
-                        onChange={handleChange}
-                        required
-                        placeholder="예: 넷카마정석"
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
-                    />
+                    <div className="shadow appearance-none border rounded w-full py-2 px-3
+                  bg-gray-100 text-gray-700">
+                        {newReport.offenderNickname}
+                    </div>
                 </div>
                 {/* 로그인한 사용자의 정보 표시 (신고자 정보는 자동 적용) */}
                 {user && (
