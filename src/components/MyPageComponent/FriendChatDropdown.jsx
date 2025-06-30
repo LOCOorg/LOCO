@@ -1,6 +1,5 @@
 // src/components/FriendChatDropdown.jsx
 import { useState, useEffect, useContext, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../stores/authStore';
 import useFriendChatStore from '../../stores/useFriendChatStore';
 import { NotificationContext } from '../../hooks/NotificationContext';
