@@ -5,14 +5,14 @@ import useAuthStore from '../../stores/authStore.js';
 import CommonModal from '../../common/CommonModal.jsx';
 
 // eslint-disable-next-line react/prop-types
-const ReportForm = ({ onReportCreated, onClose, reportedUser }) => {
+const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기타' }) => {
     // authStore에서 로그인한 사용자 정보 가져오기
     const { user } = useAuthStore();
 
     // 초기 신고 상태: 신고자 ID는 로그인한 사용자, 가해자는 reportedUser가 있을 경우 기본값 설정
     const [newReport, setNewReport] = useState({
         reportTitle: '',
-        reportArea: '친구채팅',
+        reportArea: defaultArea,
         reportCategory: '욕설, 모욕, 혐오발언',
         reportContants: '',
         // eslint-disable-next-line react/prop-types
@@ -29,6 +29,10 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser }) => {
             setNewReport(prev => ({ ...prev, reportErId: user._id }));
         }
     }, [user]);
+
+    useEffect(() => {
+        setNewReport(prev => ({ ...prev, reportArea: defaultArea }));
+    }, [defaultArea]);
 
     // reportedUser prop이 변경되면 offenderNickname 필드를 업데이트
     useEffect(() => {

@@ -3,7 +3,7 @@ import { getUserInfo } from '../../api/userAPI.js';
 import useAuthStore from '../../stores/authStore.js';
 import SimpleProfileModal from './SimpleProfileModal.jsx';
 
-const ProfileButton = ({ profile: externalProfile }) => {
+const ProfileButton = ({ profile: externalProfile, area = '프로필' }) => {
     const authUser = useAuthStore((state) => state.user);
     const [profile, setProfile] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,7 +52,7 @@ const ProfileButton = ({ profile: externalProfile }) => {
             </button>
 
             {isModalOpen && (
-                <SimpleProfileModal profile={profile} onClose={handleCloseModal} />
+                <SimpleProfileModal profile={profile} onClose={handleCloseModal} area={area} />
             )}
         </div>
     );
