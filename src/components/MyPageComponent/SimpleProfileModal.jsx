@@ -9,7 +9,7 @@ import useFriendListStore from "../../stores/useFriendListStore.js";
 import useBlockedStore from "../../stores/useBlockedStore.js";
 
 
-const SimpleProfileModal = ({ profile, onClose }) => {
+const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
     const authUser = useAuthStore(state => state.user);
     const isOwnProfile = authUser && profile._id === authUser._id; // 내 프로필인지 확인
     const [isReportModalVisible, setIsReportModalVisible] = useState(false);
@@ -190,6 +190,7 @@ const SimpleProfileModal = ({ profile, onClose }) => {
                             onClose={() => setIsReportModalVisible(false)}
                             reportedUser={profile}
                             onReportCreated={() => setIsReportModalVisible(false)}
+                            defaultArea={area}
                         />
                     </div>
                 </div>

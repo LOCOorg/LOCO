@@ -111,7 +111,7 @@ const FriendListPanel = () => {
                                                     e.stopPropagation();
                                                 }}
                                             >
-                                                <ProfileButton profile={friend} size="sm" />
+                                                <ProfileButton profile={friend} size="sm" area="친구채팅" />
                                             </div>
 
                                             {/* 3. 닉네임 클릭: 친구 채팅 열기 */}
