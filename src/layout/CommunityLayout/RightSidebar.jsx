@@ -73,8 +73,8 @@ const RightSidebar = ({ sideTab, setSideTab, topViewed, topCommented }) => {
                                         {item.communityTitle}
                                     </button>
                                     <span className="text-xs text-gray-500 ml-2">
-                    {item.comments ? item.comments.length : 0}개
-                  </span>
+                                        {item.totalComments ?? 0}개
+                                    </span>
                                 </li>
                             ))}
                         </ul>
