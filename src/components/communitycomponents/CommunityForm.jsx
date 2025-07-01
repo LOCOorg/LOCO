@@ -229,7 +229,7 @@ const CommunityForm = () => {
                                     onChange={handleFileChange}
                                     className="hidden"
                                 />
-                                <span className="text-gray-500">클릭하거나 드래그하여 파일 선택</span>
+                                <span className="text-gray-500">여기를 클릭해서 파일 선택</span>
                             </label>
                         </div>
                     )}
