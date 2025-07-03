@@ -407,7 +407,7 @@ const ChatRoom = ({roomId, userId}) => {
                                 d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                             ></path>
                         </svg>
-                        <span className="text-xl">다른 사용자를 기다리는 중…</span>
+                        <span className="text-xl">다른 사용자를 기다리는 중… <br/>다른 채팅을 원하시면 대기 중에 채팅 종료(횟수 차감X) </span>
                     </div>
                 ) : (
                     <>
