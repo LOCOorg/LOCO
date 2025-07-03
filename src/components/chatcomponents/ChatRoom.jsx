@@ -127,23 +127,36 @@ const ChatRoom = ({roomId, userId}) => {
 
     const confirmLeaveRoom = async () => {
         try {
-            // 매너 평가 점수 전송
-            await Promise.all(
-                Object.keys(ratings).map(async (participantId) => {
-                    if (ratings[participantId] === 1) {
-                        await rateUser(participantId, 1);
-                    }
-                })
-            );
-            // 채팅방 나가기 API 호출
+            /* 0) 현재 방 상태 재조회 ― 활성화됐는지 확인 */
+            const roomInfo = await getChatRoomInfo(roomId);     // 🗝️[1]
+            const isChatActive =
+                roomInfo?.isActive ||                  // 스키마의 isActive 필드[6]
+                roomInfo?.status === "active" ||       // 백엔드에서 관리하는 status
+                (roomInfo?.activeUsers?.length ?? 0) >= roomInfo?.capacity; // 예비용
+
+            /* 1) 매너 평가(채팅이 실제로 진행된 경우에만 의미가 있으므로 isChatActive 검사) */
+            if (isChatActive) {
+                await Promise.all(
+                    Object.keys(ratings).map(async (participantId) => {
+                        if (ratings[participantId] === 1) {
+                            await rateUser(participantId, 1);
+                        }
+                    })
+                );
+            }
+
+            /* 2) 방 나가기 */
             const response = await leaveChatRoom(roomId, userId);
             if (response.success) {
-                // 채팅 횟수 감소 API 호출 추가
-                await decrementChatCount(userId);
-                if (socket) {
-                    socket.emit("leaveRoom", { roomId, userId });
+                /* 3) 🔻 채팅 횟수 차감은 ‘진짜’ 채팅이 시작된 방만 */
+                if (isChatActive) {
+                    await decrementChatCount(userId);    // ✅ 필요할 때만 호출
                 }
-                navigate("/", {replace: true});
+
+                /* 4) 소켓 정리 */
+                if (socket) socket.emit("leaveRoom", { roomId, userId });
+
+                navigate("/", { replace: true });
             } else {
                 console.error("채팅방 나가기 실패:", response.message);
             }
@@ -152,6 +165,7 @@ const ChatRoom = ({roomId, userId}) => {
         }
         setIsModalOpen(false);
     };
+
 
     const cancelLeaveRoom = () => {
         setIsModalOpen(false);
@@ -393,7 +407,7 @@ const ChatRoom = ({roomId, userId}) => {
                                 d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                             ></path>
                         </svg>
-                        <span className="text-xl">다른 사용자를 기다리는 중…</span>
+                        <span className="text-xl">다른 사용자를 기다리는 중… <br/>다른 채팅을 원하시면 대기 중에 채팅 종료(횟수 차감X) </span>
                     </div>
                 ) : (
                     <>

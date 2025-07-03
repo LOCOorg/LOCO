@@ -1,6 +1,6 @@
 // src/components/FriendListPanel.jsx
 import { useEffect, useState } from "react";
-import { getUserInfo } from "../../api/userAPI.js";
+import {getFriendsPage, getUserInfo} from "../../api/userAPI.js";
 import {
     fetchChatRooms,
     createFriendRoom,
@@ -22,17 +22,29 @@ const FriendListPanel = () => {
     const [errorModalOpen, setErrorModalOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
+    const [total, setTotal]   = useState(0);   // 전체 친구 수
+    const [page,  setPage]    = useState(0);   // 현재 로드한 마지막 페이지(0-based)
+    const [fetching, setFetching] = useState(false);
+
     const authUser = useAuthStore((state) => state.user);
     const { openFriendChat, addFriendRoom  } = useFriendChatStore();
 
+    const PAGE_SIZE = 4;
+
+    /* ① 내 프로필 + 첫 페이지 */
     useEffect(() => {
         if (!authUser) return;
         (async () => {
             try {
-                const userData = await getUserInfo(authUser._id);
-                setUser(userData);
-                const friendsData = await Promise.all(userData.friends.map(fid => getUserInfo(fid)));
-                setFriendsList(friendsData);
+                const me = await getUserInfo(authUser._id);
+                setUser(me);
+
+                const { total, friends } =
+                    await getFriendsPage(authUser._id, 0, PAGE_SIZE);    // 첫 페이지
+
+                setTotal(total);
+                setFriendsList(friends);
+                setPage(0);
             } catch (e) {
                 console.error("유저 정보 로드 실패", e);
             } finally {
@@ -40,6 +52,27 @@ const FriendListPanel = () => {
             }
         })();
     }, [authUser]);
+
+    /* ② 더보기 */
+    const loadMore = async () => {
+        if (fetching) return;
+        setFetching(true);
+        try {
+            const nextPage = page + 1;
+            const { friends: newFriends } =
+                await getFriendsPage(authUser._id, nextPage * PAGE_SIZE, PAGE_SIZE);
+
+            // 이미 있는 배열 뒤에 붙이기
+            setFriendsList([...friends, ...newFriends]);   // [4]
+            setPage(nextPage);
+        } catch (e) {
+            console.error("친구 더보기 실패", e);
+            setErrorMessage("친구 목록을 더 가져오지 못했습니다.");
+            setErrorModalOpen(true);
+        } finally {
+            setFetching(false);
+        }
+    };
 
     const handleFriendSelect = async (friend) => {
         try {
@@ -80,60 +113,54 @@ const FriendListPanel = () => {
         <div className="w-80 bg-gray-50 shadow-lg rounded-xl p-5 flex flex-col">
             {loading ? (
                 <p className="text-gray-400 text-center py-10">로딩 중...</p>
-            ) : user ? (
-                <>
-                    {/* 프로필 헤더 */}
-                    <div className="flex items-center mb-6">
-                        <ProfileButton profile={user} />
-                        <div className="ml-3">
-                            <p className="text-xl font-semibold text-gray-800">
-                                {user.nickname}님
-                            </p>
-                            <p className="text-sm text-gray-500">친구 {friends.length}명</p>
+            ) : (
+                user && (
+                    <>
+                        {/* 프로필 헤더 */}
+                        <div className="flex items-center mb-6">
+                            <ProfileButton profile={user}/>
+                            <div className="ml-3">
+                                <p className="text-xl font-semibold">{user.nickname}님</p>
+                                <p className="text-sm text-gray-500">친구 {total}명</p>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* 친구 리스트 */}
-                    <div className="flex-1 overflow-y-auto">
-                        {friends.length > 0 ? (
-                            <ul className="divide-y divide-gray-200">
-                                {friends.map((friend) => (
-                                    <li
-                                        key={friend._id}
-                                        className="flex items-center justify-between p-3 hover:bg-white rounded-lg transition-shadow shadow-sm hover:shadow-md mb-2"
-                                    >
-                                        {/* 1. 프로필 버튼 + 닉네임 분리 */}
-                                        <div className="flex items-center space-x-3">
-                                            {/* 2. 프로필 버튼 클릭: 프로필 보기 (stopPropagation 으로 채팅 오픈 방지) */}
-                                            <div
-                                                className="cursor-pointer"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                }}
-                                            >
-                                                <ProfileButton profile={friend} size="sm" area="친구채팅" />
+                        {/* 친구 리스트 */}
+                        <div className="flex-1 overflow-y-auto">
+                            {friends.length ? (
+                                <ul className="divide-y divide-gray-200">
+                                    {friends.map((f) => (
+                                        <li key={f._id} className="p-3 flex items-center">
+                                            <div className="cursor-pointer" onClick={() => {}}>
+                                                <ProfileButton profile={f} size="sm"/>
                                             </div>
-
-                                            {/* 3. 닉네임 클릭: 친구 채팅 열기 */}
                                             <span
-                                                className="text-gray-700 font-medium hover:text-blue-600 transition cursor-pointer"
-                                                onClick={() => handleFriendSelect(friend)}
+                                                className="ml-3 font-medium hover:text-blue-600 cursor-pointer"
+                                                onClick={() => handleFriendSelect(f)}
                                             >
-                                            {friend.nickname}
-                                          </span>
-                                        </div>
+                        {f.nickname}
+                      </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-gray-400 text-center py-10">아직 친구가 없어요.</p>
+                            )}
+                        </div>
 
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p className="text-gray-400 text-center py-10">
-                                아직 친구가 없어요.
-                            </p>
+                        {/* 더보기 버튼: 아직 안 불러온 친구가 있을 때만 노출 */}
+                        {friends.length < total && (
+                            <button
+                                className="mt-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50"
+                                onClick={loadMore}
+                                disabled={fetching}
+                            >
+                                {fetching ? "로딩..." : "더보기"}
+                            </button>
                         )}
-                    </div>
-                </>
-            ) : null}
+                    </>
+                )
+            )}
 
             {/* 에러 모달 */}
             <CommonModal
