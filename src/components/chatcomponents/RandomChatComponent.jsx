@@ -162,6 +162,7 @@ const RandomChatComponent = () => {
 
                 // (3) 차단된 유저가 없는 대기방 필터링
                 const availableRooms = rooms.filter((room) => {
+                    if (leftRooms.includes(room._id))  return false;
                     if (room.capacity !== capacity) return false;
                     if (room.chatUsers.length >= room.capacity) return false;
                     if (room.isActive || room.status !== "waiting") return false;
