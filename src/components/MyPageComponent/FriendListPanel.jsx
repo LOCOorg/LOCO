@@ -132,7 +132,7 @@ const FriendListPanel = () => {
                                     {friends.map((f) => (
                                         <li key={f._id} className="p-3 flex items-center">
                                             <div className="cursor-pointer" onClick={() => {}}>
-                                                <ProfileButton profile={f} size="sm"/>
+                                                <ProfileButton profile={f} size="sm" area="친구채팅"/>
                                             </div>
                                             <span
                                                 className="ml-3 font-medium hover:text-blue-600 cursor-pointer"

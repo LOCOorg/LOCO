@@ -105,7 +105,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
             {error && <p className="text-red-500 mb-4">{error}</p>}
             <form onSubmit={handleSubmit}>
                 <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 제목:</label>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 제목</label>
                     <input
                         type="text"
                         name="reportTitle"
@@ -116,12 +116,13 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
                     />
                 </div>
                 <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 구역:</label>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 구역</label>
                     <select
                         name="reportArea"
                         value={newReport.reportArea}
+                        disabled
                         onChange={handleChange}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-black-700"
                     >
                         <option value="친구채팅">친구 채팅</option>
                         <option value="랜덤채팅">랜덤 채팅</option>
@@ -129,7 +130,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
                     </select>
                 </div>
                 <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 카테고리:</label>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 카테고리(선택)▼</label>
                     <select
                         name="reportCategory"
                         value={newReport.reportCategory}
@@ -143,7 +144,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
                     </select>
                 </div>
                 <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 내용:</label>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 내용</label>
                     <textarea
                         name="reportContants"
                         value={newReport.reportContants}
@@ -153,7 +154,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
                     ></textarea>
                 </div>
                 <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">가해자 별칭:</label>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">가해자</label>
                     <div className="shadow appearance-none border rounded w-full py-2 px-3
                   bg-gray-100 text-gray-700">
                         {newReport.offenderNickname}
