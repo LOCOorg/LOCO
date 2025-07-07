@@ -4,6 +4,7 @@ import { useSocket } from "../../hooks/useSocket.js";
 import { fetchMessages } from "../../api/chatAPI.js";
 import { getUserInfo } from "../../api/userAPI.js";
 import useAuthStore from "../../stores/authStore.js";
+import useFriendChatStore from "../../stores/useFriendChatStore.js";
 
 // eslint-disable-next-line react/prop-types
 function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) {
@@ -17,6 +18,10 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
     const senderId = authUser?._id;
 
     const messagesContainerRef = useRef(null);
+    const [isMinimized] = useState(false);
+    const hiddenRoomIds = useFriendChatStore((s) => s.hiddenRoomIds);
+    const toggleHideChat = useFriendChatStore((s) => s.toggleHideChat);
+
 
     // textTime을 HH:MM 형식으로 포맷하는 헬퍼 함수
     const formatTime = (textTime) => {
@@ -161,56 +166,83 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
 
     const groupedMessages = groupMessagesByDate(messages);
 
+
+    if (isMinimized) return null;
+    /* 숨김 상태면 컴포넌트 자체를 렌더하지 않음 */
+    if (hiddenRoomIds.includes(roomId)) return null;
+
     return (
         <div
-            className="fixed bottom-5 right-5 w-[350px] h-[400px] bg-white shadow-lg rounded-lg flex flex-col overflow-hidden z-[1000]"
+            className="fixed bottom-5 right-5 w-[350px] h-[400px] bg-white shadow-lg
+                 rounded-lg flex flex-col overflow-hidden z-[1000]"
             style={customStyle}
         >
-            <div className="bg-[#0084ff] text-white p-2.5 cursor-pointer flex justify-between items-center">
-                <span>{friend ? (friend.nickname || friend.name) : "채팅"}</span>
-                <button onClick={handleClose} className="bg-transparent border-0 text-white text-base cursor-pointer">
+            {/* ── 헤더 ── */}
+            <div
+                onClick={() => toggleHideChat(roomId)}
+                className="bg-[#0084ff] text-white p-2.5 cursor-pointer
+                   flex items-center justify-between select-none"
+            >
+                {/* eslint-disable-next-line react/prop-types */}
+                <span>{friend?.nickname || friend?.name || "채팅"}</span>
+
+                {/* 닫기 버튼 (버블 방지) */}
+                <button
+                    className="bg-transparent text-white text-base"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleClose();
+                    }}
+                >
                     X
                 </button>
             </div>
-            <div ref={messagesContainerRef} className="flex-1 p-2.5 overflow-y-auto bg-gray-100 h-[300px]">
-                {Object.keys(groupedMessages).map((date) => (
-                    <div key={date}>
-                        <div className="text-center my-[10px] text-xs text-gray-600">
-                            {date}
-                        </div>
-                        <ul className="list-none p-0 m-0">
-                            {groupedMessages[date].map((message) => {
-                                const isMyMessage = message.sender._id === senderId;
-                                return (
-                                    <li key={message._id} className={`flex ${isMyMessage ? "justify-end" : "justify-start"} mb-2`}>
-                                        <div className={`${isMyMessage ? "bg-[#0084ff] text-white" : "bg-[#e4e6eb] text-black"} py-2 px-3 rounded-[16px] max-w-[70%]`}>
-                                            <strong className="text-xs">{message.sender.nickname}</strong>
-                                            <div className="text-sm mt-1">
-                                                {message.text}
-                                            </div>
-                                            <div className={`text-xs text-white-600 mt-1 ${isMyMessage ? "text-right" : "text-left"}`}>
-                                                {formatTime(message.textTime)}
-                                            </div>
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+            {!isMinimized && (
+                <>
+                    <div ref={messagesContainerRef} className="flex-1 p-2.5 overflow-y-auto bg-gray-100 h-[300px]">
+                        {Object.keys(groupedMessages).map((date) => (
+                            <div key={date}>
+                                <div className="text-center my-[10px] text-xs text-gray-600">
+                                    {date}
+                                </div>
+                                <ul className="list-none p-0 m-0">
+                                    {groupedMessages[date].map((message) => {
+                                        const isMyMessage = message.sender._id === senderId;
+                                        return (
+                                            <li key={message._id}
+                                                className={`flex ${isMyMessage ? "justify-end" : "justify-start"} mb-2`}>
+                                                <div
+                                                    className={`${isMyMessage ? "bg-[#0084ff] text-white" : "bg-[#e4e6eb] text-black"} py-2 px-3 rounded-[16px] max-w-[70%]`}>
+                                                    <strong className="text-xs">{message.sender.nickname}</strong>
+                                                    <div className="text-sm mt-1">
+                                                        {message.text}
+                                                    </div>
+                                                    <div
+                                                        className={`text-xs text-white-600 mt-1 ${isMyMessage ? "text-right" : "text-left"}`}>
+                                                        {formatTime(message.textTime)}
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </div>
+                        ))}
                     </div>
-                ))}
-            </div>
-            <form onSubmit={handleSendMessage} className="flex border-t border-gray-300">
-                <input
-                    type="text"
-                    value={newMessage}
-                    onChange={handleMessageChange}
-                    placeholder="메시지를 입력하세요..."
-                    className="flex-1 p-2.5 border-none outline-none"
-                />
-                <button type="submit" className="py-2.5 px-3.5 bg-[#0084ff] text-white border-0 cursor-pointer">
-                    전송
-                </button>
-            </form>
+                    <form onSubmit={handleSendMessage} className="flex border-t border-gray-300">
+                        <input
+                            type="text"
+                            value={newMessage}
+                            onChange={handleMessageChange}
+                            placeholder="메시지를 입력하세요..."
+                            className="flex-1 p-2.5 border-none outline-none"
+                        />
+                        <button type="submit" className="py-2.5 px-3.5 bg-[#0084ff] text-white border-0 cursor-pointer">
+                            전송
+                        </button>
+                    </form>
+                </>
+            )}
         </div>
     );
 }

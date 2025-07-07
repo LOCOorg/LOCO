@@ -120,20 +120,20 @@ const ReportListComponent = () => {
                     전체 구역
                 </button>
                 <button
-                    onClick={() => handleAreaFilterChange("friendChat")}
-                    className={`px-3 py-1 rounded ${filterArea === "friendChat" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                    onClick={() => handleAreaFilterChange("친구채팅")}
+                    className={`px-3 py-1 rounded ${filterArea === "친구채팅" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
                     친구 채팅
                 </button>
                 <button
-                    onClick={() => handleAreaFilterChange("randomChat")}
-                    className={`px-3 py-1 rounded ${filterArea === "randomChat" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                    onClick={() => handleAreaFilterChange("랜덤채팅")}
+                    className={`px-3 py-1 rounded ${filterArea === "랜덤채팅" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
                     랜덤 채팅
                 </button>
                 <button
-                    onClick={() => handleAreaFilterChange("community")}
-                    className={`px-3 py-1 rounded ${filterArea === "community" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                    onClick={() => handleAreaFilterChange("커뮤니티")}
+                    className={`px-3 py-1 rounded ${filterArea === "커뮤니티" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
                     커뮤니티
                 </button>
