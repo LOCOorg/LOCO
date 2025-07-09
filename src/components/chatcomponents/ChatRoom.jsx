@@ -375,9 +375,9 @@ const ChatRoom = ({roomId, userId}) => {
                     {/* 참가자 리스트 */}
                     <div className="mt-2 flex flex-wrap gap-2 text-sm">
                         {participants.map(user => (
-                            <div key={user._id} className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1">
+                            <div key={user._id} className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1 text-black">
                                 <ProfileButton profile={user} className="mr-1" area="랜덤채팅"/>
-                                <span>{user.nickname}</span>
+                                <span className="text-white">{user.nickname}</span>
                             </div>
                         ))}
                     </div>
