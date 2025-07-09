@@ -3,7 +3,7 @@ import { getUserInfo } from '../../api/userAPI.js';
 import useAuthStore from '../../stores/authStore.js';
 import SimpleProfileModal from './SimpleProfileModal.jsx';
 
-const ProfileButton = ({ profile: externalProfile, area = '프로필' }) => {
+const ProfileButton = ({ profile: externalProfile, area = '프로필', onModalToggle }) => {
     const authUser = useAuthStore((state) => state.user);
     const [profile, setProfile] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,8 +31,16 @@ const ProfileButton = ({ profile: externalProfile, area = '프로필' }) => {
         };
     }, [externalProfile, authUser]);
 
-    const handleOpenModal = () => setIsModalOpen(true);
-    const handleCloseModal = () => setIsModalOpen(false);
+    /* 모달 열기 */
+    const handleOpenModal = () => {
+        setIsModalOpen(true);
+        onModalToggle?.(true);
+    }
+    /* 모달 닫기 */
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        onModalToggle?.(false);  // 부모에게 알림
+    };
 
     return (
         <div>
