@@ -244,6 +244,9 @@ const ReportListComponent = () => {
                             <li key={report._id} className="bg-white shadow rounded mb-4 p-4">
                                 <h3 className="text-xl font-bold mb-2">제목: {report.reportTitle}</h3>
                                 <p className="mb-1">
+                                    <span className="font-semibold">신고 구역:</span> {report.reportArea}
+                                </p>
+                                <p className="mb-1">
                                     <span className="font-semibold">내용:</span> {report.reportContants}
                                 </p>
                                 <p className="mb-1">
