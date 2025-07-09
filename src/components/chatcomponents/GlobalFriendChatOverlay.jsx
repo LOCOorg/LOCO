@@ -39,13 +39,10 @@ function GlobalFriendChatOverlay() {
             ))}
 
             {hiddenChats.length > 0 && (
-                <div
-                    className="fixed bottom-5 z-[1100]"
-                    style={{ right: 20 + MAX_CHAT_WINDOWS * 360 + "px" }}
-                >
+                <div className="fixed left-4 bottom-4 z-50">
                     <button
                         onClick={toggleShowMore}
-                        className="py-2.5 px-3.5 bg-[#0084ff] text-white border-0 cursor-pointer rounded-lg mb-[5px]"
+                        className="px-3 py-2 bg-blue-500 text-white text-sm rounded-full shadow-lg hover:bg-blue-700 transition"
                     >
                         {showMore ? "채팅 숨기기" : `+${hiddenChats.length}개 채팅`}
                     </button>
@@ -65,7 +62,8 @@ function GlobalFriendChatOverlay() {
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
-                                    <span className="flex items-center justify-center w-full h-full text-sm font-medium text-gray-700">
+                                    <span
+                                        className="flex items-center justify-center w-full h-full text-sm font-medium text-gray-700">
           {chat.friend?.nickname?.[0] || "?"}
         </span>
                                 )}

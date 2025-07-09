@@ -39,6 +39,8 @@ const ChatRoom = ({roomId, userId}) => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
 
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+
     // 메시지 전송 시간을 포맷하는 헬퍼 함수 (시간:분 형식)
     const formatTime = (textTime) => {
         if (!textTime) return "";
@@ -375,9 +377,9 @@ const ChatRoom = ({roomId, userId}) => {
                     {/* 참가자 리스트 */}
                     <div className="mt-2 flex flex-wrap gap-2 text-sm">
                         {participants.map(user => (
-                            <div key={user._id} className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1">
-                                <ProfileButton profile={user} className="mr-1" area="랜덤채팅"/>
-                                <span>{user.nickname}</span>
+                            <div key={user._id} className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1 text-black">
+                                <ProfileButton profile={user} className="mr-1" area="랜덤채팅" onModalToggle={setIsProfileOpen}/>
+                                <span className="text-white">{user.nickname}</span>
                             </div>
                         ))}
                     </div>
@@ -436,6 +438,7 @@ const ChatRoom = ({roomId, userId}) => {
                                                 profile={msg.sender}
                                                 className="w-10 h-10 rounded-full overflow-hidden mr-3"
                                                 area="랜덤채팅"
+                                                onModalToggle={setIsProfileOpen}
                                             />
                                         )}
 
@@ -468,6 +471,7 @@ const ChatRoom = ({roomId, userId}) => {
                                                 profile={msg.sender}
                                                 className="w-10 h-10 rounded-full overflow-hidden ml-3"
                                                 area="랜덤채팅"
+                                                onModalToggle={setIsProfileOpen}
                                             />
                                         )}
                                         {isMe && !msg.isDeleted && (
@@ -495,6 +499,7 @@ const ChatRoom = ({roomId, userId}) => {
 
 
                         {/* 입력 폼 */}
+                        {!isProfileOpen && (
                         <form
                             onSubmit={handleSendMessage}
                             className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex items-center space-x-3"
@@ -513,6 +518,7 @@ const ChatRoom = ({roomId, userId}) => {
                                 전송
                             </button>
                         </form>
+                            )}
                     </>
                 )}
             </section>
