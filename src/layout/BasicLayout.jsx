@@ -6,6 +6,7 @@ import FriendChatDropdown from '../components/MyPageComponent/FriendChatDropdown
 import FriendRequestNotification from '../components/MyPageComponent/FriendRequestNotification.jsx';
 import React from "react";
 import LogoutButton from '../components/authComponent/LogoutButton.jsx';
+import GlobalFriendChatOverlay from "../components/chatcomponents/GlobalFriendChatOverlay.jsx";
 
 const BasicLayout = ({ children }) => {
     const { user } = useAuthStore();
@@ -62,6 +63,7 @@ const BasicLayout = ({ children }) => {
             <footer className="bg-gray-100 text-center py-2">
                 © 2025 LOCO. All rights reserved.
             </footer>
+            <GlobalFriendChatOverlay />  {/* 전역 채팅 */}
         </div>
     );
 };

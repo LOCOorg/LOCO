@@ -14,7 +14,7 @@ import useFriendListStore from '../../stores/useFriendListStore';
 
 const FriendChatDropdown = () => {
     const { user } = useAuthStore();
-    const { openFriendChat } = useFriendChatStore();
+    const { openFriendChat, swapFriendChat } = useFriendChatStore();
     const { notifications, removeNotification } = useContext(NotificationContext);
     const addFriend    = useFriendListStore((s) => s.addFriend);
     const setAuthUser = useAuthStore((s) => s.setUser);
@@ -132,6 +132,13 @@ const FriendChatDropdown = () => {
             console.error('친구 요청 거절 실패', e);
         }
     };
+    const MAX_CHAT_WINDOWS = 3;
+    // 드롭다운 항목 클릭 시 호출
+    const handleOpenChat = (room) => {
+        openFriendChat(room);                    // 숨김 해제 또는 새 창 열기
+        swapFriendChat(room.roomId, MAX_CHAT_WINDOWS); // 보이는 영역으로 이동
+        // setShowDropdown(false);                  // 선택 후 드롭다운 닫기(선택)
+    };
 
 
 
@@ -192,7 +199,7 @@ const FriendChatDropdown = () => {
                         friendRooms.map(({ roomId, friend }) => (
                             <div
                                 key={roomId}
-                                onClick={() => openFriendChat({ roomId, friend })}
+                                onClick={() => handleOpenChat({ roomId, friend })}
                                 className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-sm"
                             >
                                 {friend.nickname || friend.name}
