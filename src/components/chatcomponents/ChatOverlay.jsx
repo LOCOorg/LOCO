@@ -5,6 +5,7 @@ import { fetchMessages } from "../../api/chatAPI.js";
 import { getUserInfo } from "../../api/userAPI.js";
 import useAuthStore from "../../stores/authStore.js";
 import useFriendChatStore from "../../stores/useFriendChatStore.js";
+import ProfileButton from "../MyPageComponent/ProfileButton.jsx";
 
 // eslint-disable-next-line react/prop-types
 function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) {
@@ -21,6 +22,8 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
     const [isMinimized] = useState(false);
     const hiddenRoomIds = useFriendChatStore((s) => s.hiddenRoomIds);
     const toggleHideChat = useFriendChatStore((s) => s.toggleHideChat);
+
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
 
     // textTime을 HH:MM 형식으로 포맷하는 헬퍼 함수
@@ -174,21 +177,32 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
     return (
         <div className="fixed bottom-5 right-5 w-[350px] h-[400px] bg-white shadow-lg
                  rounded-lg flex flex-col overflow-hidden z-[1000]"
-            style={customStyle}>
+             style={customStyle}>
             {/* ── 헤더 ── */}
-            <div className="bg-[#0084ff] text-white p-2.5 cursor-pointer
-                   flex items-center justify-between select-none">
-                {/* eslint-disable-next-line react/prop-types */}
-                <span>{friend?.nickname || friend?.name || "채팅"}</span>
+            <div className="bg-[#0084ff] text-white p-2.5 flex items-center justify-between select-none">
+                {/* 왼쪽 : 프로필 버튼 + 상대방 이름 */}
                 <div className="flex items-center space-x-2">
-                    {/* 최소화 버튼 */}
+                    {/* 상대방 정보가 있을 때만 표시 */}
+                    <div className="text-black">
+                    {friend && (
+                        <ProfileButton
+                            profile={friend}
+                            area="친구채팅"
+                            onModalToggle={setIsProfileOpen}
+                        />
+                    )}
+                    </div>
+                    <span>{friend?.nickname || friend?.name || "채팅"}</span>
+                </div>
+
+                {/* 오른쪽 : 최소화 / 닫기 */}
+                <div className="flex items-center space-x-2">
                     <button
                         className="bg-transparent text-white text-base leading-none"
                         onClick={() => toggleHideChat(roomId)}
                     >
                         ▼
                     </button>
-                    {/* 닫기 버튼 (버블 방지) */}
                     <button
                         className="bg-transparent text-white text-base leading-none"
                         onClick={(e) => {
@@ -199,56 +213,75 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                         X
                     </button>
                 </div>
-                </div>
-                {!isMinimized && (
-                    <>
-                        <div ref={messagesContainerRef} className="flex-1 p-2.5 overflow-y-auto bg-gray-100 h-[300px]">
-                            {Object.keys(groupedMessages).map((date) => (
-                                <div key={date}>
-                                    <div className="text-center my-[10px] text-xs text-gray-600">
-                                        {date}
-                                    </div>
-                                    <ul className="list-none p-0 m-0">
-                                        {groupedMessages[date].map((message) => {
-                                            const isMyMessage = message.sender._id === senderId;
-                                            return (
-                                                <li key={message._id}
-                                                    className={`flex ${isMyMessage ? "justify-end" : "justify-start"} mb-2`}>
-                                                    <div
-                                                        className={`${isMyMessage ? "bg-[#0084ff] text-white" : "bg-[#e4e6eb] text-black"} py-2 px-3 rounded-[16px] max-w-[70%]`}>
-                                                        <strong className="text-xs">{message.sender.nickname}</strong>
-                                                        <div className="text-sm mt-1">
-                                                            {message.text}
-                                                        </div>
-                                                        <div
-                                                            className={`text-xs text-white-600 mt-1 ${isMyMessage ? "text-right" : "text-left"}`}>
-                                                            {formatTime(message.textTime)}
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
-                                </div>
-                            ))}
-                        </div>
-                        <form onSubmit={handleSendMessage} className="flex border-t border-gray-300">
-                            <input
-                                type="text"
-                                value={newMessage}
-                                onChange={handleMessageChange}
-                                placeholder="메시지를 입력하세요..."
-                                className="flex-1 p-2.5 border-none outline-none"
-                            />
-                            <button type="submit"
-                                    className="py-2.5 px-3.5 bg-[#0084ff] text-white border-0 cursor-pointer">
-                                전송
-                            </button>
-                        </form>
-                    </>
-                )}
             </div>
-            );
-            }
+            {!isMinimized && (
+                <>
+                    <div ref={messagesContainerRef} className="flex-1 p-2.5 overflow-y-auto bg-gray-100 h-[300px]">
+                        {Object.keys(groupedMessages).map((date) => (
+                            <div key={date}>
+                                <div className="text-center my-[10px] text-xs text-gray-600">
+                                    {date}
+                                </div>
+                                <ul className="list-none p-0 m-0">
+                                    {groupedMessages[date].map((message) => {
+                                        const isMyMessage = message.sender._id === senderId;
 
-            export default ChatOverlay;
+                                        return (
+                                            <li
+                                                key={message._id}
+                                                className={`flex items-end gap-2 mb-2 ${
+                                                    isMyMessage ? "justify-end" : "justify-start"
+                                                }`}
+                                            >
+                                                {/* 상대방 메시지일 때만 프로필 노출 */}
+                                                {!isMyMessage && (
+                                                    <ProfileButton profile={message.sender} area="친구채팅"
+                                                                   onModalToggle={setIsProfileOpen}/>
+                                                )}
+
+                                                {/* 말풍선 */}
+                                                <div
+                                                    className={`py-2 px-3 rounded-[16px] max-w-[70%] ${
+                                                        isMyMessage
+                                                            ? "bg-[#0084ff] text-white"
+                                                            : "bg-[#e4e6eb] text-black"
+                                                    }`}
+                                                >
+                                                    <strong className="text-xs">{message.sender.nickname}</strong>
+                                                    <div className="text-sm mt-1">{message.text}</div>
+                                                    <div
+                                                        className={`text-xs mt-1 ${
+                                                            isMyMessage ? "text-right" : "text-left"
+                                                        }`}
+                                                    >
+                                                        {formatTime(message.textTime)}
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+
+                            </div>
+                        ))}
+                    </div>
+                    <form onSubmit={handleSendMessage} className="flex border-t border-gray-300">
+                        <input
+                            type="text"
+                            value={newMessage}
+                            onChange={handleMessageChange}
+                            placeholder="메시지를 입력하세요..."
+                            className="flex-1 p-2.5 border-none outline-none"
+                        />
+                        <button type="submit"
+                                className="py-2.5 px-3.5 bg-[#0084ff] text-white border-0 cursor-pointer">
+                            전송
+                        </button>
+                    </form>
+                </>
+            )}
+        </div>
+    );
+}
+
+export default ChatOverlay;
