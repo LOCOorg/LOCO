@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import useAuthStore from "../../stores/authStore";
 import useFriendChatStore from "../../stores/useFriendChatStore";
 import useNotificationStore from "../../stores/notificationStore.js";
+import DropdownTransition from '../../layout/css/DropdownTransition.jsx';
 
 const GlobalChatNotification = () => {
     const socket = useSocket();
@@ -15,6 +16,29 @@ const GlobalChatNotification = () => {
 
     // 드롭다운용
     const [dropdownOpen, setDropdownOpen] = useState(false);
+
+
+    // ② 알림 외부 클릭 감지용 useEffect -> 내부 눌러도
+    useEffect(() => {
+        if (!dropdownOpen) return;
+
+        const handleClickOutside = (e) => {
+            // ref.current가 정의되어 있고, 클릭한 타겟이 그 영역 안에 없으면
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        // 드롭다운이 열렸을 때만 리스너 등록
+        if (dropdownOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [dropdownOpen]);
+
+
+
     // 토스트용
     const [toasts, setToasts] = useState([]);
     const dropdownRef = useRef(null);
@@ -65,7 +89,7 @@ const GlobalChatNotification = () => {
             openFriendChat({ roomId: notif.chatRoom, friend: friendInfo });
         }
         removeNotification(notif.id);
-        setDropdownOpen(false);
+        // setDropdownOpen(false);
     };
 
     const renderRoomTypeTag = (roomType) => {
@@ -75,7 +99,7 @@ const GlobalChatNotification = () => {
     };
 
     return (
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
             {/* 토스트 알림 */}
             <div className="fixed top-16 right-4 z-50 space-y-2">
                 {toasts.map((toast) => (
@@ -103,11 +127,11 @@ const GlobalChatNotification = () => {
                     )}
             </button>
 
-            {dropdownOpen && (
-                <div
-                    ref={dropdownRef}
-                    className="absolute top-full right-0 bg-white text-black shadow-lg rounded z-[1000] w-[250px] max-h-[300px] overflow-y-auto"
-                >
+            <DropdownTransition
+               show={dropdownOpen}
+               as="div"
+               className="absolute top-full right-0 bg-white text-black shadow-lg rounded z-[1000] w-[250px] max-h-[300px] overflow-y-auto"
+            >
                     {notifications.length > 0 ? (
                         notifications.map((notif) => (
                             <div
@@ -124,8 +148,7 @@ const GlobalChatNotification = () => {
                             알림이 없습니다
                         </div>
                     )}
-                </div>
-            )}
+            </DropdownTransition>
 
         </div>
     );
