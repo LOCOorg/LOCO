@@ -108,7 +108,7 @@ export const acceptFriendRequest = async (userId, requestId) => {
     try {
         // userId(친구 요청을 수락하는 사용자)를 URL 경로에 추가 (라우터: "/:userId/friend-request/accept")
         const response = await axios.post(`${host}/${userId}/friend-request/accept`, { requestId });
-        return response.data.data;
+        return response.data;
     } catch (error) {
         throw new Error(error.response?.data.message || error.message);
     }
@@ -206,16 +206,5 @@ export const getLeagueRecord = async (gameName, tagLine) => {
     } catch (error) {
         console.error("getLeagueRecord API 호출 중 오류:", error);
         throw new Error("전적을 불러오는 데 실패했습니다.");
-    }
-};
-
-export const getFriendsPage = async (userId, offset = 0, limit = 20) => {
-    try {
-        const url = `${host}/${userId}/friends?offset=${offset}&limit=${limit}`;
-        const res = await axios.get(url);
-        // 백엔드에서 { total, friends } 형태로 내려준다고 가정
-        return res.data;
-    } catch (err) {
-        throw new Error("친구 목록을 불러오는 데 실패했습니다.");
     }
 };

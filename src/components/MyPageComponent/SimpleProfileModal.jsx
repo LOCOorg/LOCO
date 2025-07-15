@@ -1,30 +1,19 @@
-import React, {useMemo, useState} from 'react';
+import React, { useState } from 'react';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
 import useAuthStore from '../../stores/authStore';
-import {sendFriendRequest, blockUser, deleteFriend} from "../../api/userAPI.js";
+import { sendFriendRequest, blockUser } from "../../api/userAPI.js";
 import CommonModal from '../../common/CommonModal.jsx';
 import PhotoGallery from './PhotoGallery.jsx';
 import { useNavigate } from 'react-router-dom';
-import useFriendListStore from "../../stores/useFriendListStore.js";
-import useBlockedStore from "../../stores/useBlockedStore.js";
 
 
-const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
+const SimpleProfileModal = ({ profile, onClose }) => {
     const authUser = useAuthStore(state => state.user);
     const isOwnProfile = authUser && profile._id === authUser._id; // 내 프로필인지 확인
     const [isReportModalVisible, setIsReportModalVisible] = useState(false);
     const [alertModalOpen, setAlertModalOpen] = useState(false);
     const [alertModalMessage, setAlertModalMessage] = useState("");
     const [confirmBlockOpen, setConfirmBlockOpen] = useState(false);
-    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-    const addBlockedUser = useBlockedStore((s) => s.addBlockedUser);
-    const setUser    = useAuthStore((s) => s.setUser);
-
-    const friends = useFriendListStore((s) => s.friends);              // 추가
-    const isFriend = useMemo(
-        () => friends.some((f) => f._id === profile?._id),
-        [friends, profile?._id]
-    );
     const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
     const navigate = useNavigate();
@@ -44,31 +33,9 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
         setAlertModalOpen(true);
     };
 
-    const handleDeleteFriend = async () => {
-        try {
-            await deleteFriend(authUser._id, profile._id);    // 서버 삭제[1]
-
-            // 로컬 상태 즉시 갱신
-            const updatedUser = {
-                ...authUser,
-                friends: authUser.friends.filter((id) => id !== profile._id),
-            };
-            setUser(updatedUser);                            // Zustand 스토어 업데이트[4]
-            useFriendListStore.getState().removeFriend(profile._id);   // 전역 리스트 동기화
-
-            setAlertModalMessage("친구를 삭제했습니다.");
-        } catch (error) {
-            setAlertModalMessage(error.response?.data?.message || error.message);
-        }finally {
-            setConfirmDeleteOpen(false);                      // 확인 모달 닫기
-            setAlertModalOpen(true);                          // 알림 모달 열기
-        }
-    };
-
     const handleBlockUser = async () => {
         try {
             await blockUser(authUser._id, profile._id);
-            addBlockedUser(profile);
             setAlertModalMessage("사용자를 차단했습니다.");
         } catch (error) {
             setAlertModalMessage(error.response?.data?.message || error.message);
@@ -123,21 +90,12 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
                     {!isOwnProfile
                         ? (
                             <>
-                                {isFriend ? (
-                                    <button
-                                        onClick={() => setConfirmDeleteOpen(true)}
-                                        className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md"
-                                    >
-                                        친구 삭제
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={handleFriendRequest}
-                                        className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-md"
-                                    >
-                                        친구 신청
-                                    </button>
-                                )}
+                                <button
+                                    onClick={handleFriendRequest}
+                                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-md"
+                                >
+                                    친구신청
+                                </button>
                                 <button
                                     onClick={() => setConfirmBlockOpen(true)}
                                     className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md"
@@ -153,15 +111,14 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
                             </>
                         )
                         : (
-                        <button
-                        onClick={() => navigate('/mypage')}
-                    className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-md"
-                >
-                    프로필 수정
-                </button>
-                )
-                }
-
+                            <button
+                                onClick={() => navigate('/mypage')}
+                                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-md"
+                            >
+                                프로필 수정
+                            </button>
+                        )
+                    }
                 </div>
             </div>
 
@@ -190,7 +147,6 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
                             onClose={() => setIsReportModalVisible(false)}
                             reportedUser={profile}
                             onReportCreated={() => setIsReportModalVisible(false)}
-                            defaultArea={area}
                         />
                     </div>
                 </div>
@@ -246,32 +202,6 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
                             onConfirm={() => setAlertModalOpen(false)}
                         >
                             <p>{alertModalMessage}</p>
-                        </CommonModal>
-                    </div>
-                </div>
-            )}
-
-            {/* ---------- 친구 삭제 확인 모달 ---------- */}
-            {confirmDeleteOpen && (
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-60"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmDeleteOpen(false);
-                    }}
-                >
-                    <div
-                        className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-sm relative"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <CommonModal
-                            isOpen={confirmDeleteOpen}
-                            onClose={() => setConfirmDeleteOpen(false)}
-                            title="친구 삭제"
-                            showCancel={true}
-                            onConfirm={handleDeleteFriend}
-                        >
-                            <p>정말 이 친구를 삭제하시겠습니까?</p>
                         </CommonModal>
                     </div>
                 </div>

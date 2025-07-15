@@ -41,7 +41,7 @@ const FriendRequestNotification = () => {
     }, [toasts]);
 
     return (
-        <div className="fixed bottom-5 left-5 z-50 space-y-2">
+        <div className="fixed top-5 right-5 z-50 space-y-2">
             {toasts.map(({ id, message }) => (
                 <div
                     key={id}

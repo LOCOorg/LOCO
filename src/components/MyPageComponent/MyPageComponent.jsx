@@ -22,7 +22,6 @@ const MyPageContent = ({overrideProfile}) => {
     const [friendRequests, setFriendRequests] = useState([]);
     const [alertModalOpen, setAlertModalOpen] = useState(false);
     const [alertModalMessage, setAlertModalMessage] = useState("");
-    const setUser  = useAuthStore((s) => s.setUser);
 
     // 앨범용 input ref
     const fileInputRef = useRef(null);
@@ -195,19 +194,10 @@ const MyPageContent = ({overrideProfile}) => {
 
 
     // 친구 요청 수락 처리
-    const handleAcceptRequest = async (requestId, senderId) => {   // ✅ senderId 추가
+    const handleAcceptRequest = async (requestId) => {
         try {
-            await acceptFriendRequest(authUser._id, requestId);        // 서버 반영[1]
-
-            // 1) 전역 authUser.friends 배열 즉시 업데이트
-            setUser({
-                ...authUser,
-                friends: [...(authUser.friends || []), senderId],
-            });
-
-            // 2) 현재 페이지 요청 목록에서 제거
+            await acceptFriendRequest(authUser._id, requestId);
             setFriendRequests(prev => prev.filter(req => req._id !== requestId));
-
             setAlertModalMessage("친구 요청을 수락하였습니다.");
             setAlertModalOpen(true);
         } catch (error) {

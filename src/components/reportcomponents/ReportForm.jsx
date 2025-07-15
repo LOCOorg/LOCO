@@ -5,14 +5,14 @@ import useAuthStore from '../../stores/authStore.js';
 import CommonModal from '../../common/CommonModal.jsx';
 
 // eslint-disable-next-line react/prop-types
-const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기타' }) => {
+const ReportForm = ({ onReportCreated, onClose, reportedUser }) => {
     // authStore에서 로그인한 사용자 정보 가져오기
     const { user } = useAuthStore();
 
     // 초기 신고 상태: 신고자 ID는 로그인한 사용자, 가해자는 reportedUser가 있을 경우 기본값 설정
     const [newReport, setNewReport] = useState({
         reportTitle: '',
-        reportArea: defaultArea,
+        reportArea: 'friendChat',
         reportCategory: '욕설, 모욕, 혐오발언',
         reportContants: '',
         // eslint-disable-next-line react/prop-types
@@ -29,10 +29,6 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
             setNewReport(prev => ({ ...prev, reportErId: user._id }));
         }
     }, [user]);
-
-    useEffect(() => {
-        setNewReport(prev => ({ ...prev, reportArea: defaultArea }));
-    }, [defaultArea]);
 
     // reportedUser prop이 변경되면 offenderNickname 필드를 업데이트
     useEffect(() => {
@@ -76,7 +72,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
             // 폼 초기화 (신고자 ID는 다시 authStore의 값으로 설정하고, reportedUser가 있다면 해당 별칭으로 재설정)
             setNewReport({
                 reportTitle: '',
-                reportArea: '친구채팅',
+                reportArea: 'friendChat',
                 reportCategory: '욕설, 모욕, 혐오발언',
                 reportContants: '',
                 // eslint-disable-next-line react/prop-types
@@ -105,7 +101,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
             {error && <p className="text-red-500 mb-4">{error}</p>}
             <form onSubmit={handleSubmit}>
                 <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 제목</label>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 제목:</label>
                     <input
                         type="text"
                         name="reportTitle"
@@ -116,21 +112,20 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
                     />
                 </div>
                 <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 구역</label>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 구역:</label>
                     <select
                         name="reportArea"
                         value={newReport.reportArea}
-                        disabled
                         onChange={handleChange}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-black-700"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
                     >
-                        <option value="친구채팅">친구 채팅</option>
-                        <option value="랜덤채팅">랜덤 채팅</option>
-                        <option value="커뮤니티">커뮤니티</option>
+                        <option value="friendChat">친구 채팅</option>
+                        <option value="randomChat">랜덤 채팅</option>
+                        <option value="community">커뮤니티</option>
                     </select>
                 </div>
                 <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 카테고리(선택)▼</label>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 카테고리:</label>
                     <select
                         name="reportCategory"
                         value={newReport.reportCategory}
@@ -144,7 +139,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
                     </select>
                 </div>
                 <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 내용</label>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">신고 내용:</label>
                     <textarea
                         name="reportContants"
                         value={newReport.reportContants}
@@ -154,11 +149,16 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
                     ></textarea>
                 </div>
                 <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">가해자</label>
-                    <div className="shadow appearance-none border rounded w-full py-2 px-3
-                  bg-gray-100 text-gray-700">
-                        {newReport.offenderNickname}
-                    </div>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">가해자 별칭:</label>
+                    <input
+                        type="text"
+                        name="offenderNickname"
+                        value={newReport.offenderNickname}
+                        onChange={handleChange}
+                        required
+                        placeholder="예: 넷카마정석"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+                    />
                 </div>
                 {/* 로그인한 사용자의 정보 표시 (신고자 정보는 자동 적용) */}
                 {user && (

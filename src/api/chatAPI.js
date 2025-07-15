@@ -115,8 +115,3 @@ export const fetchUserLeftRooms = async (userId) => {
         throw error;
     }
 };
-
-export const toggleFriendRoomActive = async (roomId, active) =>
-    axios.patch(`${host}/rooms/${roomId}/active`, { active })
-        .then(res => res.data);
-

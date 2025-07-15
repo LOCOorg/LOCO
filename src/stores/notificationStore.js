@@ -11,13 +11,6 @@ const useNotificationStore = create((set) => ({
         set((state) => ({
             notifications: state.notifications.filter((n) => n.id !== id),
         })),
-    /* ★ 추가: 채팅방 단위로 모두 제거 */
-    removeNotificationsByRoom: (chatRoomId) =>
-        set((state) => ({
-            notifications: state.notifications.filter(
-                (n) => n.chatRoom !== chatRoomId
-            ),
-        })),
     clearNotifications: () => set({ notifications: [] }),
 }));
 

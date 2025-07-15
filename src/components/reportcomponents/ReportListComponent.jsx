@@ -120,20 +120,20 @@ const ReportListComponent = () => {
                     전체 구역
                 </button>
                 <button
-                    onClick={() => handleAreaFilterChange("친구채팅")}
-                    className={`px-3 py-1 rounded ${filterArea === "친구채팅" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                    onClick={() => handleAreaFilterChange("friendChat")}
+                    className={`px-3 py-1 rounded ${filterArea === "friendChat" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
                     친구 채팅
                 </button>
                 <button
-                    onClick={() => handleAreaFilterChange("랜덤채팅")}
-                    className={`px-3 py-1 rounded ${filterArea === "랜덤채팅" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                    onClick={() => handleAreaFilterChange("randomChat")}
+                    className={`px-3 py-1 rounded ${filterArea === "randomChat" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
                     랜덤 채팅
                 </button>
                 <button
-                    onClick={() => handleAreaFilterChange("커뮤니티")}
-                    className={`px-3 py-1 rounded ${filterArea === "커뮤니티" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                    onClick={() => handleAreaFilterChange("community")}
+                    className={`px-3 py-1 rounded ${filterArea === "community" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
                     커뮤니티
                 </button>
@@ -243,9 +243,6 @@ const ReportListComponent = () => {
                         {pageData.dtoList.map((report) => (
                             <li key={report._id} className="bg-white shadow rounded mb-4 p-4">
                                 <h3 className="text-xl font-bold mb-2">제목: {report.reportTitle}</h3>
-                                <p className="mb-1">
-                                    <span className="font-semibold">신고 구역:</span> {report.reportArea}
-                                </p>
                                 <p className="mb-1">
                                     <span className="font-semibold">내용:</span> {report.reportContants}
                                 </p>

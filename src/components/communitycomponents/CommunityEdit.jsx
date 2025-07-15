@@ -1,10 +1,7 @@
 // src/components/communitycomponents/CommunityEdit.jsx
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {fetchCommunityById, fetchTopCommented, fetchTopViewed, updateCommunity} from '../../api/communityApi.js';
-import LeftSidebar from "../../layout/CommunityLayout/LeftSidebar.jsx";
-import RightSidebar from "../../layout/CommunityLayout/RightSidebar.jsx";
-import CommunityLayout from "../../layout/CommunityLayout/CommunityLayout.jsx";
+import { fetchCommunityById, updateCommunity } from '../../api/communityApi.js';
 
 const CommunityEdit = () => {
     const { id } = useParams();
@@ -19,16 +16,6 @@ const CommunityEdit = () => {
     const [imageFile, setImageFile] = useState(null);
     const [error, setError] = useState('');
     const [previewImage, setPreviewImage] = useState(null);
-    const [selectedCategory, setSelectedCategory] = useState('전체');
-    const handleCategoryClick = (cat) => {
-        setSelectedCategory(cat);
-        navigate(cat === '전체' ? '/community'
-            : `/community?category=${cat}`);
-    };
-
-    const [sideTab, setSideTab] = useState('viewed');
-    const [topViewed, setTopViewed] = useState([]);
-    const [topCommented, setTopCommented] = useState([]);
 
     // 선택된 파일로부터 객체 URL을 생성하고 cleanup
     useEffect(() => {
@@ -43,26 +30,6 @@ const CommunityEdit = () => {
             URL.revokeObjectURL(objectUrl);
         };
     }, [imageFile]);
-
-    useEffect(() => {
-        const fetchGlobalTop = async () => {
-            try {
-                const viewedData = await fetchTopViewed(); // 커뮤니티 리스트와 동일 API
-                setTopViewed(viewedData);
-            } catch (error) {
-                setTopViewed([]);
-                console.log(error);
-            }
-            try {
-                const commentedData = await fetchTopCommented();
-                setTopCommented(commentedData);
-            } catch (error) {
-                setTopCommented([]);
-                console.log(error);
-            }
-        };
-        fetchGlobalTop();
-    }, []);
 
     useEffect(() => {
         const loadCommunity = async () => {
@@ -124,22 +91,6 @@ const CommunityEdit = () => {
     }
 
     return (
-        <CommunityLayout
-            leftSidebar={
-                <LeftSidebar
-                    selectedCategory={selectedCategory}
-                    handleCategoryClick={handleCategoryClick}
-                />
-            }
-            rightSidebar={
-                <RightSidebar
-                    sideTab={sideTab}
-                    setSideTab={setSideTab}
-                    topViewed={topViewed}
-                    topCommented={topCommented}
-                />
-            }
-        >
         <div className="container mx-auto px-4 py-8">
             <div className="bg-white shadow-lg rounded-xl overflow-hidden">
                 {/* 헤더 */}
@@ -287,7 +238,6 @@ const CommunityEdit = () => {
                 </form>
             </div>
         </div>
-        </CommunityLayout>
     )
 
 };
