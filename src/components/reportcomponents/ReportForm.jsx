@@ -141,6 +141,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
                         <option value="스팸, 도배, 거짓정보">스팸, 도배, 거짓정보</option>
                         <option value="부적절한 메세지(성인/도박/마약 등)">부적절한 메세지(성인/도박/마약 등)</option>
                         <option value="규칙에 위반되는 프로필/모욕성 닉네임">규칙에 위반되는 프로필/모욕성 닉네임</option>
+                        <option value="음란물 배포(이미지)">음란물 배포(이미지)</option>
                     </select>
                 </div>
                 <div className="mb-4">
