@@ -175,7 +175,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
     if (hiddenRoomIds.includes(roomId)) return null;
 
     return (
-        <div className="fixed bottom-5 right-5 w-[350px] h-[400px] bg-white shadow-lg
+        <div className="fixed bottom-5 right-5 w-[350px] h-[450px] bg-white shadow-lg
                  rounded-lg flex flex-col overflow-hidden z-[900]"
              style={customStyle}>
             {/* ── 헤더 ── */}
