@@ -1,5 +1,6 @@
 // src/components/FriendChatDropdown.jsx
-import { useState, useEffect, useContext, useCallback } from 'react';
+import { useState, useEffect, useContext, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../stores/authStore';
 import useFriendChatStore from '../../stores/useFriendChatStore';
 import { NotificationContext } from '../../hooks/NotificationContext';
@@ -11,6 +12,8 @@ import {
     getUserInfo
 } from '../../api/userAPI';
 import useFriendListStore from '../../stores/useFriendListStore';
+import DropdownTransition from '../../layout/css/DropdownTransition.jsx';
+
 
 const FriendChatDropdown = () => {
     const { user } = useAuthStore();
@@ -23,6 +26,27 @@ const FriendChatDropdown = () => {
     const friendRooms   = useFriendChatStore(s => s.friendRooms);
     const setFriendRooms = useFriendChatStore(s => s.setFriendRooms);
     const [friendRequests, setFriendRequests] = useState([]);
+
+
+    const dropdownRef = useRef(null);
+    // ② 알림 외부 클릭 감지용 useEffect -> 내부 눌러도
+    useEffect(() => {
+        if (!showDropdown) return;
+
+        const handleClickOutside = (e) => {
+            // ref.current가 정의되어 있고, 클릭한 타겟이 그 영역 안에 없으면
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setShowDropdown(false);
+            }
+        };
+        // 드롭다운이 열렸을 때만 리스너 등록
+        if (showDropdown) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [showDropdown]);
 
 
     /* ---------------- 친구 채팅방 ---------------- */
@@ -145,17 +169,21 @@ const FriendChatDropdown = () => {
 
 
     return (
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
+            {(notifications.length > 0 || friendRooms.length > 0) && (
                 <button
                     onClick={() => setShowDropdown((p) => !p)}
                     className="py-1 px-3 bg-green-500 hover:bg-green-600 rounded text-sm"
                 >
                     친구
                 </button>
+            )}
 
-
-            {showDropdown && (
-                <div className="absolute right-0 mt-2 w-72 bg-white rounded shadow-lg p-3 text-black z-50">
+            <DropdownTransition
+                show={showDropdown}
+                as="div"
+                className="absolute top-full right-0 mt-2 w-60 max-h-72 overflow-y-auto bg-white text-black rounded shadow-lg z-50"
+            >
                     {/* ===== 친구 요청 ===== */}
                     <h3 className="text-sm font-semibold mb-2">친구 요청</h3>
 
@@ -208,8 +236,7 @@ const FriendChatDropdown = () => {
                     ) : (
                         <p className="text-xs text-gray-500 py-4 text-center">채팅방이 없습니다.</p>
                     )}
-                </div>
-            )}
+            </DropdownTransition>
         </div>
     );
 };
