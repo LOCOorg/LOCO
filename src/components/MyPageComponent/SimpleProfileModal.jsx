@@ -79,7 +79,7 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
 
     return (
         <div
-            className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[1500]"
             onClick={onClose}
         >
             <div
