@@ -183,7 +183,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                 {/* 왼쪽 : 프로필 버튼 + 상대방 이름 */}
                 <div className="flex items-center space-x-2">
                     {/* 상대방 정보가 있을 때만 표시 */}
-                    <div className="text-black">
+                    <div className="text-black h-12">
                     {friend && (
                         <ProfileButton
                             profile={friend}
