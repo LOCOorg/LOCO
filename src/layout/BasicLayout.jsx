@@ -4,6 +4,8 @@ import ChatNotification from "../components/chatcomponents/ChatNotification.jsx"
 import useAuthStore from '../stores/authStore';
 import FriendChatDropdown from '../components/MyPageComponent/FriendChatDropdown.jsx';
 import FriendRequestNotification from '../components/MyPageComponent/FriendRequestNotification.jsx';
+import React from "react";
+import GlobalFriendChatOverlay from "../components/chatcomponents/GlobalFriendChatOverlay.jsx";
 import React, {useEffect, useRef, useState} from "react";
 //import LogoutButton from '../components/authComponent/LogoutButton.jsx';
 //import MyMenus from './layoutMyMenus/MyMenus.jsx';
@@ -64,6 +66,7 @@ const BasicLayout = ({ children }) => {
                             <li ><Link to="/developer" className="hover:text-gray-300">개발자</Link></li>
                         )}
                     </ul>
+
                 </nav>
 
 
@@ -132,6 +135,7 @@ const BasicLayout = ({ children }) => {
             <footer className="bg-gray-100 text-center py-2">
                 © 2025 LOCO. All rights reserved.
             </footer>
+            <GlobalFriendChatOverlay />  {/* 전역 채팅 */}
         </div>
     );
 };

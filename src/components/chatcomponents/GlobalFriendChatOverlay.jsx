@@ -3,19 +3,27 @@ import ChatOverlay from '../../components/chatcomponents/ChatOverlay.jsx';
 import useFriendChatStore from '../../stores/useFriendChatStore.js';
 
 function GlobalFriendChatOverlay() {
-    const { friendChats, closeFriendChat, swapFriendChat } = useFriendChatStore();
+    const { friendChats, closeFriendChat, swapFriendChat, hiddenRoomIds, toggleHideChat } = useFriendChatStore();
     const MAX_CHAT_WINDOWS = 3;
     const [showMore, setShowMore] = useState(false);
 
-    const visibleChats = friendChats.slice(0, MAX_CHAT_WINDOWS);
-    const hiddenChats = friendChats.slice(MAX_CHAT_WINDOWS);
+    /* 숨김된 채팅 제외 후 최대 3개 표시 */
+    const visibleChats = friendChats
+        .filter((c) => !hiddenRoomIds.includes(c.roomId))
+        .slice(0, MAX_CHAT_WINDOWS);
+
+    const hiddenChats = friendChats.filter(
+        (c) => hiddenRoomIds.includes(c.roomId) || !visibleChats.includes(c)
+    );
 
     const toggleShowMore = () => {
         setShowMore((prev) => !prev);
     };
 
-    const handleSwapChat = (selectedRoomId) => {
-        swapFriendChat(selectedRoomId, MAX_CHAT_WINDOWS);
+    /* 숨김->보임 전환 */
+    const handleRestoreChat = (roomId) => {
+        toggleHideChat(roomId);                 // 1) 숨김 해제
+        swapFriendChat(roomId, MAX_CHAT_WINDOWS); // 2) 3개 창 안으로 이동
     };
 
     return (
@@ -31,22 +39,19 @@ function GlobalFriendChatOverlay() {
             ))}
 
             {hiddenChats.length > 0 && (
-                <div
-                    className="fixed bottom-5 z-[1100]"
-                    style={{ right: 20 + MAX_CHAT_WINDOWS * 360 + "px" }}
-                >
+                <div className="fixed left-4 bottom-4 z-50">
                     <button
                         onClick={toggleShowMore}
-                        className="py-2.5 px-3.5 bg-[#0084ff] text-white border-0 cursor-pointer rounded-lg mb-[5px]"
+                        className="px-3 py-2 bg-blue-500 text-white text-sm rounded-full shadow-lg hover:bg-blue-700 transition"
                     >
-                        {showMore ? "채팅 숨기기" : `+${hiddenChats.length}개의 채팅`}
+                        {showMore ? "채팅 숨기기" : `+${hiddenChats.length}개 채팅`}
                     </button>
 
                     {showMore &&
                         hiddenChats.map((chat) => (
                             <button
                                 key={chat.roomId}
-                                onClick={() => handleSwapChat(chat.roomId)}
+                                onClick={() => handleRestoreChat(chat.roomId)}
                                 className="block my-[5px] w-[40px] h-[40px] bg-[#eee] border border-[#ccc] rounded-full overflow-hidden cursor-pointer"
                                 title={chat.friend?.nickname || chat.friend?.name || "채팅"}
                             >
@@ -57,7 +62,8 @@ function GlobalFriendChatOverlay() {
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
-                                    <span className="flex items-center justify-center w-full h-full text-sm font-medium text-gray-700">
+                                    <span
+                                        className="flex items-center justify-center w-full h-full text-sm font-medium text-gray-700">
           {chat.friend?.nickname?.[0] || "?"}
         </span>
                                 )}

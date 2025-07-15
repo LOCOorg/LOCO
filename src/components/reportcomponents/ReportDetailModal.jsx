@@ -144,10 +144,10 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
                                     onChange={(e) => setSelectedStopDetail(e.target.value)}
                                     className="w-full border rounded p-2"
                                 >
-                                    <option value="active">active</option>
-                                    <option value="banned">banned</option>
-                                    <option value="suspended">suspended</option>
-                                    <option value="warning">warning</option>
+                                    <option value="활성">활성</option>
+                                    <option value="영구정지">영구정지</option>
+                                    <option value="일시정지">일시정지</option>
+                                    <option value="경고">경고</option>
                                 </select>
                             </div>
                             <button

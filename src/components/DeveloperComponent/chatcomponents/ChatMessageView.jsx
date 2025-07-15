@@ -30,7 +30,8 @@ const ChatMessageView = ({ messages, selectedRoom, currentUser }) => (
 
                 const senderId = msg.sender?._id || msg.sender;
                 const isMe =
-                    currentUser &&
+                    !!currentUser &&
+                    senderId &&           // null 방지
                     senderId.toString() === currentUser._id.toString();
 
                 // 닉네임과 실제 이름을 함께 표시

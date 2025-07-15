@@ -1,35 +1,71 @@
-import { create } from 'zustand';
+import { create } from "zustand";
+import { toggleFriendRoomActive } from "../api/chatAPI.js";
 
 const useFriendChatStore = create((set) => ({
-    friendChats: [],
-    openFriendChat: (chatInfo) =>
+    /* ───────────────── 채팅 오버레이 ───────────────── */
+    friendChats: [],               // { roomId, friend }
+    hiddenRoomIds: [],             // ← 새로 추가
+
+    openFriendChat: (chat) =>
         set((state) => {
-            // 이미 해당 채팅방이 열려 있다면 그대로 반환
-            if (state.friendChats.some(chat => chat.roomId === chatInfo.roomId)) {
-                return state;
+            /* 이미 열려 있으나 숨김 상태라면 hidden 해제 */
+            if (state.hiddenRoomIds.includes(chat.roomId)) {
+                return {
+                    ...state,
+                    hiddenRoomIds: state.hiddenRoomIds.filter((id) => id !== chat.roomId),
+                };
             }
-            return { friendChats: [...state.friendChats, chatInfo] };
+            /* 창이 열려 있지 않으면 리스트에 추가 */
+            if (state.friendChats.some((c) => c.roomId === chat.roomId)) return state;
+            return { friendChats: [...state.friendChats, chat] };
         }),
-    closeFriendChat: (roomId) =>
+
+    closeFriendChat: async (roomId) => {
         set((state) => ({
-            friendChats: state.friendChats.filter(chat => chat.roomId !== roomId),
+            friendChats: state.friendChats.filter((c) => c.roomId !== roomId),
+            friendRooms: state.friendRooms.filter((r) => r.roomId !== roomId),
+            hiddenRoomIds: state.hiddenRoomIds.filter((id) => id !== roomId),
+        }));
+        try {
+            await toggleFriendRoomActive(roomId, false);
+        } catch (e) {
+            console.error(e);
+        }
+    },
+
+    /* 최소화(숨김) 토글 */
+    toggleHideChat: (roomId) =>
+        set((state) => ({
+            hiddenRoomIds: state.hiddenRoomIds.includes(roomId)
+                ? state.hiddenRoomIds.filter((id) => id !== roomId)
+                : [...state.hiddenRoomIds, roomId],
         })),
-    // hidden 영역의 채팅 아이콘 클릭 시 순환 교환 로직
+
+    /* ───────────────── 드롭다운 전용 friends 목록 (기존 코드) ───────────────── */
+    friendRooms: [],
+    setFriendRooms: (rooms) => set({ friendRooms: rooms }),
+    addFriendRoom: (room) =>
+        set((state) => {
+            if (state.friendRooms.some((r) => r.roomId === room.roomId)) return state;
+            return { friendRooms: [room, ...state.friendRooms] };
+        }),
+    removeFriendRoom: (roomId) =>
+        set((state) => ({
+            friendRooms: state.friendRooms.filter((r) => r.roomId !== roomId),
+        })),
+
+    /* 숨김 영역 ↔ 표시 영역 교환 (기존 코드) */
     swapFriendChat: (selectedRoomId, maxWindows) =>
         set((state) => {
             if (state.friendChats.length <= maxWindows) return state;
-            const newChats = [...state.friendChats];
-            // visible 영역의 가장 왼쪽 채팅 제거
-            const removedVisible = newChats.shift();
-            // hidden 채팅 중 선택한 채팅 찾기
-            const selectedIndex = newChats.findIndex(chat => chat.roomId === selectedRoomId);
-            if (selectedIndex === -1) return state;
-            const [selectedChat] = newChats.splice(selectedIndex, 1);
-            // visible 영역은 newChats[0 ~ maxWindows-1] (현재 newChats의 길이는 maxWindows-1)
-            newChats.splice(maxWindows - 1, 0, selectedChat);
-            // 제거한 visible 채팅을 마지막 hidden 영역에 추가
-            newChats.push(removedVisible);
-            return { friendChats: newChats };
+            const chats = [...state.friendChats];
+            const removed = chats.shift(); // visible 첫 번째 제거
+            const idx = chats.findIndex((c) => c.roomId === selectedRoomId);
+            if (idx === -1) return state;
+            const [selected] = chats.splice(idx, 1);
+            chats.splice(maxWindows - 1, 0, selected);
+            chats.push(removed);
+            return { friendChats: chats };
         }),
 }));
 

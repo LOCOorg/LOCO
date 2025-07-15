@@ -22,6 +22,7 @@ const ChatRoom = ({roomId, userId}) => {
     const [ratings, setRatings] = useState({});
     const [participants, setParticipants] = useState([]);
     const [capacity, setCapacity] = useState(0);
+    const [evaluationUsers,  setEvaluationUsers]= useState([]);  // 매너평가 대상
 
     // 신고 모달 관련 상태
     const [showReportModal, setShowReportModal] = useState(false);
@@ -37,6 +38,8 @@ const ChatRoom = ({roomId, userId}) => {
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
+
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     // 메시지 전송 시간을 포맷하는 헬퍼 함수 (시간:분 형식)
     const formatTime = (textTime) => {
@@ -83,23 +86,22 @@ const ChatRoom = ({roomId, userId}) => {
     // 채팅 종료 버튼 클릭 시 채팅방 정보를 불러와 참가자와 초기 따봉 상태(0)를 세팅
     const handleLeaveRoom = async () => {
         try {
-            const roomInfo = await getChatRoomInfo(roomId);
+            const roomInfo = await getChatRoomInfo(roomId);  // DB에서 전체 인원 재조회
             if (roomInfo && roomInfo.chatUsers) {
-                setParticipants(roomInfo.chatUsers);
-                const initialRatings = {};
-                roomInfo.chatUsers.forEach((user) => {
-                    const participantId = typeof user === "object" ? user._id : user;
-                    if (participantId !== userId) {
-                        initialRatings[participantId] = 0;
-                    }
+                setEvaluationUsers(roomInfo.chatUsers);        // UI-리스트는 그대로 두고
+                const init = {};
+                roomInfo.chatUsers.forEach(u => {
+                    const id = typeof u === "object" ? u._id : u;
+                    if (id !== userId) init[id] = 0;
                 });
-                setRatings(initialRatings);
+                setRatings(init);
             }
-        } catch (error) {
-            console.error("채팅방 정보 가져오기 오류:", error);
+        } catch (err) {
+            console.error("채팅방 정보 가져오기 오류:", err);
         }
         setIsModalOpen(true);
     };
+
 
     // 매너 평가 토글 함수
     const handleRatingToggle = (participantId) => {
@@ -127,20 +129,36 @@ const ChatRoom = ({roomId, userId}) => {
 
     const confirmLeaveRoom = async () => {
         try {
-            // 매너 평가 점수 전송
-            await Promise.all(
-                Object.keys(ratings).map(async (participantId) => {
-                    if (ratings[participantId] === 1) {
-                        await rateUser(participantId, 1);
-                    }
-                })
-            );
-            // 채팅방 나가기 API 호출
+            /* 0) 현재 방 상태 재조회 ― 활성화됐는지 확인 */
+            const roomInfo = await getChatRoomInfo(roomId);     // 🗝️[1]
+            const isChatActive =
+                roomInfo?.isActive ||                  // 스키마의 isActive 필드[6]
+                roomInfo?.status === "active" ||       // 백엔드에서 관리하는 status
+                (roomInfo?.activeUsers?.length ?? 0) >= roomInfo?.capacity; // 예비용
+
+            /* 1) 매너 평가(채팅이 실제로 진행된 경우에만 의미가 있으므로 isChatActive 검사) */
+            if (isChatActive) {
+                await Promise.all(
+                    Object.keys(ratings).map(async (participantId) => {
+                        if (ratings[participantId] === 1) {
+                            await rateUser(participantId, 1);
+                        }
+                    })
+                );
+            }
+
+            /* 2) 방 나가기 */
             const response = await leaveChatRoom(roomId, userId);
             if (response.success) {
-                // 채팅 횟수 감소 API 호출 추가
-                await decrementChatCount(userId);
-                navigate("/chat", {replace: true});
+                /* 3) 🔻 채팅 횟수 차감은 ‘진짜’ 채팅이 시작된 방만 */
+                if (isChatActive) {
+                    await decrementChatCount(userId);    // ✅ 필요할 때만 호출
+                }
+
+                /* 4) 소켓 정리 */
+                if (socket) socket.emit("leaveRoom", { roomId, userId });
+
+                navigate("/", { replace: true });
             } else {
                 console.error("채팅방 나가기 실패:", response.message);
             }
@@ -149,6 +167,7 @@ const ChatRoom = ({roomId, userId}) => {
         }
         setIsModalOpen(false);
     };
+
 
     const cancelLeaveRoom = () => {
         setIsModalOpen(false);
@@ -161,20 +180,31 @@ const ChatRoom = ({roomId, userId}) => {
             return;
         }
 
-        const message = {chatRoom: roomId, sender: {_id: userId, nickname: userName}, text};
-        socket.emit("sendMessage", message, (response) => {
+        // const message = {chatRoom: roomId, sender: {_id: userId, nickname: userName}, text};
+// (1) 소켓으로 보낼 실물 데이터 ― sender: 문자열
+        const emitMessage = { chatRoom: roomId, sender: userId, text };
+
+// (2) 화면에 바로 그려 넣을 로컬 메시지 ― sender: 객체
+        const localMessage = {
+            ...emitMessage,
+            sender: { _id: userId, nickname: userName }
+        };
+
+        socket.emit("sendMessage", emitMessage, (response) => {
             if (response.success) {
-                // 백엔드에서는 textTime 필드를 사용하도록 설정되어 있습니다.
-                const sentMessage = {...message, _id: response.message._id, textTime: response.message.textTime};
-                setMessages((prevMessages) => [
-                    ...prevMessages.filter((msg) => msg._id !== sentMessage._id),
-                    sentMessage,
-                ]);
+                const sentMessage = {
+                    ...localMessage,                 // nickname 포함
+                    _id: response.message._id,
+                    textTime: response.message.textTime
+                };
+                setMessages(prev =>
+                    [...prev.filter(m => m._id !== sentMessage._id), sentMessage]);
                 setText("");
             } else {
                 console.error("메시지 전송 실패", response);
             }
         });
+
     };
 
 // 삭제 버튼 클릭 시 모달 열기
@@ -214,7 +244,7 @@ const ChatRoom = ({roomId, userId}) => {
             const roomInfo = await getChatRoomInfo(roomId);
             if (roomInfo && roomInfo.chatUsers) {
                 // ① participants 상태에 저장
-                setParticipants(roomInfo.chatUsers);
+                setParticipants(roomInfo.activeUsers);
                 setCapacity(roomInfo.capacity);
                 // ② capacity 충족 여부에 따라 로딩 해제
                 if (roomInfo.chatUsers.length >= roomInfo.capacity) {
@@ -232,6 +262,19 @@ const ChatRoom = ({roomId, userId}) => {
         }
     };
 
+    const handleUserLeft = ({ userId: leftId }) => {
+        setParticipants(prev =>
+            prev.filter(u =>
+                (typeof u === "object" ? u._id : u) !== leftId
+            )
+        );
+    };
+
+    const handleSystemMessage = (msg) => {
+        setMessages(prev => [...prev, msg]);
+    };
+
+
     useEffect(() => {
         fetchMessages(roomId).then((fetchedMessages) => {
             setMessages(fetchedMessages);
@@ -242,10 +285,10 @@ const ChatRoom = ({roomId, userId}) => {
         if (socket) {
             socket.emit("joinRoom", roomId);
             // 참가자 입장 시: ID → { _id, nickname } 형태로 변환
-            socket.on("roomJoined", async ({ chatUsers, capacity }) => {
+            socket.on("roomJoined", async ({ activeUsers, capacity }) => {
                 try {
                     const participantsWithNames = await Promise.all(
-                        chatUsers.map(async u => {
+                        activeUsers.map(async u => {
                             const id = typeof u === "object" ? u._id : u;
                             const userInfo = await getUserInfo(id);
                             return { _id: id, nickname: userInfo.nickname || "알 수 없음" };
@@ -259,10 +302,8 @@ const ChatRoom = ({roomId, userId}) => {
             });
             socket.on("receiveMessage", handleReceiveMessage);
             socket.on("roomJoined", handleUserJoined);
-            socket.on("userLeft", ({userId}) => {
-                console.log(`사용자 ${userId}가 채팅방을 떠났습니다.`);
-            });
-
+            socket.on("userLeft", handleUserLeft);
+            socket.on("systemMessage", handleSystemMessage);
             socket.on("messageDeleted", ({messageId}) => {
                 setMessages((prevMessages) =>
                     prevMessages.map((msg) => (msg._id === messageId ? {...msg, isDeleted: true} : msg))
@@ -273,8 +314,7 @@ const ChatRoom = ({roomId, userId}) => {
                 socket.off("roomJoined");
                 socket.off("receiveMessage", handleReceiveMessage);
                 socket.off("messageDeleted");
-                socket.off("userLeft");
-                socket.off("roomJoined");
+                socket.off("userLeft", handleUserLeft);
             };
         }
 
@@ -337,9 +377,9 @@ const ChatRoom = ({roomId, userId}) => {
                     {/* 참가자 리스트 */}
                     <div className="mt-2 flex flex-wrap gap-2 text-sm">
                         {participants.map(user => (
-                            <div key={user._id} className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1">
-                                <ProfileButton profile={user} className="mr-1"/>
-                                <span>{user.nickname}</span>
+                            <div key={user._id} className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1 text-black">
+                                <ProfileButton profile={user} className="mr-1" area="랜덤채팅" onModalToggle={setIsProfileOpen}/>
+                                <span className="text-white">{user.nickname}</span>
                             </div>
                         ))}
                     </div>
@@ -369,7 +409,7 @@ const ChatRoom = ({roomId, userId}) => {
                                 d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                             ></path>
                         </svg>
-                        <span className="text-xl">다른 사용자를 기다리는 중…</span>
+                        <span className="text-xl">다른 사용자를 기다리는 중… <br/>다른 채팅을 원하시면 대기 중에 채팅 종료(횟수 차감X) </span>
                     </div>
                 ) : (
                     <>
@@ -378,6 +418,14 @@ const ChatRoom = ({roomId, userId}) => {
                             className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"
                         >
                             {messages.map(msg => {
+                                /* 시스템-메시지라면 중앙 정렬 회색 글씨로 */
+                                if (msg.isSystem) {
+                                    return (
+                                        <div key={msg._id} className="text-center text-gray-500 text-sm">
+                                            {msg.text}
+                                        </div>
+                                    );
+                                }
                                 const isMe = msg.sender._id === userId;
                                 return (
                                     <div
@@ -389,6 +437,8 @@ const ChatRoom = ({roomId, userId}) => {
                                             <ProfileButton
                                                 profile={msg.sender}
                                                 className="w-10 h-10 rounded-full overflow-hidden mr-3"
+                                                area="랜덤채팅"
+                                                onModalToggle={setIsProfileOpen}
                                             />
                                         )}
 
@@ -420,6 +470,8 @@ const ChatRoom = ({roomId, userId}) => {
                                             <ProfileButton
                                                 profile={msg.sender}
                                                 className="w-10 h-10 rounded-full overflow-hidden ml-3"
+                                                area="랜덤채팅"
+                                                onModalToggle={setIsProfileOpen}
                                             />
                                         )}
                                         {isMe && !msg.isDeleted && (
@@ -447,6 +499,7 @@ const ChatRoom = ({roomId, userId}) => {
 
 
                         {/* 입력 폼 */}
+                        {!isProfileOpen && (
                         <form
                             onSubmit={handleSendMessage}
                             className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex items-center space-x-3"
@@ -465,6 +518,7 @@ const ChatRoom = ({roomId, userId}) => {
                                 전송
                             </button>
                         </form>
+                            )}
                     </>
                 )}
             </section>
@@ -482,7 +536,7 @@ const ChatRoom = ({roomId, userId}) => {
                 isOpen={isModalOpen}
                 onClose={cancelLeaveRoom}
                 title={
-                    participants.filter((user) => {
+                    evaluationUsers.filter((user) => {
                         const participantId = typeof user === "object" ? user._id : user;
                         return participantId !== userId;
                     }).length > 0
@@ -491,7 +545,7 @@ const ChatRoom = ({roomId, userId}) => {
                 }
                 onConfirm={confirmLeaveRoom}
             >
-                {participants.filter((user) => {
+                {evaluationUsers.filter((user) => {
                     const participantId = typeof user === "object" ? user._id : user;
                     return participantId !== userId;
                 }).length > 0 ? (
@@ -499,7 +553,7 @@ const ChatRoom = ({roomId, userId}) => {
                         <p className="mb-4">
                             채팅 종료 전, 다른 참가자들의 매너를 평가 및 신고해주세요.
                         </p>
-                        {participants
+                        {evaluationUsers
                             .filter((user) => {
                                 const participantId = typeof user === "object" ? user._id : user;
                                 return participantId !== userId;
@@ -552,6 +606,7 @@ const ChatRoom = ({roomId, userId}) => {
                             onReportCreated={handleReportCreated}
                             onClose={closeReportModal}
                             reportedUser={reportedParticipant}
+                            defaultArea="랜덤채팅"
                         />
                     </div>
                 </div>
