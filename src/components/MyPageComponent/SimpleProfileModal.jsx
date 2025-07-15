@@ -7,6 +7,7 @@ import PhotoGallery from './PhotoGallery.jsx';
 import { useNavigate } from 'react-router-dom';
 import useFriendListStore from "../../stores/useFriendListStore.js";
 import useBlockedStore from "../../stores/useBlockedStore.js";
+import {createPortal} from "react-dom";
 
 
 const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
@@ -77,7 +78,7 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
         onClose();
     };
 
-    return (
+    return createPortal(
         <div
             className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[1500]"
             onClick={onClose}
@@ -276,7 +277,8 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
                     </div>
                 </div>
             )}
-        </div>
+        </div>,
+        document.body
     );
 };
 
