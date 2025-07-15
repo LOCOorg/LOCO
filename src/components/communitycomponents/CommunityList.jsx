@@ -310,8 +310,7 @@ const CommunityList = () => {
                                         <span>
                     댓글{' '}
                                             <span className="font-medium text-gray-700">
-                      {community.commentCount ||
-                          (community.comments ? community.comments.length : 0)}
+                      {community.commentCount ?? 0}
                     </span>
                   </span>
                                     </div>

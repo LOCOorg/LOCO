@@ -203,17 +203,32 @@ const CommunityDetail = () => {
 
     // 2) 클릭 시 추천·추천취소 API 호출 및 토글
     const handleToggleRecommend = async () => {
+        if (!community) return;
+
+        // 1) 화면을 즉시 반영
+        const updatedRecommendedUsers = isRecommended
+            ? community.recommendedUsers.filter(uid => uid !== currentUserId) // 취소
+            : [...community.recommendedUsers, currentUserId];                 // 추천
+
+        setCommunity({ ...community, recommendedUsers: updatedRecommendedUsers });
+        setIsRecommended(!isRecommended);
+
         try {
+            // 2) API 호출
             if (isRecommended) {
-                await cancelRecommendCommunity(community._id, currentUserId)
+                await cancelRecommendCommunity(community._id, currentUserId);
             } else {
-                await recommendCommunity(community._id, currentUserId)
+                await recommendCommunity(community._id, currentUserId);
             }
-            setIsRecommended(!isRecommended)
         } catch (err) {
-            console.error('추천 처리 에러', err)
+            console.error('추천 처리 에러', err);
+
+            // 3) 실패 시 롤백
+            setCommunity(community);            // 이전 값으로 되돌림
+            setIsRecommended(isRecommended);    // 이전 값으로 되돌림
         }
-    }
+    };
+
 
     // 커뮤니티 삭제 (게시글 자체)
     const handleDelete = () => {
@@ -553,6 +568,7 @@ const CommunityDetail = () => {
                             <ReportForm
                                 onClose={() => setReportModalOpen(false)}
                                 reportedUser={reportTarget}
+                                defaultArea="커뮤니티"
                             />
                         </div>
                     </div>
@@ -563,7 +579,7 @@ const CommunityDetail = () => {
                     <h1 className="text-3xl font-bold mb-2">{community.communityTitle}</h1>
                     <div className="text-sm text-gray-600 mb-4 space-x-2">
           <span>
-              <ProfileButton profile={postProfile}/>
+              <ProfileButton profile={postProfile} area="커뮤니티"/>
             작성자:{' '}
               <span className="font-semibold text-red-500">{postWriterNickname}</span>
           </span>
@@ -583,7 +599,7 @@ const CommunityDetail = () => {
           </span>
                         <span>
             추천:{' '}
-                            <span className="font-medium">{community.recommended}</span>
+                            <span className="font-medium">{community.recommendedUsers.length}</span>
           </span>
                     </div>
                     {community.communityImage && (
@@ -599,16 +615,7 @@ const CommunityDetail = () => {
                         />
                     )}
                     <p className="text-gray-800 mb-4">{community.communityContents}</p>
-                    <div className="mt-4">
-                        {community.userId !== currentUserId && (
-                            <button
-                                onClick={handlePostReport}
-                                className="bg-purple-500 text-white font-semibold py-2 px-4 rounded hover:bg-purple-600 transition duration-200"
-                            >
-                                신고
-                            </button>
-                        )}
-
+                    <div className="mt-4 flex items-center gap-2">
                             <button
                                 onClick={handleToggleRecommend}
                                 aria-label="추천하기"
@@ -622,6 +629,23 @@ const CommunityDetail = () => {
                             >
                                 <FaThumbsUp size={20} />
                             </button>
+
+                        {community.userId !== currentUserId && (
+                            <button
+                                onClick={handlePostReport}
+                                type="button"
+                                className="
+                                      p-0 m-0
+                                      bg-transparent border-none shadow-none
+                                      text-sm font-medium text-gray-500
+                                      hover:text-rose-600 hover:underline
+                                      focus:outline-none focus:underline
+                                      cursor-pointer
+                                    "
+                            >
+                                신고
+                            </button>
+                        )}
                     </div>
                     <div className="mt-6">
                         <h3 className="text-xl font-semibold mb-3">댓글</h3>
@@ -635,7 +659,7 @@ const CommunityDetail = () => {
                                             key={comment._id}
                                             className="flex space-x-3 p-3 border border-gray-200 rounded hover:bg-gray-50 transition duration-200"
                                         >
-                                            <ProfileButton profile={profileMap[comment.userId]}/>
+                                            <ProfileButton profile={profileMap[comment.userId]} area="커뮤니티"/>
 
                                             <div className="flex-1">
                                                 <div className="flex items-center space-x-2 mb-1">
@@ -656,7 +680,7 @@ const CommunityDetail = () => {
                                                     ) : (
                                                         <button
                                                             onClick={() => handleCommentReport(comment)}
-                                                            className="text-purple-500 text-xs ml-2 hover:underline"
+                                                            className="text-gray-500 text-xs ml-2 hover:text-rose-600 hover:underline"
                                                         >
                                                             신고
                                                         </button>
@@ -684,7 +708,7 @@ const CommunityDetail = () => {
                                                                     <div className="flex items-start space-x-2">
                                                                         {/* 대댓글 작성자 프로필 버튼 */}
                                                                         <ProfileButton
-                                                                            profile={profileMap[reply.userId]}/>
+                                                                            profile={profileMap[reply.userId]} area="커뮤니티"/>
                                                                         <div className="text-xs text-gray-500">
                                     <span
                                         className={`text-sm font-semibold ${reply.userId === community.userId ? 'text-red-500' : ''}`}>
@@ -738,7 +762,7 @@ const CommunityDetail = () => {
                                                                                         <div
                                                                                             className="flex items-center space-x-2 text-xs text-gray-500">
                                                                                             <ProfileButton
-                                                                                                profile={profileMap[subReply.userId]}/>
+                                                                                                profile={profileMap[subReply.userId]} area="커뮤니티"/>
                                                                                             <span
                                                                                                 className={`text-sm font-semibold ${
                                                                                                     subReply.userId === community.userId ? 'text-red-500' : ''

@@ -46,7 +46,7 @@ const GlobalChatNotification = () => {
     const { openFriendChat } = useFriendChatStore();
     const notifications = useNotificationStore((state) => state.notifications);
     const addNotification = useNotificationStore((state) => state.addNotification);
-    const removeNotification = useNotificationStore((state) => state.removeNotification);
+    const removeNotificationsByRoom =useNotificationStore((state) => state.removeNotificationsByRoom);
 
     useEffect(() => {
         if (socket && userId) {
@@ -88,8 +88,9 @@ const GlobalChatNotification = () => {
             };
             openFriendChat({ roomId: notif.chatRoom, friend: friendInfo });
         }
-        removeNotification(notif.id);
-        // setDropdownOpen(false);
+        removeNotificationsByRoom(notif.chatRoom);
+        setToasts((prev) => prev.filter((t) => t.chatRoom !== notif.chatRoom));
+        //setDropdownOpen(false);
     };
 
     const renderRoomTypeTag = (roomType) => {
