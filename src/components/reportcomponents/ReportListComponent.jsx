@@ -171,6 +171,12 @@ const ReportListComponent = () => {
                 >
                     프로필
                 </button>
+                <button
+                    onClick={() => handleCategoryFilterChange("음란물 배포(이미지)")}
+                    className={`px-3 py-1 rounded ${filterCategory === "음란물 배포(이미지)" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                    >
+                    음란물
+                </button>
             </div>
 
             {/* 신고 상태 필터 버튼 */}

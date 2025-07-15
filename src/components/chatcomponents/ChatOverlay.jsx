@@ -175,15 +175,15 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
     if (hiddenRoomIds.includes(roomId)) return null;
 
     return (
-        <div className="fixed bottom-5 right-5 w-[350px] h-[400px] bg-white shadow-lg
-                 rounded-lg flex flex-col overflow-hidden z-[1000]"
+        <div className="fixed bottom-5 right-5 w-[350px] h-[450px] bg-white shadow-lg
+                 rounded-lg flex flex-col overflow-hidden z-[900]"
              style={customStyle}>
             {/* ── 헤더 ── */}
             <div className="bg-[#0084ff] text-white p-2.5 flex items-center justify-between select-none">
                 {/* 왼쪽 : 프로필 버튼 + 상대방 이름 */}
                 <div className="flex items-center space-x-2">
                     {/* 상대방 정보가 있을 때만 표시 */}
-                    <div className="text-black">
+                    <div className="text-black h-12">
                     {friend && (
                         <ProfileButton
                             profile={friend}
