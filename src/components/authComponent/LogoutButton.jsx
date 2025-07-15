@@ -46,10 +46,10 @@ export default function LogoutButton() {
     };
 
     return (
-        <button
+        <li className="block px-4 py-2 hover:bg-gray-100 transition cursor-pointer"
             onClick={handleLogout}
         >
             로그아웃
-        </button>
+        </li>
     );
 }
