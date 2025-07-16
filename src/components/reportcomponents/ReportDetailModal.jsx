@@ -104,13 +104,6 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
                             <span className="font-semibold">제재 내용:</span> {localReport.stopDetail}
                         </div>
                     )}
-                    <button
-                        onClick={goTarget}
-                        disabled={!localReport?.anchor}
-                        className="btn-go-anchor"
-                    >
-                        대상 위치로 이동
-                    </button>
                     {localReport.stopDate && (
                         <div className="mb-2">
                             <span className="font-semibold">정지 시작일:</span> {new Date(localReport.stopDate).toLocaleString()}
@@ -121,6 +114,23 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
                             <span className="font-semibold">정지 해제일:</span> {new Date(localReport.durUntil).toLocaleString()}
                         </div>
                     )}
+                    <button
+                        onClick={goTarget}
+                        disabled={!localReport?.anchor}
+                        className="
+                            inline-flex items-center gap-2 px-6 py-3 rounded-xl
+                            font-semibold text-sm text-white
+                            bg-gradient-to-br from-indigo-500 to-violet-500
+                            shadow-lg transition
+                            hover:-translate-y-1 hover:shadow-xl
+                            active:translate-y-0 active:shadow-lg
+                            disabled:opacity-45 disabled:shadow-none disabled:cursor-not-allowed
+                            focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100
+                          "
+                    >
+                        <span className="text-lg -translate-y-px">📍</span>
+                        대상 위치로 이동
+                    </button>
 
                     {localReport.reportAnswer && !isEditing && (
                         <div className="mb-4 p-3 bg-gray-100 rounded">
