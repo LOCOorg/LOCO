@@ -133,6 +133,17 @@ const DetailPanel = ({ user }) => {
                 {formData.plan && (
                     <>
                         <div>
+                             <label className="block font-bold mb-1">Plan Name:</label>
+                             <input
+                                 type="text"
+                                 name="plan.planName"
+                                 value={formData.plan.planName || ""}
+                                 onChange={handleChange}
+                                 className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                             />
+                        </div>
+
+                        <div>
                             <label className="block font-bold mb-1">Plan Type:</label>
                             <input
                                 type="text"
@@ -182,8 +193,9 @@ const DetailPanel = ({ user }) => {
                         type="text"
                         name="accountLink"
                         value={formData.accountLink || ""}
-                        onChange={handleChange}
-                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        readOnly
+                        //className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="bg-gray-100 cursor-not-allowed w-full p-3 border border-gray-300 rounded-md"
                     />
                 </div>
                 {/* 소셜 로그인 정보 */}
@@ -192,8 +204,8 @@ const DetailPanel = ({ user }) => {
                     <textarea
                         name="social"
                         value={formData.social ? JSON.stringify(formData.social, null, 2) : ""}
-                        onChange={handleChange}
-                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 h-24"
+                        readOnly
+                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 h-48"
                     />
                 </div>
                 {/* 별점 */}

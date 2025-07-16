@@ -18,6 +18,7 @@ export const adminProductAPI = {
 export const productAPI = {
     getAll: () => instance.get('/'),
     getById: (id) => instance.get(`/${id}`),
+    getNames: () => instance.get('/names'),
 };
 
 
