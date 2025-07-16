@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { replyToReport } from '../../api/reportAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import useAuthStore from '../../stores/authStore.js';
+import {useNavigate} from "react-router-dom";
 
 // eslint-disable-next-line react/prop-types
 const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
@@ -12,6 +13,15 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [localReport, setLocalReport] = useState(report);
     const [modalInfo, setModalInfo] = useState({ isOpen: false, title: '', message: '' });
+
+    const navigate = useNavigate();
+
+    const goTarget = () => {
+        if (!localReport?.anchor) return;
+        const { parentId, type, targetId } = localReport.anchor;
+        navigate(`/community/${parentId}#${type}-${targetId}`);
+        onClose();
+    };
 
     useEffect(() => {
         setLocalReport(report);
@@ -94,6 +104,13 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
                             <span className="font-semibold">제재 내용:</span> {localReport.stopDetail}
                         </div>
                     )}
+                    <button
+                        onClick={goTarget}
+                        disabled={!localReport?.anchor}
+                        className="btn-go-anchor"
+                    >
+                        대상 위치로 이동
+                    </button>
                     {localReport.stopDate && (
                         <div className="mb-2">
                             <span className="font-semibold">정지 시작일:</span> {new Date(localReport.stopDate).toLocaleString()}
