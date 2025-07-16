@@ -40,6 +40,20 @@ const RandomChatComponent = () => {
         opposite: "이성"
     };
 
+    // 컴포넌트 최상단(훅들 위쪽)에 추가
+    const formatToKST = (isoString) => {
+        if (!isoString) return "-";          // 값이 없으면 그대로 대시
+        return new Date(isoString).toLocaleString("ko-KR", {
+            timeZone: "Asia/Seoul",            // KST 지정
+            year:  "numeric",
+            month: "2-digit",
+            day:   "2-digit",
+            hour:  "2-digit",
+            minute:"2-digit",
+        });
+    };
+
+
     // 생년월일을 이용한 나이 계산 함수
     const calculateAge = (birthdate) => {
         const today = new Date();
@@ -117,8 +131,23 @@ const RandomChatComponent = () => {
                 userInfo.reportTimer &&
                 new Date(userInfo.reportTimer) > new Date()
             ) {
+                // ── KST 시각과 남은 시간을 계산
+                const banEnd   = formatToKST(userInfo.reportTimer);
+                const diff     = new Date(userInfo.reportTimer) - new Date();
+                const mins     = Math.floor(diff / 60000);
+                const hours    = Math.floor(mins  / 60);
+                const days     = Math.floor(hours / 24);
+                const remain   =
+                    (days  ? `${days}일 `         : "") +
+                    (hours % 24 ? `${hours % 24}시간 ` : "") +
+                    (mins  % 60 ? `${mins  % 60}분`   : "");
+
                 setModalTitle("채팅 제한");
-                setModalMessage("신고로 인해 현재 랜덤 채팅 이용이 제한되어 있습니다.");
+                setModalMessage(
+                    `신고로 인해 현재 랜덤 채팅 이용 제한\n` +
+                    `남은 시간: ${remain.trim()}\n` +
+                    `해제 시각: ${banEnd}`
+                );
                 setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
                 setModalOpen(true);
                 return;
@@ -351,7 +380,7 @@ const RandomChatComponent = () => {
                 }}
                 buttons={modalButtons}
             >
-                <p className="text-gray-700">{modalMessage}</p>
+                <p className="text-gray-700 whitespace-pre-line">{modalMessage}</p>
             </CommonModal>
 
             {/* 차단 목록 모달 */}

@@ -5,7 +5,7 @@ import useAuthStore from '../../stores/authStore.js';
 import CommonModal from '../../common/CommonModal.jsx';
 
 // eslint-disable-next-line react/prop-types
-const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기타' }) => {
+const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기타', anchor }) => {
     // authStore에서 로그인한 사용자 정보 가져오기
     const { user } = useAuthStore();
 
@@ -67,7 +67,8 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
                 reportCategory: newReport.reportCategory,
                 reportContants: newReport.reportContants,
                 reportErId: newReport.reportErId,
-                offenderId: offenderUser._id
+                offenderId: offenderUser._id,
+                ...(anchor ? { anchor } : {})                // 🔑 있을 때만 포함
             };
 
             const created = await createReport(reportData);

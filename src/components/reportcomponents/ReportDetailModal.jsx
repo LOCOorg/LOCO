@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { replyToReport } from '../../api/reportAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import useAuthStore from '../../stores/authStore.js';
+import {useNavigate} from "react-router-dom";
 
 // eslint-disable-next-line react/prop-types
 const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
@@ -12,6 +13,15 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [localReport, setLocalReport] = useState(report);
     const [modalInfo, setModalInfo] = useState({ isOpen: false, title: '', message: '' });
+
+    const navigate = useNavigate();
+
+    const goTarget = () => {
+        if (!localReport?.anchor) return;
+        const { parentId, type, targetId } = localReport.anchor;
+        navigate(`/community/${parentId}#${type}-${targetId}`);
+        onClose();
+    };
 
     useEffect(() => {
         setLocalReport(report);
@@ -104,6 +114,23 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
                             <span className="font-semibold">정지 해제일:</span> {new Date(localReport.durUntil).toLocaleString()}
                         </div>
                     )}
+                    <button
+                        onClick={goTarget}
+                        disabled={!localReport?.anchor}
+                        className="
+                            inline-flex items-center gap-2 px-6 py-3 rounded-xl
+                            font-semibold text-sm text-white
+                            bg-gradient-to-br from-indigo-500 to-violet-500
+                            shadow-lg transition
+                            hover:-translate-y-1 hover:shadow-xl
+                            active:translate-y-0 active:shadow-lg
+                            disabled:opacity-45 disabled:shadow-none disabled:cursor-not-allowed
+                            focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100
+                          "
+                    >
+                        <span className="text-lg -translate-y-px">📍</span>
+                        대상 위치로 이동
+                    </button>
 
                     {localReport.reportAnswer && !isEditing && (
                         <div className="mb-4 p-3 bg-gray-100 rounded">
