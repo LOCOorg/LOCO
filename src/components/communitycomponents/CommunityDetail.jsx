@@ -1,6 +1,6 @@
 //src/components/communitycomponents/CommunityDetail.jsx
 import {useEffect, useState} from 'react';
-import {useParams, useNavigate} from 'react-router-dom';
+import {useParams, useNavigate, useLocation} from 'react-router-dom';
 import {
     fetchCommunityById,
     deleteCommunity,
@@ -59,6 +59,7 @@ const CommunityDetail = () => {
     // 현재 사용자
     const currentUser = useAuthStore((state) => state.user);
     const currentUserId = currentUser?._id;
+    const isAdmin = currentUser?.userLv >= 2;   // 🔑 Lv 2 이상 여부
 
     // 모달 상태 (게시글 삭제, 추천)
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -96,7 +97,7 @@ const CommunityDetail = () => {
 
     // 신고 모달 상태 및 신고 대상
     const [reportModalOpen, setReportModalOpen] = useState(false);
-    const [reportTarget, setReportTarget] = useState(null);
+    const [reportTarget, setReportTarget] = useState({ nickname:'', anchor:null });
 
     useEffect(() => {
         if (community && community.userId) {
@@ -448,29 +449,38 @@ const CommunityDetail = () => {
     // 게시글 신고 핸들러
     const handlePostReport = () => {
         // 게시글 신고 시 신고 대상은 게시글 작성자
-        setReportTarget({nickname: userMap[community.userId] || community.userId});
+        setReportTarget({
+            nickname : userMap[community.userId] || community.userId,
+            anchor   : { type:'post', parentId: community._id, targetId: community._id }
+        });
         setReportModalOpen(true);
     };
 
     // 댓글 신고 핸들러
     const handleCommentReport = (comment) => {
         // 댓글 신고 시 신고 대상은 댓글 작성자
-        const nickname = userMap[comment.userId] || comment.userId;
-        setReportTarget({nickname});
+        setReportTarget({
+            nickname : userMap[comment.userId] || comment.userId,
+            anchor   : { type:'comment', parentId: community._id, targetId: comment._id }
+        });
         setReportModalOpen(true);
     };
 
     // 대댓글 신고 핸들러
     const handleReplyReport = (reply) => {
-        const nickname = userMap[reply.userId] || reply.userId;
-        setReportTarget({nickname});
+        setReportTarget({
+            nickname : userMap[reply.userId] || reply.userId,
+            anchor   : { type:'reply', parentId: community._id, targetId: reply._id }
+        });
         setReportModalOpen(true);
     };
 
     // 대대댓글 신고 핸들러
     const handleSubReplyReport = (subReply) => {
-        const nickname = userMap[subReply.userId] || subReply.userId;
-        setReportTarget({nickname});
+        setReportTarget({
+            nickname : userMap[subReply.userId] || subReply.userId,
+            anchor   : { type:'subReply', parentId: community._id, targetId: subReply._id }
+        });
         setReportModalOpen(true);
     };
 
@@ -478,6 +488,17 @@ const CommunityDetail = () => {
     const handleCategoryNav = (category) => {
         navigate(`/community?category=${category}`);
     };
+
+    const { hash } = useLocation();
+    useEffect(() => {
+        if (!hash) return;                       // e.g. #comment-64fd…
+        const el = document.getElementById(hash.slice(1));
+        if (el) {
+            el.scrollIntoView({ behavior:'smooth', block:'center' });
+            el.classList.add('highlight');
+            setTimeout(() => el.classList.remove('highlight'), 3000);
+        }
+    }, [hash, community]);                      // community 렌더 완료 후 실행
 
 
     if (loading) {
@@ -567,7 +588,8 @@ const CommunityDetail = () => {
                             </button>
                             <ReportForm
                                 onClose={() => setReportModalOpen(false)}
-                                reportedUser={reportTarget}
+                                reportedUser={{ nickname: reportTarget.nickname }}
+                                anchor={reportTarget.anchor}          // 🔑 추가
                                 defaultArea="커뮤니티"
                             />
                         </div>
@@ -614,7 +636,7 @@ const CommunityDetail = () => {
                             className="w-full h-auto mb-4"
                         />
                     )}
-                    <p className="text-gray-800 mb-4">{community.communityContents}</p>
+                    <p className="text-gray-800 mb-4" id={`post-${community._id}`}>{community.communityContents}</p>
                     <div className="mt-4 flex items-center gap-2">
                             <button
                                 onClick={handleToggleRecommend}
@@ -670,7 +692,7 @@ const CommunityDetail = () => {
                                                     <span className="text-xs text-gray-500">
                           {formatRelativeTime(comment.commentRegDate)}
                         </span>
-                                                    {comment.userId === currentUserId ? (
+                                                    {comment.userId === currentUserId || isAdmin ? (
                                                         <button
                                                             onClick={() => openCommentDeleteModal(comment._id)}
                                                             className="text-red-500 text-xs ml-2 hover:underline"
@@ -686,7 +708,7 @@ const CommunityDetail = () => {
                                                         </button>
                                                     )}
                                                 </div>
-                                                <p className="text-gray-800">{comment.commentContents}</p>
+                                                <p className="text-gray-800" id={`comment-${comment._id}`}>{comment.commentContents}</p>
                                                 {comment.commentImage && (
                                                     <img
                                                         src={
@@ -717,7 +739,7 @@ const CommunityDetail = () => {
                                                                             <span className="ml-2 text-gray-400">
                                       {formatRelativeTime(reply.commentRegDate)}
                                     </span>
-                                                                            {reply.userId === currentUserId ? (
+                                                                            {reply.userId === currentUserId || isAdmin ? (
                                                                                 <button
                                                                                     onClick={() => openReplyDeleteModal(comment._id, reply._id)}
                                                                                     className="text-red-500 text-xs ml-2 hover:underline"
@@ -732,7 +754,7 @@ const CommunityDetail = () => {
                                                                                     신고
                                                                                 </button>
                                                                             )}
-                                                                            <div className="text-gray-800 mt-1">
+                                                                            <div id={`reply-${reply._id}`} className="text-gray-800 mt-1">
                                                                                 {reply.commentContents}
                                                                             </div>
                                                                             {reply.replyImage && (
@@ -770,7 +792,7 @@ const CommunityDetail = () => {
                                                                                             >{subReplyNickname} </span>
                                                                                             <span
                                                                                                 className="ml-2 text-gray-400">{formatRelativeTime(subReply.commentRegDate)}</span>
-                                                                                            {subReply.userId === currentUserId ? (
+                                                                                            {subReply.userId === currentUserId || isAdmin ? (
                                                                                                 <button
                                                                                                     onClick={() =>
                                                                                                         openSubReplyDeleteModal(comment._id, reply._id, subReply._id)
@@ -791,7 +813,7 @@ const CommunityDetail = () => {
 
                                                                                         {/* — 본문 */}
                                                                                         <div
-                                                                                            className="text-gray-800 text-sm">
+                                                                                            id={`subReply-${subReply._id}`} className="text-gray-800 text-sm">
                                                                                             {subReply.commentContents}
                                                                                         </div>
 
@@ -1045,7 +1067,7 @@ const CommunityDetail = () => {
                         </form>
                     </div>
 
-                    {community.userId === currentUserId && (
+                    {(community.userId === currentUserId || isAdmin) && (
                         <div className="mt-6 flex space-x-4">
                             <button
                                 onClick={() => navigate(`/community/edit/${community._id}`)}
