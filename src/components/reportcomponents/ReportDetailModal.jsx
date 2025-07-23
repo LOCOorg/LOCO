@@ -1,5 +1,6 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
-import { replyToReport } from '../../api/reportAPI.js';
+import { replyToReport, fetchReportChatLog  } from '../../api/reportAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import useAuthStore from '../../stores/authStore.js';
 import {useNavigate} from "react-router-dom";
@@ -14,7 +15,20 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
     const [localReport, setLocalReport] = useState(report);
     const [modalInfo, setModalInfo] = useState({ isOpen: false, title: '', message: '' });
 
+    const [chatMessages, setChatMessages] = useState([]);
+    const [showChatModal, setShowChatModal] = useState(false);
+
     const navigate = useNavigate();
+
+    const loadChatLog = async () => {
+        try {
+            const msgs = await fetchReportChatLog(localReport._id);
+            setChatMessages(msgs);
+            setShowChatModal(true);
+        } catch (err) {
+            setModalInfo({ isOpen: true, title: '오류', message: err.message });
+        }
+    };
 
     const goTarget = () => {
         if (!localReport?.anchor) return;
@@ -114,6 +128,12 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
                             <span className="font-semibold">정지 해제일:</span> {new Date(localReport.durUntil).toLocaleString()}
                         </div>
                     )}
+                    {localReport.anchor?.type === 'chat' && (
+                        <button className="btn-view-chat" onClick={loadChatLog}>
+                            채팅 내역 보기
+                        </button>
+                    )}
+
                     <button
                         onClick={goTarget}
                         disabled={!localReport?.anchor}
@@ -197,6 +217,95 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
             >
                 <p>{modalInfo.message}</p>
             </CommonModal>
+
+            {showChatModal && (
+                <CommonModal
+                    title="채팅 내역"
+                    isOpen={true}
+                    onConfirm={() => setShowChatModal(false)}
+                    showCancel={false}
+                >
+                    {/* ── 스크롤 컨테이너 ────────────────────────── */}
+                    <div className="max-h-[70vh] overflow-y-auto px-3 py-4 bg-gray-50 rounded-lg">
+
+                        {chatMessages.length === 0 && (
+                            <p className="text-center text-gray-500 py-8">채팅 기록이 없습니다.</p>
+                        )}
+
+                        {chatMessages.map((msg, idx) => {
+                            /* 날짜 · 시간 포맷 */
+                            const dateObj  = new Date(msg.textTime || msg.createdAt);
+                            const prevDate = idx > 0 ? new Date(chatMessages[idx - 1].textTime || chatMessages[idx - 1].createdAt) : null;
+
+                            const y = dateObj.getFullYear();
+                            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                            const d = String(dateObj.getDate()).padStart(2, '0');
+                            const dateStr = `${y}.${m}.${d}`;
+                            const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                            const showDateLine = idx === 0 || dateStr !==
+                                `${prevDate?.getFullYear()}.${String(prevDate?.getMonth()+1).padStart(2,'0')}.${String(prevDate?.getDate()).padStart(2,'0')}`;
+
+                            /* “가해자” 기준 노란/회색 말풍선 구분 */
+                            const offenderId = (localReport.offenderId?._id || localReport.offenderId || '').toString();
+                            const senderId   = (msg.sender?._id        || msg.sender        || '').toString();
+                            const isMe = offenderId === senderId;
+
+                            /* 닉네임(실명) 표시 */
+                            const nick = msg.sender?.nickname;
+                            const real = msg.sender?.name;
+                            const who  = nick && real ? `${nick}(${real})` : nick || real || '알 수 없음';
+
+                            return (
+                                <React.Fragment key={msg._id}>
+                                    {/* 날짜 구분선 ------------------------------------------------ */}
+                                    {showDateLine && (
+                                        <div className="w-full text-center my-3 text-[11px] text-gray-400 select-none">
+                                            ── {dateStr} ──
+                                        </div>
+                                    )}
+
+                                    {/* 메시지 한 줄 ---------------------------------------------- */}
+                                    <div className={`w-full flex mb-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                        {/* (내 메시지) 시간 → 말풍선 */}
+                                        {isMe && (
+                                            <span className="text-[10px] text-gray-500 mr-2 self-end">
+                  {timeStr}
+                </span>
+                                        )}
+
+                                        <div
+                                            className={`
+                  max-w-[80%] px-4 py-2 rounded-xl whitespace-pre-wrap
+                  ${isMe
+                                                ? 'bg-yellow-200 text-black rounded-bl-none'
+                                                : 'bg-gray-100  text-gray-900 rounded-br-none'}
+                `}
+                                        >
+                                            {/* 발신자 이름 */}
+                                            <p className={`text-[11px] font-semibold mb-1 ${isMe ? 'text-right' : 'text-left'}`}>
+                                                {who}
+                                            </p>
+
+                                            {/* 본문 */}
+                                                <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                                        </div>
+
+                                        {/* (상대 메시지) 말풍선 → 시간 */}
+                                        {!isMe && (
+                                            <span className="text-[10px] text-gray-500 ml-2 self-end">
+                  {timeStr}
+                </span>
+                                        )}
+                                    </div>
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
+                </CommonModal>
+            )}
+
+
         </>
     );
 };

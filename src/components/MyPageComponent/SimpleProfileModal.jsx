@@ -10,7 +10,7 @@ import useBlockedStore from "../../stores/useBlockedStore.js";
 import {createPortal} from "react-dom";
 
 
-const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
+const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) => {
     const authUser = useAuthStore(state => state.user);
     const isOwnProfile = authUser && profile._id === authUser._id; // 내 프로필인지 확인
     const [isReportModalVisible, setIsReportModalVisible] = useState(false);
@@ -192,6 +192,7 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
                             reportedUser={profile}
                             onReportCreated={() => setIsReportModalVisible(false)}
                             defaultArea={area}
+                            anchor={anchor}
                         />
                     </div>
                 </div>

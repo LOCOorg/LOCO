@@ -27,6 +27,7 @@ const ChatRoom = ({roomId, userId}) => {
     // 신고 모달 관련 상태
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportedParticipant, setReportedParticipant] = useState(null);
+    const [reportAnchor, setReportAnchor] = useState(null);
 
     const messagesContainerRef = useRef(null);
 
@@ -114,6 +115,13 @@ const ChatRoom = ({roomId, userId}) => {
     // 신고 모달 열기/닫기 함수
     const openReportModal = (participant) => {
         setReportedParticipant(participant);
+        // roomId를 포함한 anchor 생성
+        setReportAnchor({
+            type: 'chat',
+            roomId,           // 현재 방 ID
+            parentId: roomId,
+            targetId: roomId,
+        });
         setShowReportModal(true);
     };
 
@@ -326,42 +334,42 @@ const ChatRoom = ({roomId, userId}) => {
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
     }, [messages]);
-    // ────────── ③ participants 변경 시 상대 소환사명으로 전적 조회 ──────────
-    // 채팅방 참가자 변경 시 상대방 Riot ID로 전적 조회
-    useEffect(() => {
-        if (participants.length < 2 || participantsRef.current) return;
-        const otherIds = participants
-            .map(u => (typeof u === "object" ? u._id : u))
-            .filter(id => id !== userId);
-
-        setRecordsLoading(true);
-        setRecordsError(null);
-
-        Promise.all(
-            otherIds.map(async participantId => {
-                try {
-                    const userInfo = await getUserInfo(participantId);
-                    const {riotGameName, riotTagLine} = userInfo;
-                    if (!riotGameName || !riotTagLine) {
-                        throw new Error("Riot ID 정보가 없습니다.");
-                    }
-                    const leagueRecord = await getLeagueRecord(riotGameName, riotTagLine);
-                    return {participantId, userInfo, leagueRecord, error: null};
-                } catch (err) {
-                    return {participantId, userInfo: null, leagueRecord: null, error: err.message};
-                }
-            })
-        )
-            .then(results => {
-                setPartnerRecords(results);
-                setRecordsLoading(false);
-                participantsRef.current = true;
-            })
-            .catch(err => {
-                setRecordsError(err.message);
-                setRecordsLoading(false);
-            });
-    }, [participants, userId]);
+    // // ────────── ③ participants 변경 시 상대 소환사명으로 전적 조회 ──────────
+    // // 채팅방 참가자 변경 시 상대방 Riot ID로 전적 조회
+    // useEffect(() => {
+    //     if (participants.length < 2 || participantsRef.current) return;
+    //     const otherIds = participants
+    //         .map(u => (typeof u === "object" ? u._id : u))
+    //         .filter(id => id !== userId);
+    //
+    //     setRecordsLoading(true);
+    //     setRecordsError(null);
+    //
+    //     Promise.all(
+    //         otherIds.map(async participantId => {
+    //             try {
+    //                 const userInfo = await getUserInfo(participantId);
+    //                 const {riotGameName, riotTagLine} = userInfo;
+    //                 if (!riotGameName || !riotTagLine) {
+    //                     throw new Error("Riot ID 정보가 없습니다.");
+    //                 }
+    //                 const leagueRecord = await getLeagueRecord(riotGameName, riotTagLine);
+    //                 return {participantId, userInfo, leagueRecord, error: null};
+    //             } catch (err) {
+    //                 return {participantId, userInfo: null, leagueRecord: null, error: err.message};
+    //             }
+    //         })
+    //     )
+    //         .then(results => {
+    //             setPartnerRecords(results);
+    //             setRecordsLoading(false);
+    //             participantsRef.current = true;
+    //         })
+    //         .catch(err => {
+    //             setRecordsError(err.message);
+    //             setRecordsLoading(false);
+    //         });
+    // }, [participants, userId]);
 
     return (
         <div
@@ -378,7 +386,13 @@ const ChatRoom = ({roomId, userId}) => {
                     <div className="mt-2 flex flex-wrap gap-2 text-sm">
                         {participants.map(user => (
                             <div key={user._id} className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1 text-black">
-                                <ProfileButton profile={user} className="mr-1" area="랜덤채팅" onModalToggle={setIsProfileOpen}/>
+                                <ProfileButton profile={user} className="mr-1" area="랜덤채팅" onModalToggle={setIsProfileOpen}
+                                               anchor={{
+                                                   type: 'chat',
+                                                   roomId,           // 현재 채팅방 ID
+                                                   parentId: roomId, // 스키마상 required ⇒ 동일 값
+                                                   targetId: user._id // 신고 클릭한 메시지 ID
+                                               }}/>
                                 <span className="text-white">{user.nickname}</span>
                             </div>
                         ))}
@@ -439,6 +453,12 @@ const ChatRoom = ({roomId, userId}) => {
                                                 className="w-10 h-10 rounded-full overflow-hidden mr-3"
                                                 area="랜덤채팅"
                                                 onModalToggle={setIsProfileOpen}
+                                                anchor={{
+                                                    type: 'chat',
+                                                    roomId,           // 현재 채팅방 ID
+                                                    parentId: roomId, // 스키마상 required ⇒ 동일 값
+                                                    targetId: msg._id // 신고 클릭한 메시지 ID
+                                                }}
                                             />
                                         )}
 
@@ -607,6 +627,7 @@ const ChatRoom = ({roomId, userId}) => {
                             onClose={closeReportModal}
                             reportedUser={reportedParticipant}
                             defaultArea="랜덤채팅"
+                            anchor={reportAnchor}
                         />
                     </div>
                 </div>

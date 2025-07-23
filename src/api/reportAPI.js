@@ -68,3 +68,15 @@ export const replyToReport = async (reportId, replyData) => {
         throw new Error('답변 저장에 실패했습니다.');
     }
 };
+
+/* 관리자가 신고된 채팅방의 메시지를 받는 함수 */
+export const fetchReportChatLog = async (reportId) => {
+    try {
+        const res = await axios.get(`${host}/reports/${reportId}/chat-log`, {
+            withCredentials: true,
+        });
+        return res.data;          // 메시지 배열
+    } catch {
+        throw new Error('채팅 로그를 불러오지 못했습니다.');
+    }
+};
