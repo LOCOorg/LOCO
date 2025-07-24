@@ -129,28 +129,50 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
                         </div>
                     )}
                     {localReport.anchor?.type === 'chat' && (
-                        <button className="btn-view-chat" onClick={loadChatLog}>
+                        <button
+                            onClick={loadChatLog}
+                            className="
+                                      inline-flex items-center gap-2
+                                      px-4 py-2
+                                      rounded-lg
+                                      text-sm font-semibold text-white
+                                      bg-gradient-to-r from-teal-400 to-blue-500
+                                      shadow-md ring-1 ring-inset ring-white/20
+                                      transition
+                                      hover:brightness-110 hover:shadow-lg
+                                      active:scale-95
+                                      focus-visible:outline-none
+                                      focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-teal-300
+                                    "
+                        >
+                            {/* 작은 채팅 아이콘 (Heroicons) */}
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none"
+                                 viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round"
+                                      d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4-4.03 7-9 7a9.77 9.77 0 01-4-.8l-4 1 1.1-3.5A6.8 6.8 0 013 12c0-4 4.03-7 9-7s9 3 9 7z" />
+                            </svg>
                             채팅 내역 보기
                         </button>
                     )}
 
-                    <button
-                        onClick={goTarget}
-                        disabled={!localReport?.anchor}
-                        className="
-                            inline-flex items-center gap-2 px-6 py-3 rounded-xl
-                            font-semibold text-sm text-white
-                            bg-gradient-to-br from-indigo-500 to-violet-500
-                            shadow-lg transition
-                            hover:-translate-y-1 hover:shadow-xl
-                            active:translate-y-0 active:shadow-lg
-                            disabled:opacity-45 disabled:shadow-none disabled:cursor-not-allowed
-                            focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100
-                          "
-                    >
-                        <span className="text-lg -translate-y-px">📍</span>
-                        대상 위치로 이동
-                    </button>
+
+                    {localReport.anchor?.type !== 'chat' && (
+                        <button
+                            onClick={goTarget}
+                            disabled={!localReport?.anchor}
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl
+                                       font-semibold text-sm text-white
+                                       bg-gradient-to-br from-indigo-500 to-violet-500
+                                       shadow-lg transition
+                                       hover:-translate-y-1 hover:shadow-xl
+                                       active:translate-y-0 active:shadow-lg
+                                       disabled:opacity-45 disabled:shadow-none disabled:cursor-not-allowed
+                                       focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100"
+                        >
+                            <span className="text-lg -translate-y-px">📍</span>
+                            대상 위치로 이동
+                        </button>
+                    )}
 
                     {localReport.reportAnswer && !isEditing && (
                         <div className="mb-4 p-3 bg-gray-100 rounded">
