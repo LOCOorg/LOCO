@@ -22,10 +22,12 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) =>
     const setUser    = useAuthStore((s) => s.setUser);
 
     const friends = useFriendListStore((s) => s.friends);              // 추가
-    const isFriend = useMemo(
-        () => friends.some((f) => f._id === profile?._id),
-        [friends, profile?._id]
-    );
+    const isFriend = useMemo(() => {
+        const byStore = friends.some(f => f._id === profile?._id);
+        const byAuth  = authUser?.friends?.includes(profile?._id);
+        return byStore || byAuth;
+    }, [friends, authUser?.friends, profile?._id]);
+
     const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
     const navigate = useNavigate();
