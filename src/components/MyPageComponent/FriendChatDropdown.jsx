@@ -186,11 +186,12 @@ const FriendChatDropdown = () => {
             <DropdownTransition
                 show={showDropdown}
                 as="div"
-                className="absolute top-full right-0 mt-2 w-72 max-h-80 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5 z-50"
+                className="absolute top-full right-0 mt-2 w-72 max-h-[calc(100vh-10rem)] overflow-hidden rounded-xl
+                bg-white shadow-xl ring-1 ring-black/5 z-50"
             >
-                <div className="flex h-full flex-col divide-y divide-gray-200">
+                <div className="flex h-full flex-col divide-y divide-gray-200 min-h-0">
                     {/* ===== 친구 요청 ===== */}
-                    <section className="max-h-40 overflow-y-auto custom-scroll">
+                    <section className="shrink-0 overflow-y-auto custom-scroll">
                         <h3 className="sticky top-0 z-10 bg-white px-4 py-2 text-xs font-semibold text-gray-700">
                             친구 요청
                         </h3>
@@ -234,7 +235,7 @@ const FriendChatDropdown = () => {
                     </section>
 
                     {/* ===== 친구 채팅 ===== */}
-                    <section className="grow overflow-y-auto custom-scroll">
+                    <section className="flex-1 min-h-0 overflow-y-auto custom-scroll">
                         <h3 className="sticky top-0 z-10 bg-white px-4 py-2 text-xs font-semibold text-gray-700">
                             친구 채팅
                         </h3>
