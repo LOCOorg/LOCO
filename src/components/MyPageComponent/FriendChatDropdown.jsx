@@ -1,4 +1,3 @@
-// src/components/FriendChatDropdown.jsx
 import { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import useAuthStore from '../../stores/authStore';
 import useFriendChatStore from '../../stores/useFriendChatStore';
@@ -8,77 +7,76 @@ import {
     acceptFriendRequest,
     declineFriendRequest,
     getFriendRequestList,
-    getUserInfo
+    getUserInfo,
 } from '../../api/userAPI';
 import useFriendListStore from '../../stores/useFriendListStore';
 import DropdownTransition from '../../layout/css/DropdownTransition.jsx';
 
+/* === 아이콘 (Heroicons 2.x) === */
+import {
+    UserGroupIcon,
+    CheckIcon,
+    XMarkIcon,
+    ChatBubbleLeftEllipsisIcon,
+} from '@heroicons/react/24/solid';
 
 const FriendChatDropdown = () => {
-    const { user } = useAuthStore();
-    const { openFriendChat, swapFriendChat } = useFriendChatStore();
+    /* --------------- 상태 / 스토어 --------------- */
+    const { user, setUser: setAuthUser } = useAuthStore();
+    const { openFriendChat, swapFriendChat, friendRooms, setFriendRooms } =
+        useFriendChatStore();
+    const addFriend = useFriendListStore((s) => s.addFriend);
     const { notifications, removeNotification } = useContext(NotificationContext);
-    const addFriend    = useFriendListStore((s) => s.addFriend);
-    const setAuthUser = useAuthStore((s) => s.setUser);
 
     const [showDropdown, setShowDropdown] = useState(false);
-    const friendRooms   = useFriendChatStore(s => s.friendRooms);
-    const setFriendRooms = useFriendChatStore(s => s.setFriendRooms);
     const [friendRequests, setFriendRequests] = useState([]);
 
-
     const dropdownRef = useRef(null);
-    // ② 알림 외부 클릭 감지용 useEffect -> 내부 눌러도
+
+    /* --------------- 바깥 클릭 시 닫기 --------------- */
     useEffect(() => {
         if (!showDropdown) return;
-
         const handleClickOutside = (e) => {
-            // ref.current가 정의되어 있고, 클릭한 타겟이 그 영역 안에 없으면
             if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
                 setShowDropdown(false);
             }
         };
-        // 드롭다운이 열렸을 때만 리스너 등록
-        if (showDropdown) {
-            document.addEventListener("mousedown", handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [showDropdown]);
 
-
-    /* ---------------- 친구 채팅방 ---------------- */
+    /* --------------- 친구 채팅방 로딩 --------------- */
     const loadRooms = useCallback(async () => {
         if (!user?._id) return;
         try {
             const rooms = await fetchChatRooms({ roomType: 'friend' });
-            const myRooms = rooms.filter(r =>
-                r.chatUsers.some(u => u._id === user._id)
+            const myRooms = rooms.filter((r) =>
+                r.chatUsers.some((u) => u._id === user._id)
             );
-            const mapped = myRooms.filter(r => r.isActive).map((r) => ({
-                roomId: r._id,
-                friend: r.chatUsers.find((u) => u._id !== user._id),
-            }));
+            const mapped = myRooms
+                .filter((r) => r.isActive)
+                .map((r) => ({
+                    roomId: r._id,
+                    friend: r.chatUsers.find((u) => u._id !== user._id),
+                }));
             setFriendRooms(mapped);
         } catch (e) {
             console.error('친구 채팅방 조회 실패', e);
         }
     }, [user, setFriendRooms]);
 
-    // ⛔ async 함수를 effect 콜백으로 넘기지 않는다
     useEffect(() => {
         loadRooms();
     }, [loadRooms]);
 
-    /* ---------------- 서버 저장 친구-요청 ---------------- */
+    /* --------------- 서버에 저장된 친구 요청 로딩 --------------- */
     const loadFriendReqFromServer = useCallback(async () => {
         if (!user?._id) return;
         try {
             const list = await getFriendRequestList(user._id);
             setFriendRequests(list);
 
-            // 이미 DB에 반영된 요청이면 알림에서 제거
+            /* DB 에 이미 반영된 알림은 제거 */
             list.forEach((r) => {
                 const idx = notifications.findIndex(
                     (n) => n.type === 'FRIEND_REQUEST' && n.requestId === r._id
@@ -94,13 +92,13 @@ const FriendChatDropdown = () => {
         loadFriendReqFromServer();
     }, [loadFriendReqFromServer]);
 
-    /* ---------------- 실시간 알림 → friendRequests 머지 ---------------- */
+    /* --------------- 실시간 알림 → 요청 배열에 머지 --------------- */
     useEffect(() => {
         const incoming = notifications
-            .filter(n => n.type === 'FRIEND_REQUEST')
+            .filter((n) => n.type === 'FRIEND_REQUEST')
             .map((n, idx) => ({
                 _id: n.requestId,
-                sender: {                            // ✅ 최소 _id 포함하도록 매핑
+                sender: {
                     _id: n.senderId || n.sender?._id,
                     nickname: n.senderNickname || n.sender?.nickname,
                 },
@@ -117,7 +115,7 @@ const FriendChatDropdown = () => {
         });
     }, [notifications]);
 
-    /* ---------------- 수락 / 거절 ---------------- */
+    /* --------------- 요청 수락 / 거절 --------------- */
     const afterHandled = (reqId, notiIdx) => {
         setFriendRequests((prev) => prev.filter((r) => r._id !== reqId));
         if (typeof notiIdx === 'number') removeNotification(notiIdx);
@@ -128,19 +126,18 @@ const FriendChatDropdown = () => {
             await acceptFriendRequest(user._id, reqId);
             afterHandled(reqId, notiIdx);
 
-            /* ==== 새 친구 정보 받아서 리스트에 즉시 추가 ==== */
-            const accepted = friendRequests.find((r) => r._id === reqId);   // 요청 객체
+            /* 새 친구 정보를 받아와 즉시 반영 */
+            const accepted = friendRequests.find((r) => r._id === reqId);
             if (accepted?.sender?._id) {
-                const friendInfo = await getUserInfo(accepted.sender._id);   // [3]
+                const friendInfo = await getUserInfo(accepted.sender._id);
                 addFriend(friendInfo);
                 setAuthUser({
                     ...user,
                     friends: [...(user?.friends || []), friendInfo._id],
                 });
             } else {
-                // _id 가 없으면 전체 친구 목록을 다시 받아서 동기화
-                await loadFriendReqFromServer();        // 요청 목록 재조회
-                await loadRooms();                      // 채팅방 재조회
+                await loadFriendReqFromServer();
+                await loadRooms();
             }
         } catch (e) {
             console.error('친구 요청 수락 실패', e);
@@ -155,86 +152,118 @@ const FriendChatDropdown = () => {
             console.error('친구 요청 거절 실패', e);
         }
     };
+
+    /* --------------- 채팅창 열기 --------------- */
     const MAX_CHAT_WINDOWS = 3;
-    // 드롭다운 항목 클릭 시 호출
     const handleOpenChat = (room) => {
-        openFriendChat(room);                    // 숨김 해제 또는 새 창 열기
-        swapFriendChat(room.roomId, MAX_CHAT_WINDOWS); // 보이는 영역으로 이동
-        // setShowDropdown(false);                  // 선택 후 드롭다운 닫기(선택)
+        openFriendChat(room);
+        swapFriendChat(room.roomId, MAX_CHAT_WINDOWS);
     };
 
-
-
-
+    /* ------------------------------------------------------------------ */
+    /* ------------------------------- UI -------------------------------- */
+    /* ------------------------------------------------------------------ */
+    const badgeCnt = friendRequests.length;
 
     return (
         <div className="relative" ref={dropdownRef}>
-            {(notifications.length > 0 || friendRooms.length > 0) && (
+            {/* === 친구 버튼 === */}
                 <button
                     onClick={() => setShowDropdown((p) => !p)}
-                    className="py-1 px-3 bg-green-500 hover:bg-green-600 rounded text-sm"
+                    className="relative flex items-center gap-1 rounded-full bg-green-500 px-4 py-2 text-sm font-medium text-white shadow-md transition hover:bg-green-600"
                 >
+                    <UserGroupIcon className="h-4 w-4" />
                     친구
+                    {badgeCnt > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+              {badgeCnt}
+            </span>
+                    )}
                 </button>
-            )}
 
+
+            {/* === 드롭다운 === */}
             <DropdownTransition
                 show={showDropdown}
                 as="div"
-                className="absolute top-full right-0 mt-2 w-60 max-h-72 overflow-y-auto bg-white text-black rounded shadow-lg z-50"
+                className="absolute top-full right-0 mt-2 w-72 max-h-80 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5 z-50"
             >
+                <div className="flex h-full flex-col divide-y divide-gray-200">
                     {/* ===== 친구 요청 ===== */}
-                    <h3 className="text-sm font-semibold mb-2">친구 요청</h3>
+                    <section className="max-h-40 overflow-y-auto custom-scroll">
+                        <h3 className="sticky top-0 z-10 bg-white px-4 py-2 text-xs font-semibold text-gray-700">
+                            친구 요청
+                        </h3>
 
-                    {friendRequests.length === 0 && (
-                        <p className="text-xs text-gray-500 py-4 text-center">
-                            도착한 친구 요청이 없습니다.
-                        </p>
-                    )}
+                        {friendRequests.length === 0 && (
+                            <p className="flex flex-col items-center justify-center gap-1 py-6 text-xs text-gray-400">
+                                <UserGroupIcon className="h-6 w-6 opacity-40" />
+                                도착한 친구 요청이 없습니다.
+                            </p>
+                        )}
 
-                    {friendRequests.map((req) => (
-                        <div
-                            key={req._id}
-                            className="flex items-center justify-between py-1 border-b last:border-b-0"
-                        >
-              <span className="text-sm truncate">
-                {req.sender?.nickname || '알 수 없음'}
-              </span>
+                        {friendRequests.map((req) => (
+                            <article
+                                key={req._id}
+                                className="group flex items-center justify-between gap-2 px-4 py-2 hover:bg-gray-50"
+                            >
+                                {/* 아바타 + 닉네임 */}
+                                <div className="flex items-center gap-2">
+                                    <img
+                                        src={req.sender?.avatar ?? '/img/default-avatar.png'}
+                                        alt=""
+                                        className="h-8 w-8 rounded-full object-cover"
+                                    />
+                                    <span className="max-w-[8rem] truncate text-sm font-medium text-gray-800">
+                    {req.sender?.nickname || '알 수 없음'}
+                  </span>
+                                </div>
 
-                            <div className="space-x-1">
-                                <button
-                                    onClick={() => handleAccept(req._id, req._notiIdx)}
-                                    className="bg-blue-500 hover:bg-blue-600 text-xs px-2 py-1 rounded text-white"
-                                >
-                                    수락
-                                </button>
-                                <button
-                                    onClick={() => handleDecline(req._id, req._notiIdx)}
-                                    className="bg-gray-300 hover:bg-gray-400 text-xs px-2 py-1 rounded"
-                                >
-                                    거절
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-
-
+                                {/* 수락 / 거절 */}
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => handleAccept(req._id, req._notiIdx)}
+                                        className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500 text-white transition hover:bg-blue-600"
+                                    >
+                                        <CheckIcon className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDecline(req._id, req._notiIdx)}
+                                        className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-300 text-gray-700 transition hover:bg-gray-400"
+                                    >
+                                        <XMarkIcon className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </article>
+                        ))}
+                    </section>
 
                     {/* ===== 친구 채팅 ===== */}
-                    <h3 className="text-sm font-semibold mt-3 mb-1">친구 채팅</h3>
-                    {friendRooms.length > 0 ? (
-                        friendRooms.map(({ roomId, friend }) => (
-                            <div
-                                key={roomId}
-                                onClick={() => handleOpenChat({ roomId, friend })}
-                                className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-sm"
-                            >
-                                {friend.nickname || friend.name}
-                            </div>
-                        ))
-                    ) : (
-                        <p className="text-xs text-gray-500 py-4 text-center">채팅방이 없습니다.</p>
-                    )}
+                    <section className="grow overflow-y-auto custom-scroll">
+                        <h3 className="sticky top-0 z-10 bg-white px-4 py-2 text-xs font-semibold text-gray-700">
+                            친구 채팅
+                        </h3>
+
+                        {friendRooms.length === 0 ? (
+                            <p className="flex flex-col items-center justify-center gap-1 py-6 text-xs text-gray-400">
+                                <ChatBubbleLeftEllipsisIcon className="h-6 w-6 opacity-40" />
+                                채팅방이 없습니다.
+                            </p>
+                        ) : (
+                            friendRooms.map(({ roomId, friend }) => (
+                                <button
+                                    key={roomId}
+                                    onClick={() => handleOpenChat({ roomId, friend })}
+                                    className="flex w-full items-center gap-2 px-4 py-2 text-left transition hover:bg-gray-50"
+                                >
+                                    <span className="truncate text-sm text-gray-800">
+                    {friend.nickname || friend.name}
+                  </span>
+                                </button>
+                            ))
+                        )}
+                    </section>
+                </div>
             </DropdownTransition>
         </div>
     );
