@@ -125,22 +125,19 @@ const GlobalChatNotification = () => {
                 ))}
             </div>
 
-            {/* ────────── 벨 버튼 (업그레이드) ────────── */}
+            {/* ────────── 벨 버튼 ────────── */}
             <button
                 onClick={toggleDropdown}
-                /* ① flex 로 가운데 정렬, ② h-12 w-12 지름 48 px,
-                   ③ 반투명 화이트 + blur → 글래스 느낌,
-                   ④ ring & shadow 로 입체감 */
-                className="relative flex h-12 w-12 items-center justify-center
+                className="relative flex h-10 w-10 items-center justify-center
              rounded-full bg-white/70 backdrop-blur-md
              text-gray-700 shadow-lg ring-1 ring-gray-200/70
-             transition hover:shadow-xl hover:ring-gray-300"
+             transition hover:shadow-xl hover:ring-gray-800"
             >
                 {/* 아이콘도 한 단계 키움 */}
                 <BellIcon className="h-7 w-7" />
 
                 {notifications.length > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center
                      rounded-full bg-red-500 text-xs font-bold text-white
                      ring-2 ring-white">
       {notifications.length}
@@ -174,10 +171,10 @@ const GlobalChatNotification = () => {
                                 className="flex w-full items-start gap-2 px-4 py-3 text-left hover:bg-gray-50"
                             >
                                 <ChatBubbleLeftEllipsisIcon className="h-5 w-5 text-blue-500 shrink-0" />
-                                <div className="flex-1">
-                  <span className="text-xs font-medium text-gray-500">
-                    {renderRoomTag(notif.roomType)}
-                  </span>
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-xs font-medium text-gray-500">
+                                    {renderRoomTag(notif.roomType)}
+                                  </span>
                                     <p className="truncate text-sm text-gray-800">
                                         {notif.notification}
                                     </p>
