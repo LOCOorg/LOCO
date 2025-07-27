@@ -209,11 +209,6 @@ const FriendChatDropdown = () => {
                             >
                                 {/* 아바타 + 닉네임 */}
                                 <div className="flex items-center gap-2">
-                                    <img
-                                        src={req.sender?.avatar ?? '/img/default-avatar.png'}
-                                        alt=""
-                                        className="h-8 w-8 rounded-full object-cover"
-                                    />
                                     <span className="max-w-[8rem] truncate text-sm font-medium text-gray-800">
                     {req.sender?.nickname || '알 수 없음'}
                   </span>
