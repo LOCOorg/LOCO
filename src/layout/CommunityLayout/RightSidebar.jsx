@@ -7,6 +7,8 @@ const RightSidebar = ({ sideTab, setSideTab, topViewed, topCommented }) => {
     return (
         <div className="w-full lg:w-80 sticky top-20">
             <div className="bg-white shadow-lg rounded-xl p-4 mb-6">
+                {/* 24시간 기준 업데이트 라벨 */}
+                <p className="text-xs text-gray-500 mb-3">24시간 기준 업데이트</p>
                 {/* Toggle Buttons */}
                 <div className="flex justify-between bg-gray-100 rounded-lg overflow-hidden">
                     <button
