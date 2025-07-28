@@ -3,26 +3,20 @@ import {useEffect, useRef, useState} from 'react';
 import {
     getUserInfo,
     updateUserProfile,
-    getFriendRequestList,
-    acceptFriendRequest,
-    declineFriendRequest
 } from "../../api/userAPI"; // declineFriendRequest 추가됨
 import {uploadFile} from "../../api/fileUploadAPI";
 import useAuthStore from '../../stores/authStore';
-import CommonModal from '../../common/CommonModal.jsx';
 import ProfilePhotoSection from './ProfilePhotoSection';
 import ProfileDetailSection from './ProfileDetailSection';
-import {toast, ToastContainer, Slide, Zoom, Flip, Bounce} from "react-toastify";
+import {toast, ToastContainer, Zoom} from "react-toastify";
 
 const MyPageContent = ({overrideProfile}) => {
     const authUser = useAuthStore((state) => state.user);
     const [profile, setProfile] = useState(overrideProfile || null);
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({});
-    const [friendRequests, setFriendRequests] = useState([]);
     const [alertModalOpen, setAlertModalOpen] = useState(false);
     const [alertModalMessage, setAlertModalMessage] = useState("");
-    const setUser  = useAuthStore((s) => s.setUser);
 
     // 앨범용 input ref
     const fileInputRef = useRef(null);
@@ -61,13 +55,6 @@ const MyPageContent = ({overrideProfile}) => {
         }
     }, [authUser, overrideProfile]);
 
-    useEffect(() => {
-        if (authUser) {
-            getFriendRequestList(authUser._id)
-                .then((list) => setFriendRequests(list))
-                .catch((error) => console.error("친구 요청 목록 로딩 실패:", error));
-        }
-    }, [authUser]);
 
     if (!profile) return <div>로딩 중...</div>;
 
@@ -190,44 +177,6 @@ const MyPageContent = ({overrideProfile}) => {
         } catch (error) {
             console.error('프로필 업데이트 실패:', error);
             toast.error('수정 중 오류가 발생했습니다.');
-        }
-    };
-
-
-    // 친구 요청 수락 처리
-    const handleAcceptRequest = async (requestId, senderId) => {   // ✅ senderId 추가
-        try {
-            await acceptFriendRequest(authUser._id, requestId);        // 서버 반영[1]
-
-            // 1) 전역 authUser.friends 배열 즉시 업데이트
-            setUser({
-                ...authUser,
-                friends: [...(authUser.friends || []), senderId],
-            });
-
-            // 2) 현재 페이지 요청 목록에서 제거
-            setFriendRequests(prev => prev.filter(req => req._id !== requestId));
-
-            setAlertModalMessage("친구 요청을 수락하였습니다.");
-            setAlertModalOpen(true);
-        } catch (error) {
-            console.error("친구 요청 수락 실패:", error);
-            setAlertModalMessage("친구 요청 수락에 실패했습니다.");
-            setAlertModalOpen(true);
-        }
-    };
-
-    // 친구 요청 거절 처리
-    const handleDeclineRequest = async (requestId) => {
-        try {
-            await declineFriendRequest(authUser._id, requestId);
-            setFriendRequests(prev => prev.filter(req => req._id !== requestId));
-            setAlertModalMessage("친구 요청을 거절하였습니다.");
-            setAlertModalOpen(true);
-        } catch (error) {
-            console.error("친구 요청 거절 실패:", error);
-            setAlertModalMessage("친구 요청 거절에 실패했습니다.");
-            setAlertModalOpen(true);
         }
     };
 
