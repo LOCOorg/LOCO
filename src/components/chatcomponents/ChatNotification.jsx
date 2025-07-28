@@ -129,9 +129,8 @@ const GlobalChatNotification = () => {
             <button
                 onClick={toggleDropdown}
                 className="relative flex h-10 w-10 items-center justify-center
-             rounded-full bg-white/70 backdrop-blur-md
-             text-gray-700 shadow-lg ring-1 ring-gray-200/70
-             transition hover:shadow-xl hover:ring-gray-800"
+             rounded-full bg-blue/70 backdrop-blur-md
+             text-white-700 hover:text-gray-400"
             >
                 {/* 아이콘도 한 단계 키움 */}
                 <BellIcon className="h-7 w-7" />
