@@ -19,6 +19,7 @@ import {
     XMarkIcon,
     ChatBubbleLeftEllipsisIcon,
 } from '@heroicons/react/24/solid';
+import ProfileButton from "./ProfileButton.jsx";
 
 const FriendChatDropdown = () => {
     /* --------------- 상태 / 스토어 --------------- */
@@ -36,13 +37,24 @@ const FriendChatDropdown = () => {
     /* --------------- 바깥 클릭 시 닫기 --------------- */
     useEffect(() => {
         if (!showDropdown) return;
-        const handleClickOutside = (e) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+
+        const handlePointerDown = (e) => {
+            const clickedInsideDropdown =
+                dropdownRef.current && dropdownRef.current.contains(e.target);
+
+            // 모달이 포털로 렌더링되는 DOM 노드(예: id="modal-root")
+            const modalRoot = document.getElementById('modal-root');
+            const clickedInsideModal = modalRoot && modalRoot.contains(e.target);
+
+            if (!clickedInsideDropdown && !clickedInsideModal) {
                 setShowDropdown(false);
             }
         };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+
+        // mousedown 대신 pointerdown 사용
+        document.addEventListener('pointerdown', handlePointerDown);
+        return () =>
+            document.removeEventListener('pointerdown', handlePointerDown);
     }, [showDropdown]);
 
     /* --------------- 친구 채팅방 로딩 --------------- */
@@ -210,6 +222,10 @@ const FriendChatDropdown = () => {
                             >
                                 {/* 아바타 + 닉네임 */}
                                 <div className="flex items-center gap-2">
+                                    <ProfileButton
+                                        profile={{ _id: req.sender._id, nickname: req.sender.nickname }}
+                                        area='친구요청'
+                                    />
                                     <span className="max-w-[8rem] truncate text-sm font-medium text-gray-800">
                     {req.sender?.nickname || '알 수 없음'}
                   </span>
