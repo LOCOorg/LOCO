@@ -34,6 +34,9 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) =>
 
     if (!profile) return null;
 
+    /* FriendChatDropdown(=친구요청·친구채팅목록) 에서 열린 경우 신고 숨김 */
+    const hideReport = area === '친구요청';
+
     const photos = profile.photo || [];
 
     const handleFriendRequest = async () => {
@@ -84,6 +87,7 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) =>
         <div
             className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[1500]"
             onClick={onClose}
+            onPointerDown={(e) => e.stopPropagation()}
         >
             <div
                 className="bg-white w-96 p-6 rounded-lg shadow-lg relative"
@@ -147,23 +151,25 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) =>
                                 >
                                     차단
                                 </button>
-                                <button
-                                    onClick={() => setIsReportModalVisible(true)}
-                                    className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md"
-                                >
-                                    신고
-                                </button>
+                                {!hideReport && (
+                                    <button
+                                        onClick={() => setIsReportModalVisible(true)}
+                                        className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md"
+                                    >
+                                        신고
+                                    </button>
+                                )}
                             </>
                         )
                         : (
                         <button
-                        onClick={() => navigate('/mypage')}
-                    className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-md"
-                >
-                    프로필 수정
-                </button>
-                )
-                }
+                            onClick={() => navigate('/mypage')}
+                            className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-md"
+                        >
+                            프로필 수정
+                        </button>
+                        )
+                    }
 
                 </div>
             </div>
