@@ -31,8 +31,9 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
     const navigate = useNavigate();
 
     if (!profile) return null;
-
-    const photos = profile.photo || [];
+    const photos = profile.profilePhoto
+        ? [ profile.profilePhoto, ...(profile.photo || []) ]
+        : (profile.photo || []);
 
     const handleFriendRequest = async () => {
         if (!authUser) return;
