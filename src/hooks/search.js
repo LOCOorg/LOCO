@@ -15,6 +15,9 @@ export function useSearch({
                               pageSize = 10,
                               minKeywordLength = 0
                           }) {
+
+
+
     const [data, setData]           = useState([]);
     const [pagination, setPageInfo] = useState(null);
     const [params, setParams]       = useState({ ...initialParams, page: 1, size: pageSize });
@@ -65,3 +68,7 @@ export function useSearch({
         setParam
     };
 }
+
+
+
+
