@@ -782,7 +782,7 @@ const CommunityDetail = () => {
                                                                                                 : `${import.meta.env.VITE_API_HOST}${reply.replyImage}`
                                                                                         }
                                                                                         alt="대댓글 이미지"
-                                                                                        className="w-full h-auto"
+                                                                                        className="w-32 h-auto"
                                                                                     />
                                                                                 </div>
                                                                             )}
@@ -848,7 +848,7 @@ const CommunityDetail = () => {
                                                                                                             : `${import.meta.env.VITE_API_HOST}${subReply.subReplyImage}`
                                                                                                     }
                                                                                                     alt="대대댓글 이미지"
-                                                                                                    className="w-20 h-auto"
+                                                                                                    className="w-32 h-auto"
                                                                                                 />
                                                                                             </div>
                                                                                         )}
