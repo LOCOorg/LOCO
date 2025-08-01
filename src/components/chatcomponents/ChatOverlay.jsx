@@ -189,6 +189,12 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                             profile={friend}
                             area="친구채팅"
                             onModalToggle={setIsProfileOpen}
+                            anchor={{
+                                type: 'chat',
+                                roomId,           // 현재 채팅방 ID
+                                parentId: roomId, // 스키마상 required ⇒ 동일 값
+                                targetId: roomId// 신고 클릭한 메시지 ID
+                            }}
                         />
                     )}
                     </div>
@@ -236,7 +242,13 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                                                 {/* 상대방 메시지일 때만 프로필 노출 */}
                                                 {!isMyMessage && (
                                                     <ProfileButton profile={message.sender} area="친구채팅"
-                                                                   onModalToggle={setIsProfileOpen}/>
+                                                                   onModalToggle={setIsProfileOpen}
+                                                                   anchor={{
+                                                                       type: 'chat',
+                                                                       roomId,           // 현재 채팅방 ID
+                                                                       parentId: roomId, // 스키마상 required ⇒ 동일 값
+                                                                       targetId: message.sender._id // 신고 클릭한 메시지 ID
+                                                                   }}/>
                                                 )}
 
                                                 {/* 말풍선 */}

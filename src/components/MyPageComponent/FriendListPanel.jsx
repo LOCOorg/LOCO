@@ -29,7 +29,7 @@ const FriendListPanel = () => {
     const authUser = useAuthStore((state) => state.user);
     const { openFriendChat, addFriendRoom  } = useFriendChatStore();
 
-    const PAGE_SIZE = 4;
+    const PAGE_SIZE = 5;
 
     /* ① 내 프로필 + 첫 페이지 */
     useEffect(() => {

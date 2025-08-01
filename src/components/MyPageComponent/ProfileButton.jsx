@@ -4,7 +4,7 @@ import useAuthStore from '../../stores/authStore.js';
 import SimpleProfileModal from './SimpleProfileModal.jsx';
 import { FiUser } from 'react-icons/fi';
 
-const ProfileButton = ({ profile: externalProfile, area = '프로필', onModalToggle }) => {
+const ProfileButton = ({ profile: externalProfile, area = '프로필', onModalToggle, anchor }) => {
     const authUser = useAuthStore((state) => state.user);
     const [profile, setProfile] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,7 +68,7 @@ const ProfileButton = ({ profile: externalProfile, area = '프로필', onModalTo
             </button>
 
             {isModalOpen && (
-                <SimpleProfileModal profile={profile} onClose={handleCloseModal} area={area} />
+                <SimpleProfileModal profile={profile} onClose={handleCloseModal} area={area} anchor={anchor} />
             )}
         </div>
     );

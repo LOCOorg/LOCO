@@ -1,5 +1,6 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
-import { replyToReport } from '../../api/reportAPI.js';
+import { replyToReport, fetchReportChatLog  } from '../../api/reportAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import useAuthStore from '../../stores/authStore.js';
 import {useNavigate} from "react-router-dom";
@@ -14,7 +15,20 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
     const [localReport, setLocalReport] = useState(report);
     const [modalInfo, setModalInfo] = useState({ isOpen: false, title: '', message: '' });
 
+    const [chatMessages, setChatMessages] = useState([]);
+    const [showChatModal, setShowChatModal] = useState(false);
+
     const navigate = useNavigate();
+
+    const loadChatLog = async () => {
+        try {
+            const msgs = await fetchReportChatLog(localReport._id);
+            setChatMessages(msgs);
+            setShowChatModal(true);
+        } catch (err) {
+            setModalInfo({ isOpen: true, title: '오류', message: err.message });
+        }
+    };
 
     const goTarget = () => {
         if (!localReport?.anchor) return;
@@ -114,23 +128,51 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
                             <span className="font-semibold">정지 해제일:</span> {new Date(localReport.durUntil).toLocaleString()}
                         </div>
                     )}
-                    <button
-                        onClick={goTarget}
-                        disabled={!localReport?.anchor}
-                        className="
-                            inline-flex items-center gap-2 px-6 py-3 rounded-xl
-                            font-semibold text-sm text-white
-                            bg-gradient-to-br from-indigo-500 to-violet-500
-                            shadow-lg transition
-                            hover:-translate-y-1 hover:shadow-xl
-                            active:translate-y-0 active:shadow-lg
-                            disabled:opacity-45 disabled:shadow-none disabled:cursor-not-allowed
-                            focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100
-                          "
-                    >
-                        <span className="text-lg -translate-y-px">📍</span>
-                        대상 위치로 이동
-                    </button>
+                    {localReport.anchor?.type === 'chat' && (
+                        <button
+                            onClick={loadChatLog}
+                            className="
+                                      inline-flex items-center gap-2
+                                      px-4 py-2
+                                      rounded-lg
+                                      text-sm font-semibold text-white
+                                      bg-gradient-to-r from-teal-400 to-blue-500
+                                      shadow-md ring-1 ring-inset ring-white/20
+                                      transition
+                                      hover:brightness-110 hover:shadow-lg
+                                      active:scale-95
+                                      focus-visible:outline-none
+                                      focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-teal-300
+                                    "
+                        >
+                            {/* 작은 채팅 아이콘 (Heroicons) */}
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none"
+                                 viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round"
+                                      d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4-4.03 7-9 7a9.77 9.77 0 01-4-.8l-4 1 1.1-3.5A6.8 6.8 0 013 12c0-4 4.03-7 9-7s9 3 9 7z" />
+                            </svg>
+                            채팅 내역 보기
+                        </button>
+                    )}
+
+
+                    {localReport.anchor?.type !== 'chat' && (
+                        <button
+                            onClick={goTarget}
+                            disabled={!localReport?.anchor}
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl
+                                       font-semibold text-sm text-white
+                                       bg-gradient-to-br from-indigo-500 to-violet-500
+                                       shadow-lg transition
+                                       hover:-translate-y-1 hover:shadow-xl
+                                       active:translate-y-0 active:shadow-lg
+                                       disabled:opacity-45 disabled:shadow-none disabled:cursor-not-allowed
+                                       focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100"
+                        >
+                            <span className="text-lg -translate-y-px">📍</span>
+                            대상 위치로 이동
+                        </button>
+                    )}
 
                     {localReport.reportAnswer && !isEditing && (
                         <div className="mb-4 p-3 bg-gray-100 rounded">
@@ -197,6 +239,95 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
             >
                 <p>{modalInfo.message}</p>
             </CommonModal>
+
+            {showChatModal && (
+                <CommonModal
+                    title="채팅 내역"
+                    isOpen={true}
+                    onConfirm={() => setShowChatModal(false)}
+                    showCancel={false}
+                >
+                    {/* ── 스크롤 컨테이너 ────────────────────────── */}
+                    <div className="max-h-[70vh] overflow-y-auto px-3 py-4 bg-gray-50 rounded-lg">
+
+                        {chatMessages.length === 0 && (
+                            <p className="text-center text-gray-500 py-8">채팅 기록이 없습니다.</p>
+                        )}
+
+                        {chatMessages.map((msg, idx) => {
+                            /* 날짜 · 시간 포맷 */
+                            const dateObj  = new Date(msg.textTime || msg.createdAt);
+                            const prevDate = idx > 0 ? new Date(chatMessages[idx - 1].textTime || chatMessages[idx - 1].createdAt) : null;
+
+                            const y = dateObj.getFullYear();
+                            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                            const d = String(dateObj.getDate()).padStart(2, '0');
+                            const dateStr = `${y}.${m}.${d}`;
+                            const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                            const showDateLine = idx === 0 || dateStr !==
+                                `${prevDate?.getFullYear()}.${String(prevDate?.getMonth()+1).padStart(2,'0')}.${String(prevDate?.getDate()).padStart(2,'0')}`;
+
+                            /* “가해자” 기준 노란/회색 말풍선 구분 */
+                            const offenderId = (localReport.offenderId?._id || localReport.offenderId || '').toString();
+                            const senderId   = (msg.sender?._id        || msg.sender        || '').toString();
+                            const isMe = offenderId === senderId;
+
+                            /* 닉네임(실명) 표시 */
+                            const nick = msg.sender?.nickname;
+                            const real = msg.sender?.name;
+                            const who  = nick && real ? `${nick}(${real})` : nick || real || '알 수 없음';
+
+                            return (
+                                <React.Fragment key={msg._id}>
+                                    {/* 날짜 구분선 ------------------------------------------------ */}
+                                    {showDateLine && (
+                                        <div className="w-full text-center my-3 text-[11px] text-gray-400 select-none">
+                                            ── {dateStr} ──
+                                        </div>
+                                    )}
+
+                                    {/* 메시지 한 줄 ---------------------------------------------- */}
+                                    <div className={`w-full flex mb-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                        {/* (내 메시지) 시간 → 말풍선 */}
+                                        {isMe && (
+                                            <span className="text-[10px] text-gray-500 mr-2 self-end">
+                  {timeStr}
+                </span>
+                                        )}
+
+                                        <div
+                                            className={`
+                  max-w-[80%] px-4 py-2 rounded-xl whitespace-pre-wrap
+                  ${isMe
+                                                ? 'bg-yellow-200 text-black rounded-bl-none'
+                                                : 'bg-gray-100  text-gray-900 rounded-br-none'}
+                `}
+                                        >
+                                            {/* 발신자 이름 */}
+                                            <p className={`text-[11px] font-semibold mb-1 ${isMe ? 'text-right' : 'text-left'}`}>
+                                                {who}
+                                            </p>
+
+                                            {/* 본문 */}
+                                                <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                                        </div>
+
+                                        {/* (상대 메시지) 말풍선 → 시간 */}
+                                        {!isMe && (
+                                            <span className="text-[10px] text-gray-500 ml-2 self-end">
+                  {timeStr}
+                </span>
+                                        )}
+                                    </div>
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
+                </CommonModal>
+            )}
+
+
         </>
     );
 };

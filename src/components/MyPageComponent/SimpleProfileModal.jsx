@@ -8,9 +8,10 @@ import { useNavigate } from 'react-router-dom';
 import useFriendListStore from "../../stores/useFriendListStore.js";
 import useBlockedStore from "../../stores/useBlockedStore.js";
 import {createPortal} from "react-dom";
+import useFriendChatStore from "../../stores/useFriendChatStore.js";
 
 
-const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
+const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) => {
     const authUser = useAuthStore(state => state.user);
     const isOwnProfile = authUser && profile._id === authUser._id; // 내 프로필인지 확인
     const [isReportModalVisible, setIsReportModalVisible] = useState(false);
@@ -22,15 +23,23 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
     const setUser    = useAuthStore((s) => s.setUser);
 
     const friends = useFriendListStore((s) => s.friends);              // 추가
-    const isFriend = useMemo(
-        () => friends.some((f) => f._id === profile?._id),
-        [friends, profile?._id]
-    );
+    const isFriend = useMemo(() => {
+        const byStore = friends.some(f => f._id === profile?._id);
+        const byAuth  = authUser?.friends?.includes(profile?._id);
+        return byStore || byAuth;
+    }, [friends, authUser?.friends, profile?._id]);
+
     const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
     const navigate = useNavigate();
 
+    const { closeFriendChat } = useFriendChatStore();
+
     if (!profile) return null;
+
+    /* FriendChatDropdown(=친구요청·친구채팅목록) 에서 열린 경우 신고 숨김 */
+    const hideReport = area === '친구요청';
+
     const photos = profile.profilePhoto
         ? [ profile.profilePhoto, ...(profile.photo || []) ]
         : (profile.photo || []);
@@ -58,6 +67,13 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
             setUser(updatedUser);                            // Zustand 스토어 업데이트[4]
             useFriendListStore.getState().removeFriend(profile._id);   // 전역 리스트 동기화
 
+            /* 2) 열려 있던 친구 채팅창 닫기 */
+            const friendChats = useFriendChatStore.getState().friendChats;
+            const targetChat = friendChats.find(c => c.friend._id === profile._id);
+            if (targetChat) {
+                await closeFriendChat(targetChat.roomId);   // ⬅ 핵심
+            }
+
             setAlertModalMessage("친구를 삭제했습니다.");
         } catch (error) {
             setAlertModalMessage(error.response?.data?.message || error.message);
@@ -83,6 +99,7 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
         <div
             className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[1500]"
             onClick={onClose}
+            onPointerDown={(e) => e.stopPropagation()}
         >
             <div
                 className="bg-white w-96 p-6 rounded-lg shadow-lg relative"
@@ -146,23 +163,25 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
                                 >
                                     차단
                                 </button>
-                                <button
-                                    onClick={() => setIsReportModalVisible(true)}
-                                    className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md"
-                                >
-                                    신고
-                                </button>
+                                {!hideReport && (
+                                    <button
+                                        onClick={() => setIsReportModalVisible(true)}
+                                        className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md"
+                                    >
+                                        신고
+                                    </button>
+                                )}
                             </>
                         )
                         : (
                         <button
-                        onClick={() => navigate('/mypage')}
-                    className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-md"
-                >
-                    프로필 수정
-                </button>
-                )
-                }
+                            onClick={() => navigate('/mypage')}
+                            className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-md"
+                        >
+                            프로필 수정
+                        </button>
+                        )
+                    }
 
                 </div>
             </div>
@@ -193,6 +212,7 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필' }) => {
                             reportedUser={profile}
                             onReportCreated={() => setIsReportModalVisible(false)}
                             defaultArea={area}
+                            anchor={anchor}
                         />
                     </div>
                 </div>

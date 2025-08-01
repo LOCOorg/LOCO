@@ -1,53 +1,64 @@
-// src/components/FriendRequestNotification.jsx
 import { useContext, useEffect, useState } from 'react';
 import { useSocket } from '../../hooks/useSocket.js';
 import useAuthStore from '../../stores/authStore';
 import { NotificationContext } from '../../hooks/NotificationContext.jsx';
 
+/* 아이콘 (Heroicons 2.x) */
+import { UserPlusIcon } from '@heroicons/react/24/solid';
+
 const FriendRequestNotification = () => {
     const { user } = useAuthStore();
-    const socket = useSocket();
+    const socket  = useSocket();
     const { addNotification } = useContext(NotificationContext);
 
-    // local toast list (컨텍스트와 별개로 유지)
     const [toasts, setToasts] = useState([]);
 
+    /* -------- 소켓 통신 -------- */
     useEffect(() => {
         if (!socket || !user) return;
         socket.emit('register', user._id);
 
-        socket.on('friendRequestNotification', (data) => {
-            // 1) 드롭다운용 컨텍스트에 저장
-            addNotification(data);
-            // 2) 토스트에도 추가
-            setToasts((prev) => [...prev, {
-                id: Date.now(),       // 간단한 고유키
-                message: data.message
-            }]);
-        });
-
-        return () => {
-            socket.off('friendRequestNotification');
+        const handler = (data) => {
+            addNotification(data);               // 드롭다운용
+            setToasts((prev) => [
+                ...prev,
+                { id: Date.now(), message: data.message },
+            ]);
         };
+        socket.on('friendRequestNotification', handler);
+        return () => socket.off('friendRequestNotification', handler);
     }, [socket, user, addNotification]);
 
-    // 토스트 자동 제거 (5초)
+    /* -------- 자동 제거 -------- */
     useEffect(() => {
         if (toasts.length === 0) return;
-        const timer = setTimeout(() => {
-            setToasts((prev) => prev.slice(1)); // 가장 오래된 하나 제거
-        }, 5000);
+        const timer = setTimeout(
+            () => setToasts((prev) => prev.slice(1)),
+            5000
+        );
         return () => clearTimeout(timer);
     }, [toasts]);
 
+    /* --------- UI --------- */
     return (
-        <div className="fixed bottom-5 left-5 z-50 space-y-2">
+        <div className="fixed bottom-14 left-5 z-[1100] space-y-3">
             {toasts.map(({ id, message }) => (
                 <div
                     key={id}
-                    className="bg-green-500 text-white px-5 py-3 rounded shadow-lg flex items-center min-w-[200px]"
+                    className="relative flex items-start gap-3 w-auto max-w-[90vw]
+                     rounded-lg bg-white/80 backdrop-blur-md
+                     shadow-lg ring-1 ring-gray-200
+                     animate-toast-in"
                 >
-                    <span className="flex-1">{message}</span>
+                    {/* 아이콘 */}
+                    <UserPlusIcon className="h-6 w-6 text-emerald-500 shrink-0 mt-0.5" />
+
+                    {/* 메시지 */}
+                    <p className="flex-1 text-sm text-gray-800">{message}</p>
+
+                    {/* 진행바 (5초) */}
+                    <span className="absolute bottom-0 left-0 h-0.5
+                           w-full bg-emerald-500 animate-toast-bar" />
                 </div>
             ))}
         </div>

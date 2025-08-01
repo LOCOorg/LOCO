@@ -25,6 +25,7 @@ const RandomChatComponent = () => {
     const [modalTitle, setModalTitle] = useState("");
     const [modalButtons, setModalButtons] = useState([]);
     const [showBlockedModal, setShowBlockedModal] = useState(false);
+    const [timeLeft, setTimeLeft]   = useState(null);   // ☆ 추가
 
     const blockedUsers          = useBlockedStore((s) => s.blockedUsers);
     const setBlockedUsersStore  = useBlockedStore((s) => s.setBlockedUsers);
@@ -63,6 +64,26 @@ const RandomChatComponent = () => {
         if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
         return age;
     };
+
+    // ① 주기적 카운트다운
+    useEffect(() => {
+        if (!userInfo?.nextRefillAt) return;
+
+        const tick = () => {
+            const diff = new Date(userInfo.nextRefillAt) - Date.now();
+            if (diff <= 0) {
+                fetchUserInfoAsync(userId);
+                return;
+            }
+            const h = String(Math.floor(diff / 3_600_000)).padStart(2, "0");
+            const m = String(Math.floor((diff % 3_600_000) / 60_000)).padStart(2, "0");
+            const s = String(Math.floor((diff % 60_000) / 1_000)).padStart(2, "0");
+            setTimeLeft(`${h}:${m}:${s}`);
+        };
+        tick();                               // 최초 계산
+        const id = setInterval(tick, 1_000);  // 1 초마다 갱신
+        return () => clearInterval(id);       // 클린업
+    }, [userInfo?.nextRefillAt]);
 
     // 유저 정보 호출 함수
     const fetchUserInfoAsync = async (userId) => {
@@ -325,8 +346,23 @@ const RandomChatComponent = () => {
                 </div>
                 <div className="flex flex-col">
                     <span className="text-sm font-medium text-gray-500">남은 채팅 횟수</span>
-                    <span className="mt-1 text-gray-700">{userInfo?.numOfChat || "–"}</span>
+
+                    {/* 남은횟수 + 충전정보를 한 줄에 */}
+                    <span className="mt-1 flex items-center space-x-2 text-gray-700">
+                        {/* ① 남은/최대 */}
+                        {userInfo ? `${userInfo.numOfChat} / ${userInfo.maxChatCount}` : "-"}
+                        {/* ② 충전 정보 */}
+                        {userInfo &&
+                            (userInfo.numOfChat >= userInfo.maxChatCount ? (
+                                <span className="text-green-600 text-sm">(충전 완료)</span>
+                            ) : (
+                                <span className="text-gray-500 text-sm">
+                          ({timeLeft ?? "-"} 후 +1)
+                        </span>
+                            ))}
+                  </span>
                 </div>
+
             </div>
 
             {/* 옵션 선택 */}
