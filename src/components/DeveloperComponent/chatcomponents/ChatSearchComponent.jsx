@@ -38,6 +38,7 @@ const ChatSearchComponent = () => {
 
                     {/* 2) 방 목록 */}
                     <ChatRoomListPanel
+                        selectedUser={chatUser}
                         rooms={rooms}
                         selectedRoom={selectedRoom}
                         setSelectedRoom={setSelectedRoom}

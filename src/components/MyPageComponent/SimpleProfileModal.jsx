@@ -40,7 +40,9 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) =>
     /* FriendChatDropdown(=친구요청·친구채팅목록) 에서 열린 경우 신고 숨김 */
     const hideReport = area === '친구요청';
 
-    const photos = profile.photo || [];
+    const photos = profile.profilePhoto
+        ? [ profile.profilePhoto, ...(profile.photo || []) ]
+        : (profile.photo || []);
 
     const handleFriendRequest = async () => {
         if (!authUser) return;

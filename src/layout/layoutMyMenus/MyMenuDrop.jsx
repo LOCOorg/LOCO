@@ -5,6 +5,7 @@ import MyMenus from "./MyMenus.jsx";
 import LogoutButton from '../../components/authComponent/LogoutButton.jsx';
 import DropdownTransition from '../css/DropdownTransition.jsx';
 
+
 export default function MyMenuDrop({ user }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
@@ -49,7 +50,7 @@ export default function MyMenuDrop({ user }) {
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
         >
-            <MyMenus src={user.MyMenusUrl} size={8} className="w-8 h-8 hover:scale-110" />
+            <MyMenus src={user.profilePhoto} size={8} className="w-8 h-8 hover:scale-110" />
 
             {/* hover 시 나타날 드롭다운 */}
             <DropdownTransition
@@ -59,7 +60,7 @@ export default function MyMenuDrop({ user }) {
             >
                     <div className="px-4 py-3 border-b">
                         <div className="flex items-center">
-                            <MyMenus src={user.MyMenusUrl} size={10} />
+                            <MyMenus src={user.profilePhoto} size={10} />
                             <div className="ml-3">
                                 <p className="font-semibold">{user.nickname}</p>
                             </div>

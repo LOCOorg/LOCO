@@ -22,15 +22,21 @@ export const loginWithKakao = (code) =>
     instance.get(`/api/auth/kakao/callback?code=${code}`)
         .then((res) => res.data);
 
+
+
 // 네이버 콜백으로부터 액세스 토큰·유저정보 받아오기
 export const loginWithNaver = (code, state) =>
     instance.get(`/api/auth/naver/callback?code=${code}&state=${state}`)
         .then((res) => res.data);
 
+
+
 // Silent refresh: 쿠키에 담긴 Refresh Token으로 새 Access Token 발급
 export const refresh = () =>
     instance.post('/api/auth/refresh')
-        .then((res) => res.data.accessToken);
+        .then(() => {});
+
+
 
 // 인증된 Access Token 으로 현재 사용자 정보 조회
 export const fetchCurrentUser = () =>

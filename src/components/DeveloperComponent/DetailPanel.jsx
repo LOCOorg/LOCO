@@ -5,10 +5,19 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-const DetailPanel = ({ user }) => {
+
+const modes = [
+    { key: "friends", label: "친구내역" },
+    { key: "photos",  label: "사진 업로드내역" },
+    // { key: "logs",    label: "활동 내역" },  // 예시로 추가 가능
+];
+
+
+
+const DetailPanel = ({ user, view, setView }) => {
     if (!user) {
         return (
-            <div className="w-3/5 p-6 overflow-y-auto">
+            <div className="w-1/3 p-6 overflow-y-auto">
                 <h2 className="mb-4 text-2xl font-semibold border-b border-gray-300 pb-2">User Details</h2>
                 <p>Please select a user from the search list.</p>
             </div>
@@ -16,6 +25,17 @@ const DetailPanel = ({ user }) => {
     }
 
     const [formData, setFormData] = useState(user);
+    const [productNames, setProductNames] = useState([]);
+
+
+    // 마운트 시에 /api/product/names 호출
+    useEffect(() => {
+        axios
+            .get("/api/product/names")
+            .then(res => setProductNames(res.data))
+            .catch(err => console.error(err));
+        }, []);
+
 
     useEffect(() => {
         setFormData(user);
@@ -48,17 +68,31 @@ const DetailPanel = ({ user }) => {
     };
 
     return (
-        <div className="w-3/5 p-6 bg-white overflow-y-auto">
+        <div className="w-1/3 p-6 bg-white overflow-y-auto">
             <h2 className="mb-4 text-2xl font-semibold border-b border-gray-300 pb-2">User Details</h2>
             <div className="space-y-4 max-w-xl">
+                <div className="flex space-x-2 mb-4">
+                    {modes.map(modeItem => (
+                        <button
+                            key={modeItem.key}
+                            onClick={() => setView(modeItem.key)}
+                            className={`px-3 py-1 rounded whitespace-nowrap ${
+                                view === modeItem.key
+                                    ? "bg-blue-500 text-white"
+                                    : "bg-gray-200 text-gray-700"
+                            }`}
+                        >
+                            {modeItem.label}
+                        </button>
+                    ))}
+                </div>
                 {/* 프로필 사진 */}
                 <div>
                     <label className="block font-bold mb-1">Profile Photo:</label>
-                    {formData.photo && formData.photo.length > 0 ? (
-                        <img src={formData.photo[0]} alt="Profile" className="w-32 h-32 object-cover rounded-md" />
-                    ) : (
-                        <span>No photo available</span>
-                    )}
+                    {formData.profilePhoto
+                        ? <img src={formData.profilePhoto} alt="Profile" className="w-32 h-32 object-cover rounded-md" />
+                        : <span>No photo available</span>
+                    }
                 </div>
                 {/* 이름 (수정 불가능) */}
                 <div>
@@ -133,15 +167,38 @@ const DetailPanel = ({ user }) => {
                 {formData.plan && (
                     <>
                         <div>
-                            <label className="block font-bold mb-1">Plan Type:</label>
-                            <input
-                                type="text"
-                                name="plan.planType"
-                                value={formData.plan.planType || ""}
+                            <label className="block font-bold mb-1">Plan Name:</label>
+                            <select
+                                name="plan.planName"
+                                value={formData.plan.planName || ""}
                                 onChange={handleChange}
                                 className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            />
+                            >
+                                <option value="">-- Select Plan --</option>
+                                {productNames.map(p => (
+                                    <option key={p._id} value={p.productName}>
+                                        {p.productName}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
+
+                        <div>
+                            <label className="block font-bold mb-1">Plan Type:</label>
+                            <select
+                                name="plan.planType"
+                                value={formData.plan.planType || "none"}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                                <option value="none">None</option>
+                                <option value="basic">Basic</option>
+                                <option value="standard">Standard</option>
+                                <option value="premium">Premium</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
                         <div>
                             <label className="block font-bold mb-1">Plan Active:</label>
                             <input
@@ -182,8 +239,9 @@ const DetailPanel = ({ user }) => {
                         type="text"
                         name="accountLink"
                         value={formData.accountLink || ""}
-                        onChange={handleChange}
-                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        readOnly
+                        //className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="bg-gray-100 cursor-not-allowed w-full p-3 border border-gray-300 rounded-md"
                     />
                 </div>
                 {/* 소셜 로그인 정보 */}
@@ -192,8 +250,8 @@ const DetailPanel = ({ user }) => {
                     <textarea
                         name="social"
                         value={formData.social ? JSON.stringify(formData.social, null, 2) : ""}
-                        onChange={handleChange}
-                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 h-24"
+                        readOnly
+                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 h-48"
                     />
                 </div>
                 {/* 별점 */}

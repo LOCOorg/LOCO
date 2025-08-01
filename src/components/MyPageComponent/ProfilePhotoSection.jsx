@@ -9,7 +9,7 @@ export default function LeftProfileCard({
                                             removeProfileImage,
                                         }) {
 
-    const album = albumImages.slice(1);
+    const album = albumImages.slice(0);
 
 
     return (
@@ -61,11 +61,11 @@ export default function LeftProfileCard({
                         <div key={idx} className="relative">
                             <img
                                 src={url}
-                                alt={`앨범 ${idx + 1}`}
+                                alt={`앨범 ${idx + 0}`}
                                 className="w-full aspect-square object-cover rounded-lg"
                             />
                             <button
-                                onClick={() => onRemovePhoto(idx + 1)}
+                                onClick={() => onRemovePhoto(idx + 0)}
                                 className="absolute top-1 right-1 bg-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow"
                             >
                                 ×
@@ -74,7 +74,7 @@ export default function LeftProfileCard({
                     ))}
 
                     {/* 빈 슬롯 (6개까지) */}
-                    {albumImages.length < 7 && (
+                    {albumImages.length < 6 && (
                         <div
                             onClick={onAddToAlbum}
                             className="aspect-square rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center text-2xl text-gray-300 cursor-pointer hover:bg-gray-100 transition"
