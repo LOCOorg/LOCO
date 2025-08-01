@@ -5,7 +5,8 @@ import UserListItem from "./UserListItem.jsx";
 
 const SearchPanel = ({ query, setQuery, page, setPage, users, total, loading, error, onUserClick }) => {
     return (
-        <div className="w-2/5 p-6 bg-white border-r border-gray-200 overflow-y-auto">
+        <div className="w-1/3 p-6 bg-white border-r border-gray-200 overflow-y-auto">
+
             {/* 패널 제목 */}
             <h2 className="mb-4 text-2xl font-semibold border-b border-gray-300 pb-2">User Search</h2>
             {/* 검색 인풋 */}

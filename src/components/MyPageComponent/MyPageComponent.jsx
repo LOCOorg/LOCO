@@ -70,7 +70,7 @@ const MyPageContent = ({overrideProfile}) => {
         const file = e.target.files?.[0];
         if (!file) return;
         try {
-            const url = await uploadFile(file);
+            const url = await uploadFile(file, window.location.pathname);
             // 0번으로 삽입 + 이전 0번 제거
             setFormData(prev => ({...prev, profilePhoto: url}));
             const updated = await updateUserProfile(authUser._id, {
@@ -113,7 +113,7 @@ const MyPageContent = ({overrideProfile}) => {
             // 1) 파일 각각 uploadFile() 호출 → 서버에 저장되고, URL을 받아온다.
             const newPhotoURLs = [];
             for (const file of files) {
-                const url = await uploadFile(file);
+                const url = await uploadFile(file, window.location.pathname);
                 newPhotoURLs.push(url);
             }
 

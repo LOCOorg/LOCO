@@ -1,5 +1,5 @@
 // src/components/DeveloperComponent/chatcomponents/ChatRoomListPanel.jsx
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 
 const ChatRoomListPanel = ({
                                rooms,
@@ -10,13 +10,56 @@ const ChatRoomListPanel = ({
                                setPage,
                                selectedRoom,
                                setSelectedRoom
-                           }) => (
+                           }) => {
+
+    // 1) 현재 선택된 필터 타입 상태
+    const [filterType, setFilterType] = useState('all');
+
+    // 2) 유니크한 타입 목록 뽑기
+    const typeOptions = useMemo(() => {
+        const types = rooms.map(r => r.roomType);
+        return ['all', ...new Set(types)];
+    }, [rooms]);
+
+    // 3) 필터 적용된 방 목록
+    const filteredRooms = useMemo(() => {
+        if (filterType === 'all') return rooms;
+        return rooms.filter(r => r.roomType === filterType);
+    }, [rooms, filterType]);
+
+
+
+
+
+
+    return (
     <div className="w-1/3 border-r p-4 overflow-y-auto bg-white">
         <h2 className="text-xl font-semibold mb-2">채팅방 목록</h2>
+
+        {/* 필터 버튼 그룹 */}
+        <div className="flex space-x-2 mb-4">
+            {typeOptions.map(type => (
+                <button
+                    key={type}
+                    onClick={() => setFilterType(type)}
+                    className={`
+              px-3 py-1 border rounded
+              ${filterType === type ? 'bg-blue-500 text-white' : 'hover:bg-gray-100'}
+            `}
+                >
+                    {type === 'all' ? '전체' : type}
+                </button>
+            ))}
+        </div>
+
+
         {error && <p className="text-red-500 mb-2">에러: {error.message}</p>}
         {loading && <p className="text-gray-500 mb-2">로딩 중...</p>}
-        {rooms.length > 0 ? (
-            rooms.map(room => (
+
+
+        {/* 필터 적용된 목록 렌더링 */}
+        {filteredRooms.length > 0 ? (
+            filteredRooms.map(room => (
                 <div
                     key={room._id}
                     onClick={() => setSelectedRoom(room)}
@@ -30,20 +73,20 @@ const ChatRoomListPanel = ({
                     <p className="text-sm text-gray-600">타입: {room.roomType}</p>
                     {/* 참여자 닉네임 목록 */}
                     {Array.isArray(room.chatUsers) && room.chatUsers.length > 0 && (
-                    <p className="text-sm text-gray-600">
-                        참여자:{" "}
-                        {room.chatUsers
-                        .map(u =>
-                            u.nickname && u.name
-                                ? `${u.nickname}(${u.name})`
-                                : u.nickname
-                                    ? u.nickname
-                                    : u.name
-                                        ? u.name
-                                        : u._id
-                        )         /* u가 객체면 u.nickname, 아니면 그냥 ID */
-                        .join(", ")}
-                    </p>
+                        <p className="text-sm text-gray-600">
+                            참여자:{" "}
+                            {room.chatUsers
+                                .map(u =>
+                                    u.nickname && u.name
+                                        ? `${u.nickname}(${u.name})`
+                                        : u.nickname
+                                            ? u.nickname
+                                            : u.name
+                                                ? u.name
+                                                : u._id
+                                )         /* u가 객체면 u.nickname, 아니면 그냥 ID */
+                                .join(", ")}
+                        </p>
                     )}
                     {/* 생성 일자 추가 */}
                     {room.createdAt && (
@@ -55,7 +98,7 @@ const ChatRoomListPanel = ({
                         <p className="text-xs text-gray-500">
                             종료일: {new Date(room.closedAt).toLocaleString()}
                         </p>
-                        )}
+                    )}
                 </div>
             ))
         ) : (
@@ -95,6 +138,7 @@ const ChatRoomListPanel = ({
             </div>
         )}
     </div>
-);
+    );
+};
 
 export default ChatRoomListPanel;

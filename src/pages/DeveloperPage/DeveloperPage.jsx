@@ -7,7 +7,6 @@ const DeveloperPage = () => {
     return (
 
         <div>
-            <h1>개발자 페이지</h1>
             <DeveloperComponent />
         </div>
 

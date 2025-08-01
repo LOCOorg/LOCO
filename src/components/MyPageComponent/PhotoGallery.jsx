@@ -21,7 +21,7 @@ const PhotoGallery = ({ photos = [], selectedIndex, onSelect }) => {
 
             {/* 썸네일 */}
             <div className="flex gap-2 mb-4">
-                {photos.slice(0, 6).map((url, i) => (
+                {photos.slice(0, 7).map((url, i) => (
                     <div
                         key={i}
                         className={`w-12 h-12 rounded-md overflow-hidden cursor-pointer border-2 ${

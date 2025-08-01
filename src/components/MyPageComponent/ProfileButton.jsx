@@ -2,11 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { getUserInfo } from '../../api/userAPI.js';
 import useAuthStore from '../../stores/authStore.js';
 import SimpleProfileModal from './SimpleProfileModal.jsx';
+import { FiUser } from 'react-icons/fi';
 
 const ProfileButton = ({ profile: externalProfile, area = '프로필', onModalToggle, anchor }) => {
     const authUser = useAuthStore((state) => state.user);
     const [profile, setProfile] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [imgError, setImgError] = useState(false);
+
+    const photoUrl =
+        profile?.profilePhoto ||
+        null;
+
 
     useEffect(() => {
         // 사용할 사용자 ID 결정
@@ -48,14 +55,15 @@ const ProfileButton = ({ profile: externalProfile, area = '프로필', onModalTo
                 onClick={handleOpenModal}
                 className="p-0 bg-transparent border-none cursor-pointer"
             >
-                {profile?.photo?.length > 0 ? (
+                {photoUrl && !imgError ? (
                     <img
-                        src={profile.photo[0]}
+                        src={photoUrl}
                         alt="메인 프로필 사진"
+                        onError={() => setImgError(true)}  // 이미지 로드 실패 시 fallback
                         className="w-12 h-12 rounded-full object-cover"
                     />
                 ) : (
-                    <div className="w-12 h-12 rounded-full bg-gray-300" />
+                    <FiUser  className="w-12 h-12 rounded-full bg-gray-300" />
                 )}
             </button>
 

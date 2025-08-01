@@ -21,19 +21,16 @@ const AuthInit = () => {
         (async () => {
             try {
                 // 1) Silent refresh (쿠키에 담긴 리프레시 토큰으로 액세스 토큰 발급)
-                const newAccessToken = await refresh();
-                if (newAccessToken) {
-                    setAccessToken(newAccessToken);
-                }
+                await refresh();
 
                 // 2) /api/auth/me 호출하여 현재 사용자 정보 및 추가 토큰을 받아옴
-                const { user, accessToken: maybeNew } = await fetchCurrentUser();
+                const { user } = await fetchCurrentUser();
                 setUser(user);
 
-                // 3) fetchCurrentUser()가 추가 새로운 액세스 토큰을 내려줄 경우, 스토어 갱신
-                if (maybeNew) {
-                    setAccessToken(maybeNew);
-                }
+                // // 3) fetchCurrentUser()가 추가 새로운 액세스 토큰을  내려줄 경우, 스토어 갱신
+                // if (maybeNew) {
+                //     setAccessToken(maybeNew);
+                // }
             } catch (err) {
                 // 리프레시나 사용자 조회 단계에서 오류(401 등) 발생 시, 완전 로그아웃 상태로 전환
                 console.error('AuthInit 오류:', err);

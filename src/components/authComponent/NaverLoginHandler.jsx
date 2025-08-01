@@ -24,7 +24,6 @@ const NaverLoginHandler = () => {
                 if (data.status === 'noUser') {
                     navigate('/signupPage');
                 } else if (data.status === 'success') {
-                    setAccessToken(data.accessToken);
                     setUser(data.user);
                     navigate('/');
                 }
