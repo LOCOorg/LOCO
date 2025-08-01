@@ -5,7 +5,7 @@ const DEFAULT_PROFILE_IMAGE = import.meta.env.VITE_DEFAULT_PROFILE_IMAGE;
 
 const PRProfileCard = ({ user }) => {
     // 프로필 이미지 URL (없으면 기본 이미지)
-    const photoUrl = user.photo?.[0] || DEFAULT_PROFILE_IMAGE;
+    const photoUrl = user.profilePhoto || DEFAULT_PROFILE_IMAGE;
 
     // 별점을 정수로 반올림, 없으면 0으로 표시
     const rating =
