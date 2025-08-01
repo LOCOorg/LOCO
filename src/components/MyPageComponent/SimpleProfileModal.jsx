@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import useFriendListStore from "../../stores/useFriendListStore.js";
 import useBlockedStore from "../../stores/useBlockedStore.js";
 import {createPortal} from "react-dom";
+import useFriendChatStore from "../../stores/useFriendChatStore.js";
 
 
 const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) => {
@@ -31,6 +32,8 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) =>
     const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
     const navigate = useNavigate();
+
+    const { closeFriendChat } = useFriendChatStore();
 
     if (!profile) return null;
 
@@ -61,6 +64,13 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) =>
             };
             setUser(updatedUser);                            // Zustand 스토어 업데이트[4]
             useFriendListStore.getState().removeFriend(profile._id);   // 전역 리스트 동기화
+
+            /* 2) 열려 있던 친구 채팅창 닫기 */
+            const friendChats = useFriendChatStore.getState().friendChats;
+            const targetChat = friendChats.find(c => c.friend._id === profile._id);
+            if (targetChat) {
+                await closeFriendChat(targetChat.roomId);   // ⬅ 핵심
+            }
 
             setAlertModalMessage("친구를 삭제했습니다.");
         } catch (error) {
