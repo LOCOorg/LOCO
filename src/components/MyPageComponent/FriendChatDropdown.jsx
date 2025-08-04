@@ -225,10 +225,13 @@ const FriendChatDropdown = () => {
                                     <ProfileButton
                                         profile={{ _id: req.sender._id, nickname: req.sender.nickname }}
                                         area='친구요청'
+                                        requestId={req._id}           // ✔ 요청 id 전달
+                                        onAccept={() => handleAccept(req._id, req._notiIdx)}
+                                        onDecline={() => handleDecline(req._id, req._notiIdx)}
                                     />
                                     <span className="max-w-[8rem] truncate text-sm font-medium text-gray-800">
-                    {req.sender?.nickname || '알 수 없음'}
-                  </span>
+                                        {req.sender?.nickname || '알 수 없음'}
+                                    </span>
                                 </div>
 
                                 {/* 수락 / 거절 */}

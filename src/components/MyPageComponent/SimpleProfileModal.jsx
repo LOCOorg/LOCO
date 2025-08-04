@@ -9,9 +9,10 @@ import useFriendListStore from "../../stores/useFriendListStore.js";
 import useBlockedStore from "../../stores/useBlockedStore.js";
 import {createPortal} from "react-dom";
 import useFriendChatStore from "../../stores/useFriendChatStore.js";
+import {CheckIcon, XMarkIcon} from "@heroicons/react/24/solid";
 
 
-const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) => {
+const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requestId, onAccept, onDecline }) => {
     const authUser = useAuthStore(state => state.user);
     const isOwnProfile = authUser && profile._id === authUser._id; // 내 프로필인지 확인
     const [isReportModalVisible, setIsReportModalVisible] = useState(false);
@@ -28,6 +29,8 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) =>
         const byAuth  = authUser?.friends?.includes(profile?._id);
         return byStore || byAuth;
     }, [friends, authUser?.friends, profile?._id]);
+
+    const needAccept = !!requestId;
 
     const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
@@ -47,7 +50,7 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) =>
     const handleFriendRequest = async () => {
         if (!authUser) return;
         try {
-            await sendFriendRequest(authUser._id, profile._id);
+            await sendFriendRequest("6805d797041653f706e7a091", profile._id);
             setAlertModalMessage("친구 요청을 보냈습니다.");
         } catch (error) {
             setAlertModalMessage(error.response?.data?.message || error.message);
@@ -138,52 +141,91 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor }) =>
                 </div>
 
                 {/* 액션 버튼 본인이면 액션버튼 다르게 보이기*/}
-                <div className="flex gap-3">
-                    {!isOwnProfile
-                        ? (
-                            <>
-                                {isFriend ? (
-                                    <button
-                                        onClick={() => setConfirmDeleteOpen(true)}
-                                        className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md"
-                                    >
-                                        친구 삭제
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={handleFriendRequest}
-                                        className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-md"
-                                    >
-                                        친구 신청
-                                    </button>
-                                )}
-                                <button
-                                    onClick={() => setConfirmBlockOpen(true)}
-                                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md"
-                                >
-                                    차단
-                                </button>
-                                {!hideReport && (
-                                    <button
-                                        onClick={() => setIsReportModalVisible(true)}
-                                        className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-md"
-                                    >
-                                        신고
-                                    </button>
-                                )}
-                            </>
-                        )
-                        : (
+                <div className="mt-6 flex flex-row-reverse flex-wrap gap-2">
+
+                    {/* ─── 내 프로필 수정 ─── */}
+                    {isOwnProfile && (
                         <button
                             onClick={() => navigate('/mypage')}
-                            className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-md"
-                        >
+                            className="inline-flex items-center justify-center gap-1 rounded-md
+                 bg-orange-500 px-4 py-2 text-sm font-medium text-white
+                 shadow-sm transition hover:bg-slate-800 active:scale-95">
                             프로필 수정
                         </button>
-                        )
-                    }
+                    )}
 
+                    {/* ─── 타인 프로필 ─── */}
+                    {!isOwnProfile && (
+                        <>
+                            {/* 친구 삭제 : 회색 테두리 */}
+                            {isFriend && !needAccept && (
+                                <button
+                                    onClick={() => setConfirmDeleteOpen(true)}
+                                    className="inline-flex items-center justify-center gap-1 rounded-md
+                     border border-gray-400 bg-white px-4 py-2 text-sm font-medium
+                     text-gray-800 shadow-sm transition hover:bg-gray-50 active:scale-95">
+                                    친구 삭제
+                                </button>
+                            )}
+
+                            {/* 수락 : 인디고  /  거절 : 주황 */}
+                            {needAccept && (
+                                <>
+                                    <button
+                                        onClick={onDecline}
+                                        className="inline-flex items-center justify-center gap-1 rounded-md
+                       bg-amber-500 px-4 py-2 text-sm font-medium text-white
+                       shadow-sm transition hover:bg-amber-600 active:scale-95">
+                                        <XMarkIcon className="h-5 w-5" />
+                                        거절
+                                    </button>
+                                    <button
+                                        onClick={onAccept}
+                                        className="inline-flex items-center justify-center gap-1 rounded-md
+                       bg-indigo-600 px-4 py-2 text-sm font-medium text-white
+                       shadow-sm transition hover:bg-indigo-700 active:scale-95">
+                                        <CheckIcon className="h-5 w-5" />
+                                        수락
+                                    </button>
+                                </>
+                            )}
+
+                            {/* 친구 신청 : 인디고 */}
+                            {!isFriend && !needAccept && (
+                                <button
+                                    onClick={handleFriendRequest}
+                                    className="inline-flex items-center justify-center gap-1 rounded-md
+                     bg-indigo-600 px-4 py-2 text-sm font-medium text-white
+                     shadow-sm transition hover:bg-indigo-700 active:scale-95">
+                                    친구 신청
+                                </button>
+                            )}
+
+                            {/* 차단 : 빨강 700 */}
+                            <button
+                                onClick={() => setConfirmBlockOpen(true)}
+                                className="inline-flex items-center justify-center gap-1 rounded-md
+                   bg-blue-600 px-4 py-2 text-sm font-medium text-white
+                   shadow-sm transition hover:bg-rose-700 active:scale-95">
+                                차단
+                            </button>
+
+                            {/* 신고 : 빨강 500 */}
+                            {!hideReport && (
+                                <button
+                                    onClick={() => setIsReportModalVisible(true)}
+                                    className="inline-flex items-center justify-center gap-1 rounded-md
+                     bg-red-500 px-4 py-2 text-sm font-medium text-white
+                     shadow-sm transition hover:bg-rose-600 active:scale-95">
+                                    신고
+                                </button>
+                            )}
+                        </>
+                    )}
                 </div>
+
+
+
             </div>
 
             {/* 신고 모달 */}
