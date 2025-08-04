@@ -1089,12 +1089,17 @@ const CommunityDetail = () => {
 
                     {(community.userId === currentUserId || isAdmin) && (
                         <div className="mt-6 flex space-x-4">
-                            <button
-                                onClick={() => navigate(`/community/edit/${community._id}`)}
-                                className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 transition duration-200"
-                            >
-                                수정
-                            </button>
+                            {/* 글 작성자일 때만 수정 가능 */}
+                            {community.userId === currentUserId && (
+                                <button
+                                    onClick={() => navigate(`/community/edit/${community._id}`)}
+                                    className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 transition duration-200"
+                                >
+                                    수정
+                                </button>
+                            )}
+
+                            {/* 작성자 또는 관리자 모두 삭제 가능 */}
                             <button
                                 onClick={handleDelete}
                                 className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-200"
