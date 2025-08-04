@@ -4,6 +4,7 @@ import QnaDetailModal from './QnaDetailModal';
 import { getQnaPageByStatus, deleteQna } from '../../api/qnaAPI.js';
 import useAuthStore from '../../stores/authStore';
 import CommonModal from '../../common/CommonModal.jsx';
+import {toKST} from "../../util/dateUtils.js";
 
 function QnaListComponent() {
     // 현재 활성 탭: "답변대기" 또는 "답변완료"
@@ -229,10 +230,11 @@ function QnaListComponent() {
                                     <p className="text-gray-600 leading-relaxed mb-6">
                                         {qna.qnaContents.substring(0, 100)}…
                                     </p>
+                                    <p className="text-sm text-gray-500 mb-4">작성일: {toKST(qna.qnaRegdate)}</p>
                                     <div className="flex justify-between items-center text-sm">
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                    {qna.qnaStatus}
-                  </span>
+                                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                                        {qna.qnaStatus}
+                                      </span>
                                         {(user?.userLv >= 2 || user?._id === qna.userId?._id) && (
                                             <button
                                                 onClick={e => { e.stopPropagation(); requestDelete(qna._id); }}
@@ -305,10 +307,12 @@ function QnaListComponent() {
                                     <p className="text-gray-600 leading-relaxed mb-6">
                                         {qna.qnaContents.substring(0, 100)}…
                                     </p>
+                                    <p className="text-sm text-gray-500 mb-4">작성일: {toKST(qna.qnaRegdate)}</p>
+                                    <p className="text-sm text-gray-500 mb-4">답변일: {toKST(qna.updatedAt)}</p>
                                     <div className="flex justify-between items-center text-sm">
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full">
-                    {qna.qnaStatus}
-                  </span>
+                                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                                        {qna.qnaStatus}
+                                      </span>
                                         {(user?.userLv >= 2 || user?._id === qna.userId?._id) && (
                                             <button
                                                 onClick={e => { e.stopPropagation(); requestDelete(qna._id); }}
