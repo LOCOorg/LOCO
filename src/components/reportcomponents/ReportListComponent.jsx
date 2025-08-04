@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { fetchReports, deleteReport } from '../../api/reportAPI.js';
 import ReportDetailModal from './ReportDetailModal';
 import CommonModal from '../../common/CommonModal.jsx';
+import useAuthStore from "../../stores/authStore.js";
 
 const ReportListComponent = () => {
     const [pageData, setPageData] = useState(null);
@@ -17,6 +18,8 @@ const ReportListComponent = () => {
     const pageSize = 5;
     const [keyword, setKeyword] = useState('');
     const [searchType, setSearchType] = useState('all');
+
+    const { user } = useAuthStore();
 
     // 신고 목록 불러오기 (필터 적용)
     const loadReports = async (page) => {
@@ -104,6 +107,21 @@ const ReportListComponent = () => {
         setCurrentPage(1);
         loadReports(1);
     };
+    // ★ 삭제 버튼 렌더링 함수 추가
+    const renderDeleteBtn = (reportId) => {
+        // 로그인 안 했거나 userLv 3 미만이면 아무것도 반환하지 않음
+        if (!user || user.userLv < 3) return null;
+
+        return (
+            <button
+                className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded"
+                onClick={() => handleDeleteClick(reportId)}
+            >
+                삭제
+            </button>
+        );
+    };
+
 
     return (
         <div className="max-w-4xl mx-auto p-6">
@@ -273,12 +291,8 @@ const ReportListComponent = () => {
                                     >
                                         상세 보기
                                     </button>
-                                    <button
-                                        onClick={() => handleDeleteClick(report._id)}
-                                        className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded"
-                                    >
-                                        삭제
-                                    </button>
+                                    {/* 🚫 userLv 3 이상에게만 보임 */}
+                                    {renderDeleteBtn(report._id)}
                                 </div>
                             </li>
                         ))}
