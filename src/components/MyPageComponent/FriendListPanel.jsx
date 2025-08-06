@@ -112,7 +112,7 @@ const FriendListPanel = () => {
     return (
         <div className="w-80 bg-gray-50 shadow-lg rounded-xl p-5 flex flex-col">
             {loading ? (
-                <p className="text-gray-400 text-center py-10">로딩 중...</p>
+                <p className="text-gray-400 text-center py-10">로그인 해주세요!</p>
             ) : (
                 user && (
                     <>
