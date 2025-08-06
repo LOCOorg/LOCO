@@ -1,0 +1,5 @@
+/*src/noScroll.css*/
+/* index.css */
+.no-scroll {
+    overflow: hidden;
+}

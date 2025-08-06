@@ -1,32 +1,81 @@
 // src/components/pr/PRFilter.jsx
 import React from "react";
+import {
+    sortOptions,
+    genderOptions,
+    tierOptions
+} from "./PRFilterConfig.js";
+const PRFilter = ({
+                      sort,
+                      gender,
+                      tier,
+                      onSortChange,
+                      onGenderChange,
+                      onTierChange,
+                  }) => (
 
-const PRFilter = ({ sort, gender, handleSortChange, handleGenderChange }) => (
-    <div className="flex flex-wrap gap-6 my-6 text-sm text-gray-700">
-        <label className="flex items-center space-x-2">
-            <span>정렬:</span>
-            <select
-                value={sort}
-                onChange={handleSortChange}
-                className="p-1 border border-gray-300 rounded"
-            >
-                <option value="star|desc">별점 높은순</option>
-                <option value="star|asc">별점 낮은순</option>
-                <option value="online">온라인 순</option>
-            </select>
-        </label>
-        <label className="flex items-center space-x-2">
-            <span>성별:</span>
-            <select
-                value={gender}
-                onChange={handleGenderChange}
-                className="p-1 border border-gray-300 rounded"
-            >
-                <option value="all">모두</option>
-                <option value="female">여성</option>
-                <option value="male">남성</option>
-            </select>
-        </label>
+
+
+    <div className="space-y-6">
+        {/* 정렬 */}
+        <div>
+            <h3 className="mb-2 text-gray-800 font-semibold">정렬</h3>
+            <div className="space-y-2">
+                {sortOptions.map(opt => (
+                    <label key={opt.value} className="flex items-center space-x-2">
+                        <input
+                            type="radio"
+                            name="sort"
+                            value={opt.value}
+                            checked={sort === opt.value}
+                            onChange={onSortChange}
+                            className="w-4 h-4 text-green-400 border-gray-300 focus:ring-green-300"
+                        />
+                        <span className="text-sm text-gray-700">{opt.label}</span>
+                    </label>
+                ))}
+            </div>
+        </div>
+
+        {/* 성별 */}
+        <div>
+            <h3 className="mb-2 text-gray-800 font-semibold">성별</h3>
+            <div className="space-y-2">
+                {genderOptions.map(opt => (
+                    <label key={opt.value} className="flex items-center space-x-2">
+                        <input
+                            type="radio"
+                            name="gender"
+                            value={opt.value}
+                            checked={gender === opt.value}
+                            onChange={onGenderChange}
+                            className="w-4 h-4 text-green-400 border-gray-300 focus:ring-green-300"
+                        />
+                        <span className="text-sm text-gray-700">{opt.label}</span>
+                    </label>
+                ))}
+            </div>
+        </div>
+
+        {/* 등급 */}
+        <div>
+            <h3 className="mb-2 text-gray-800 font-semibold">등급</h3>
+            <div className="space-y-2">
+                {tierOptions.map(opt => (
+                    <label key={opt.value} className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            name="tier"
+                            value={opt.value}
+                            checked={tier.includes(opt.value)}
+                            onChange={onTierChange}
+                            className="w-4 h-4 text-green-400 border-gray-300 focus:ring-green-300"
+                        />
+                        <span className="text-sm text-gray-700">{opt.label}</span>
+                    </label>
+                ))}
+            </div>
+        </div>
     </div>
 );
 

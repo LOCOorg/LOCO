@@ -127,13 +127,11 @@ const BasicLayout = ({ children }) => {
                 </div>
             </header>
 
-            <main className="flex-1 p-4">{children}
+            <main className="flex-1 p-0">{children}
                 <Outlet />
             </main>
 
-            <footer className="bg-gray-100 text-center py-2">
-                © 2025 LOCO. All rights reserved.
-            </footer>
+
             <GlobalFriendChatOverlay />  {/* 전역 채팅 */}
         </div>
     );
