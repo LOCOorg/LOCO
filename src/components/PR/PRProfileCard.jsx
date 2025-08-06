@@ -3,7 +3,7 @@ import React from "react";
 
 const DEFAULT_PROFILE_IMAGE = import.meta.env.VITE_DEFAULT_PROFILE_IMAGE;
 
-const PRProfileCard = ({ user }) => {
+const PRProfileCard = ({ user, onClick  }) => {
     // 프로필 이미지 URL (없으면 기본 이미지)
     const photoUrl = user.profilePhoto || DEFAULT_PROFILE_IMAGE;
 
@@ -14,7 +14,7 @@ const PRProfileCard = ({ user }) => {
             : 0;
 
     return (
-        <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition p-4">
+        <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition p-4 cursor-pointer" onClick={onClick}>
             <div className="relative mb-4">
                 <img
                     src={photoUrl}
