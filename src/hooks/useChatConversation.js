@@ -30,7 +30,7 @@ export function useChatConversation(chatUser, mode) {
                     }));
 
                     // ─ 종료된 랜덤채팅 히스토리 조회 ─
-                    const histRes = await axios.get('/api/search/chat-room-history', {
+                    const histRes = await axios.get('/api/chat/search/chat-room-history', {
                         params: {
                             'meta.chatUsers': chatUser._id,
                             page: 1,
