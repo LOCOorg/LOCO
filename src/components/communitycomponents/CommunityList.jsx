@@ -1,8 +1,8 @@
 // CommunityList.jsx
-import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { fetchCommunities, fetchTopViewed, fetchTopCommented } from '../../api/communityApi.js';
-import { getUserInfo } from '../../api/userAPI.js';
+import {useEffect, useState} from 'react';
+import {useNavigate, useSearchParams} from 'react-router-dom';
+import {fetchCommunities, fetchTopViewed, fetchTopCommented} from '../../api/communityApi.js';
+import {getUserInfo} from '../../api/userAPI.js';
 import PageComponent from '../../common/pageComponent.jsx';
 import CommunityLayout from '../../layout/CommunityLayout/CommunityLayout.jsx';
 import LeftSidebar from '../../layout/CommunityLayout/LeftSidebar.jsx';
@@ -33,6 +33,7 @@ const CommunityList = () => {
     const initialCategory = searchParams.get('category') || '전체';
     const currentUser = useAuthStore((state) => state.user);
     const currentUserId = currentUser?._id;
+    const API_HOST = import.meta.env.VITE_API_HOST;
 
     const [pageResponse, setPageResponse] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -255,75 +256,72 @@ const CommunityList = () => {
                     </div>
                 ) : (
                     <ul className="grid grid-cols-1 gap-4">
-                        {filteredCommunities.map((community) => (
-                            <li
-                                key={community._id}
-                                className="flex bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
-                            >
-                                {/* 썸네일 */}
-                                {community.communityImage && (
-                                    <div className="w-24 h-24 flex-shrink-0 mr-4">
-                                        <img
-                                            src={
-                                                community.communityImage.startsWith('http') ||
-                                                community.communityImage.startsWith('data:')
-                                                    ? community.communityImage
-                                                    : `${import.meta.env.VITE_API_HOST}${community.communityImage}`
-                                            }
-                                            alt="게시글 이미지"
-                                            className="object-cover w-full h-full rounded-md"
-                                        />
-                                    </div>
-                                )}
+                        {filteredCommunities.map((community) => {
+                            const thumb = community.communityImages?.length
+                                ? `${API_HOST}${community.communityImages[0]}`
+                                : '/no-thumb.png';
 
-                                {/* 콘텐츠 */}
-                                <div className="flex-1 flex flex-col justify-between">
-                                    <button
-                                        onClick={() => navigate(`/community/${community._id}`)}
-                                        className="text-lg font-semibold text-blue-600 hover:underline text-left"
-                                    >
-                                        {community.communityTitle}{' '}
-                                        <span className="text-sm text-gray-500">
-                    ({community.communityCategory})
-                  </span>
-                                    </button>
+                            return (
+                                <li
+                                    key={community._id}
+                                    className="flex bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
+                                >
+                                    {/* 썸네일 */}
+                                    <img
+                                        src={thumb}
+                                        alt="thumbnail"
+                                        className="h-20 w-28 shrink-0 object-cover rounded mr-4"
+                                    />
 
-                                    <div className="mt-2 text-xs text-gray-500 flex flex-wrap gap-2">
-                  <span>
-                    작성일{' '}
-                      <span className="font-medium text-gray-700">
-                      {formatRelativeTime(community.communityRegDate)}
-                    </span>
-                  </span>
-                                        <span>
-                    조회수{' '}
-                                            <span className="font-medium text-gray-700">
-                      {community.communityViews}
-                    </span>
-                  </span>
-                                        <span>
-                    추천{' '}
-                                            <span className="font-medium text-gray-700">
-                      {community.recommended}
-                    </span>
-                  </span>
-                                        <span>
-                    댓글{' '}
-                                            <span className="font-medium text-gray-700">
-                      {community.commentCount ?? 0}
-                    </span>
-                  </span>
-                                    </div>
+                                    {/* 콘텐츠 */}
+                                    <div className="flex-1 flex flex-col justify-between">
+                                        <button
+                                            onClick={() => navigate(`/community/${community._id}`)}
+                                            className="text-lg font-semibold text-blue-600 hover:underline text-left"
+                                        >
+                                            {community.communityTitle}{' '}
+                                            <span className="text-sm text-gray-500">
+                                        ({community.communityCategory})
+                                      </span>
+                                        </button>
 
-                                    <div className="mt-1 text-xs text-gray-500">
-                                        작성자:{' '}
-                                        <span className="font-medium text-gray-700">
-                    {userMap[community.userId] || community.userId}
-                  </span>
+                                        <div className="mt-2 text-xs text-gray-500 flex flex-wrap gap-2">
+                                      <span>
+                                        작성일{' '}
+                                          <span className="font-medium text-gray-700">
+                                          {formatRelativeTime(community.communityRegDate)}
+                                            </span>
+                                      </span>
+                                            <span>
+                                            조회수{' '}
+                                                <span className="font-medium text-gray-700">
+                                          {community.communityViews}
+                                            </span>
+                                        </span>
+                                            <span>
+                                                추천{' '}
+                                                <span className="font-medium text-gray-700">
+                                          {community.recommended}
+                                        </span>
+                                          </span>
+                                            <span>
+                                            댓글{' '}
+                                                <span className="font-medium text-gray-700">
+                                              {community.commentCount ?? 0}
+                                            </span>
+                                          </span>
+                                        </div>
+
+                                        <div className="mt-1 text-xs text-gray-500">
+                                            작성자:{' '}
+                                            <span className="font-medium text-gray-700">
+                                        {userMap[community.userId] || community.userId}
+                                      </span>
+                                        </div>
                                     </div>
-                                </div>
-                            </li>
-                        ))}
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
 

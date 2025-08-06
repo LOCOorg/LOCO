@@ -60,6 +60,7 @@ const CommunityDetail = () => {
     const currentUser = useAuthStore((state) => state.user);
     const currentUserId = currentUser?._id;
     const isAdmin = currentUser?.userLv >= 2;   // 🔑 Lv 2 이상 여부
+    const API_HOST = import.meta.env.VITE_API_HOST;
 
     // 모달 상태 (게시글 삭제, 추천)
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -629,17 +630,18 @@ const CommunityDetail = () => {
                             <span className="font-medium">{community.recommendedUsers.length}</span>
           </span>
                     </div>
-                    {community.communityImage && (
-                        <img
-                            src={
-                                community.communityImage.startsWith('http') ||
-                                community.communityImage.startsWith('data:')
-                                    ? community.communityImage
-                                    : `${import.meta.env.VITE_API_HOST}${community.communityImage}`
-                            }
-                            alt="커뮤니티 이미지"
-                            className="w-full h-auto mb-4"
-                        />
+                    {/* 본문 이미지 영역 */}
+                    {community.communityImages?.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-4">
+                            {community.communityImages.map((src) => (
+                                <img
+                                    key={src}
+                                    src={`${API_HOST}${src}`}   // ✅ 절대경로
+                                    alt="본문 이미지"
+                                    className="max-h-96 w-auto rounded object-contain"
+                                />
+                            ))}
+                        </div>
                     )}
                     <p className="text-gray-800 mb-4" id={`post-${community._id}`}>{community.communityContents}</p>
                     <div className="mt-4 flex items-center gap-2">
