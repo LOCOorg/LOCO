@@ -144,7 +144,7 @@ const CommunityForm = () => {
                                 onChange={(e) => setCategory(e.target.value)}
                                 className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-green-300 w-full"
                             >
-                                {['자유', '유머', '질문', '사건사고', '전적인증'].map((c) => (
+                                {['자유', '유머', '질문', '사건사고', '전적인증', '개발요청'].map((c) => (
                                     <option key={c}>{c}</option>
                                 ))}
                             </select>
