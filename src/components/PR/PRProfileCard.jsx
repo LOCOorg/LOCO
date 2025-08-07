@@ -1,9 +1,10 @@
 // src/components/pr/PRProfileCard.jsx
 import React from "react";
+import {CARD_W} from "./prCardSize.js";
 
 const DEFAULT_PROFILE_IMAGE = import.meta.env.VITE_DEFAULT_PROFILE_IMAGE;
 
-const PRProfileCard = ({ user, onClick  }) => {
+const PRProfileCard = ({user, onClick}) => {
     // 프로필 이미지 URL (없으면 기본 이미지)
     const photoUrl = user.profilePhoto || DEFAULT_PROFILE_IMAGE;
 
@@ -14,12 +15,18 @@ const PRProfileCard = ({ user, onClick  }) => {
             : 0;
 
     return (
-        <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition p-4 cursor-pointer" onClick={onClick}>
-            <div className="relative mb-4">
+        <div
+            className="bg-white rounded-xl shadow-sm hover:shadow-md transition-transform hover:-translate-y-1 duration-150 cursor-pointer"
+            onClick={onClick}>
+
+
+            <div className="relative mb-4" style={{ height: CARD_W /*=232*/ }}>
+
+
                 <img
                     src={photoUrl}
                     alt={user.nickname || "프로필"}
-                    className="w-full h-48 object-cover rounded-xl"
+                    className="w-full h-full object-cover rounded-t-xl"
                 />
                 {user.isOnline && (
                     <span className="absolute top-2 left-2 bg-green-400 text-white text-xs px-2 py-0.5 rounded-full">
@@ -28,12 +35,12 @@ const PRProfileCard = ({ user, onClick  }) => {
                 )}
             </div>
 
-            <div className="space-y-1 text-center">
-                <h3 className="text-lg font-semibold text-gray-800">
+            <div className="px-4 pb-4 space-y-2 text-left">
+                <h3 className="truncate text-base font-semibold text-gray-900">
                     {user.nickname || "Unnamed"}
                 </h3>
 
-                <div className="flex justify-center items-center space-x-3 text-sm text-gray-600">
+                <div className="flex justify-start  items-center space-x-3 text-sm text-gray-600">
           <span className="flex items-center">
             {/* 별 아이콘 */}
               <svg
@@ -48,7 +55,7 @@ const PRProfileCard = ({ user, onClick  }) => {
               2.455c-.784.57-1.838-.197-1.54-1.118l1.286-3.966a1
               1 0 00-.364-1.118L2.63
               9.393c-.783-.57-.38-1.81.588-1.81h4.17a1
-              1 0 00.95-.69l1.286-3.966z" />
+              1 0 00.95-.69l1.286-3.966z"/>
             </svg>
               {rating}
           </span>
