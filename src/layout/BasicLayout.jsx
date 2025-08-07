@@ -10,6 +10,7 @@ import React, {useEffect, useRef, useState} from "react";
 //import MyMenus from './layoutMyMenus/MyMenus.jsx';
 import MyMenuDrop from "./layoutMyMenus/MyMenuDrop.jsx";
 import DropdownTransition from './css/DropdownTransition.jsx';
+import NotificationToggleButton from "./NotificationToggleButton.jsx";
 
 
 const BasicLayout = ({ children }) => {
@@ -115,6 +116,7 @@ const BasicLayout = ({ children }) => {
                     <FriendChatDropdown />
                     <ChatNotification />
                     <FriendRequestNotification />
+                    <NotificationToggleButton/>
                     {user ? (
                         //<LogoutButton />
                         // 내부에서 authStore.user._id 로 프로필을 가져와 렌더링
