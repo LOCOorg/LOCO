@@ -194,18 +194,24 @@ const MyPageContent = ({overrideProfile}) => {
     };
     const handleFriendReqToggle = async (v) => {
         setFriendReqEnabled(v); // 상태·localStorage 반영
+
+        // 토스트 안내 추가
+        toast.info(
+            v ? '친구 신청 차단 해제' : '친구 신청 차단'
+        );
+
         // 서버 동기화
         if (authUser?._id) {
             try {
                 await updateUserPrefs(authUser._id, { friendReqEnabled: v });
                 // 성공: 별도 처리 없이 완료
             } catch (err) {
-                // 실패: 롤백 or Toast 안내
                 setFriendReqEnabled(!v); // 상태 복원
                 toast.error('서버 저장에 실패했습니다. 잠시 후 다시 시도하세요.');
             }
         }
     };
+
 
 
     {/* -------------------------------------------------------------------- */
@@ -222,12 +228,17 @@ const MyPageContent = ({overrideProfile}) => {
                     <Toggle
                         label="미리보기 알림"
                         checked={toastEnabled}
-                        onChange={setToastEnabled}
+                        onChange={(v) => {
+                            setToastEnabled(v);
+                            toast.info(
+                                v ? '채팅 미리보기 알림 활성화' : '채팅 미리보기 알림 해제'
+                            );
+                        }}
                     />
                     {/* === 친구 신청 알림 설정 === */}
                     <div className="flex items-center justify-between pt-4 border-t">
                         <Toggle
-                            label="친구 신청 알림"
+                            label="친구 신청 차단"
                             checked={friendReqEnabled}
                             onChange={handleFriendReqToggle}
                         />
