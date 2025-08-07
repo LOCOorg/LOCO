@@ -7,6 +7,7 @@ const GAP_PX = 24;      // space-x-6 클래스의 gap (1.5rem = 24px)
 const CARD_WIDTH = 240;
 const AUTO_PLAY_MS = 3000; // 자동 재생 간격
 const STEP = 1;
+const FIXED_CARD_WIDTH = 206;   //카드 크기
 
 const PRTopSlider = ({ topUsers }) => {
     const containerRef = useRef(null);
@@ -29,9 +30,9 @@ const PRTopSlider = ({ topUsers }) => {
         const width = containerRef.current.offsetWidth;
         setContainerWidth(width);
 
-        const minCardTotal = 176 + GAP_PX;
+        const minCardTotal = FIXED_CARD_WIDTH + GAP_PX;
         const rawCount = Math.floor((width + GAP_PX) / minCardTotal) || 1;
-        const count = Math.min(rawCount, topUsers.length, 6);
+        const count = Math.min(rawCount, topUsers.length, 5);
         setSlideSize(count);
         setSliderIndex(idx => Math.min(idx, Math.max(0, topUsers.length - count)));
     }, [topUsers.length]);
@@ -99,7 +100,7 @@ const PRTopSlider = ({ topUsers }) => {
             <h2 className="text-2xl font-bold text-gray-800 mb-4">별점 랭킹 TOP 10</h2>
 
 
-            <div className="flex items-center" >
+            <div className="flex items-center justify-center" >
                 <button
                     onClick={handlePrev}
                     disabled={sliderIndex === 0}
@@ -108,16 +109,22 @@ const PRTopSlider = ({ topUsers }) => {
                     &lt;
                 </button>
                 {/* 슬라이드 뷰포트 */}
-                <div className="overflow-hidden flex-1" ref={containerRef}>
+                <div
+                    className="overflow-hidden"
+                    style={{
+                        width: `${5 * FIXED_CARD_WIDTH + (5 - 1) * GAP_PX}px`
+                    }}
+                    ref={containerRef}
+                >
                     <div
                         className="flex transition-transform duration-300"
                         style={{
-                            transform: `translateX(-${sliderIndex * (itemWidth + GAP_PX)}px)`,
+                            transform: `translateX(-${sliderIndex * (FIXED_CARD_WIDTH + GAP_PX)}px)`,
                             gap: `${GAP_PX}px`,
                         }}
                     >
                         {topUsers.map((user) => (
-                            <div key={user._id} style={{ width: `${itemWidth}px`, flexShrink: 0 }}
+                            <div key={user._id} style={{ width: `${FIXED_CARD_WIDTH}px`, flexShrink: 0 }}
                             >
                                 <PRProfileCard user={user} />
                             </div>
