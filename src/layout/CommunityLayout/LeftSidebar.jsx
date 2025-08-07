@@ -19,6 +19,7 @@ const LeftSidebar = ({ selectedCategory, handleCategoryClick }) => {
         '질문',
         '사건사고',
         '전적인증',
+        '개발요청'
     ];
 
     return (

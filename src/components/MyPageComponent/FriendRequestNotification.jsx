@@ -5,6 +5,7 @@ import { NotificationContext } from '../../hooks/NotificationContext.jsx';
 
 /* 아이콘 (Heroicons 2.x) */
 import { UserPlusIcon } from '@heroicons/react/24/solid';
+import useNotificationStore from "../../stores/notificationStore.js";
 
 const FriendRequestNotification = () => {
     const { user } = useAuthStore();
@@ -12,6 +13,7 @@ const FriendRequestNotification = () => {
     const { addNotification } = useContext(NotificationContext);
 
     const [toasts, setToasts] = useState([]);
+    const friendReqEnabled = useNotificationStore((s) => s.friendReqEnabled);
 
     /* -------- 소켓 통신 -------- */
     useEffect(() => {
@@ -19,6 +21,7 @@ const FriendRequestNotification = () => {
         socket.emit('register', user._id);
 
         const handler = (data) => {
+            if (!friendReqEnabled) return;
             addNotification(data);               // 드롭다운용
             setToasts((prev) => [
                 ...prev,
@@ -27,7 +30,7 @@ const FriendRequestNotification = () => {
         };
         socket.on('friendRequestNotification', handler);
         return () => socket.off('friendRequestNotification', handler);
-    }, [socket, user, addNotification]);
+    }, [socket, user, addNotification, friendReqEnabled]);
 
     /* -------- 자동 제거 -------- */
     useEffect(() => {
