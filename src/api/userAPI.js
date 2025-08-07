@@ -219,3 +219,13 @@ export const getFriendsPage = async (userId, offset = 0, limit = 20) => {
         throw new Error("친구 목록을 불러오는 데 실패했습니다.");
     }
 };
+
+export const updateUserPrefs = async (userId, prefs) => {
+    try {
+        // PATCH /api/user/:userId/prefs
+        const response = await axios.patch(`${host}/${userId}/prefs`, prefs);
+        return response.data.data;
+    } catch (error) {
+        throw new Error(error.response?.data.message || error.message);
+    }
+};

@@ -1,7 +1,7 @@
 // src/components/MyPageComponent.jsx
 import {useEffect, useRef, useState} from 'react';
 import {
-    getUserInfo,
+    getUserInfo, updateUserPrefs,
     updateUserProfile,
 } from "../../api/userAPI"; // declineFriendRequest 추가됨
 import {uploadFile} from "../../api/fileUploadAPI";
@@ -9,6 +9,9 @@ import useAuthStore from '../../stores/authStore';
 import ProfilePhotoSection from './ProfilePhotoSection';
 import ProfileDetailSection from './ProfileDetailSection';
 import {toast, ToastContainer, Zoom} from "react-toastify";
+import useNotificationStore from "../../stores/notificationStore.js";
+import {Switch} from "@headlessui/react";
+import Toggle from "../../hooks/Toggle.jsx";
 
 const MyPageContent = ({overrideProfile}) => {
     const authUser = useAuthStore((state) => state.user);
@@ -17,6 +20,10 @@ const MyPageContent = ({overrideProfile}) => {
     const [formData, setFormData] = useState({});
     const [alertModalOpen, setAlertModalOpen] = useState(false);
     const [alertModalMessage, setAlertModalMessage] = useState("");
+    const toastEnabled   = useNotificationStore((s) => s.toastEnabled);
+    const setToastEnabled = useNotificationStore((s) => s.setToastEnabled);
+    const friendReqEnabled = useNotificationStore((s) => s.friendReqEnabled);
+    const setFriendReqEnabled = useNotificationStore((s) => s.setFriendReqEnabled);
 
     // 앨범용 input ref
     const fileInputRef = useRef(null);
@@ -54,6 +61,12 @@ const MyPageContent = ({overrideProfile}) => {
                 .catch((error) => console.error('프로필 불러오기 에러:', error));
         }
     }, [authUser, overrideProfile]);
+
+    useEffect(() => {
+        if (profile?.friendReqEnabled != null) {
+            setFriendReqEnabled(profile.friendReqEnabled);
+        }
+    }, [profile]);
 
 
     if (!profile) return <div>로딩 중...</div>;
@@ -179,6 +192,20 @@ const MyPageContent = ({overrideProfile}) => {
             toast.error('수정 중 오류가 발생했습니다.');
         }
     };
+    const handleFriendReqToggle = async (v) => {
+        setFriendReqEnabled(v); // 상태·localStorage 반영
+        // 서버 동기화
+        if (authUser?._id) {
+            try {
+                await updateUserPrefs(authUser._id, { friendReqEnabled: v });
+                // 성공: 별도 처리 없이 완료
+            } catch (err) {
+                // 실패: 롤백 or Toast 안내
+                setFriendReqEnabled(!v); // 상태 복원
+                toast.error('서버 저장에 실패했습니다. 잠시 후 다시 시도하세요.');
+            }
+        }
+    };
 
 
     {/* -------------------------------------------------------------------- */
@@ -187,7 +214,26 @@ const MyPageContent = ({overrideProfile}) => {
 
     return (
         <div className="max-w-6xl mx-auto p-6">
-
+            {/* === 알림 설정 구역 === */}
+            <div className="space-y-6">
+                {/* === 채팅 알림 설정 === */}
+                <div className="pt-6">
+                    <h3 className="text-lg font-semibold mb-2">채팅/친구신청 알림 설정</h3>
+                    <Toggle
+                        label="미리보기 알림"
+                        checked={toastEnabled}
+                        onChange={setToastEnabled}
+                    />
+                    {/* === 친구 신청 알림 설정 === */}
+                    <div className="flex items-center justify-between pt-4 border-t">
+                        <Toggle
+                            label="친구 신청 알림"
+                            checked={friendReqEnabled}
+                            onChange={handleFriendReqToggle}
+                        />
+                    </div>
+                </div>
+            </div>
 
             {/* 왼쪽 섹션 */}
             <h2 className="text-2xl font-bold mb-4">프로필 편집</h2>
