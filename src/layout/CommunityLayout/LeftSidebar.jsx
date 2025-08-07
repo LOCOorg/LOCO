@@ -1,4 +1,5 @@
 import useAuthStore from '../../stores/authStore.js';
+import ProfileButton from "../../components/MyPageComponent/ProfileButton.jsx";
 
 // eslint-disable-next-line react/prop-types
 const LeftSidebar = ({ selectedCategory, handleCategoryClick }) => {
@@ -26,9 +27,7 @@ const LeftSidebar = ({ selectedCategory, handleCategoryClick }) => {
         <aside className="w-full lg:w-64 space-y-6 sticky top-20">
             {/* User Card */}
             <div className="flex items-center bg-white shadow-md rounded-lg p-4">
-                <div className="h-12 w-12 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full text-xl font-bold">
-                    {userInitial}
-                </div>
+                <ProfileButton/>
                 <div className="ml-3">
                     <p className="text-lg font-semibold text-gray-800">
                         {userNickname}님
