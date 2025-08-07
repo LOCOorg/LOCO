@@ -28,6 +28,8 @@ const GlobalChatNotification = () => {
     const removeNotificationsByRoom = useNotificationStore(
         (s) => s.removeNotificationsByRoom
     );
+    const toastEnabled = useNotificationStore((s) => s.toastEnabled);
+    const clearNotifications = useNotificationStore((s) => s.clearNotifications);
 
     /* ----------------- 컴포넌트 상태 ----------------- */
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -59,6 +61,12 @@ const GlobalChatNotification = () => {
         const handler = (data) => {
             /* 내가 이미 보고 있는 채팅방이면 무시 */
             if (pathname.startsWith(`/chat/${data.chatRoom}`)) return;
+
+            /* 토스트가 꺼져 있으면 드롭다운 목록만 추가 */
+            if (!toastEnabled) {
+                addNotification({ id: Date.now(), ...data });
+                return;
+            }
 
             const id        = Date.now();
             const newNotif  = { id, ...data };
@@ -153,9 +161,21 @@ const GlobalChatNotification = () => {
                    bg-white shadow-xl ring-1 ring-black/5 z-[1050]"
             >
                 <section className="max-h-80 overflow-y-auto custom-scroll">
-                    <h3 className="sticky top-0 z-10 bg-white px-4 py-2 text-xs font-semibold text-gray-700 border-b">
-                        채팅 알림
-                    </h3>
+                    <div className="sticky top-0 z-10 flex items-center justify-between
+                   bg-white px-4 py-2 border-b">
+                        <h3 className="text-xs font-semibold text-gray-700">채팅 알림</h3>
+                        {notifications.length > 0 && (
+                            <button
+                                onClick={() => {
+                                    clearNotifications();      // 드롭다운 목록 비우기
+                                    setToasts([]);             // 열린 토스트도 같이 닫기
+                                }}
+                                className="text-[11px] font-medium text-blue-600 hover:text-blue-700"
+                            >
+                                전체 삭제
+                            </button>
+                        )}
+                    </div>
 
                     {notifications.length === 0 ? (
                         <p className="flex flex-col items-center justify-center gap-1 py-8 text-xs text-gray-400">

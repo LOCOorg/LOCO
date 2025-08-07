@@ -3,6 +3,20 @@ import { create } from 'zustand';
 
 const useNotificationStore = create((set) => ({
     notifications: [],
+    friendReqEnabled: JSON.parse(localStorage.getItem('friendReqEnabled') ?? 'true'),
+
+    setFriendReqEnabled: (val) =>
+        set(() => {
+            localStorage.setItem('friendReqEnabled', JSON.stringify(val));
+            return { friendReqEnabled: val };
+        }),
+    /* ✅ 토스트 사용 여부 */
+    toastEnabled: JSON.parse(localStorage.getItem('toastEnabled') ?? 'true'),
+    setToastEnabled: (val) =>
+        set(() => {
+            localStorage.setItem('toastEnabled', JSON.stringify(val));
+            return { toastEnabled: val };
+        }),
     addNotification: (notification) =>
         set((state) => ({
             notifications: [...state.notifications, notification],
