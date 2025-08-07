@@ -85,7 +85,7 @@ const GlobalChatNotification = () => {
 
         socket.on('chatNotification', handler);
         return () => socket.off('chatNotification', handler);
-    }, [socket, pathname, addNotification]);
+    }, [socket, pathname, toastEnabled, addNotification]);
 
     /* ----------------- UI 핸들러 ----------------- */
     const toggleDropdown = () => setDropdownOpen((p) => !p);
@@ -115,6 +115,7 @@ const GlobalChatNotification = () => {
     return (
         <div className="relative" ref={dropdownRef}>
             {/* ────────── 토스트 ────────── */}
+            {toastEnabled && (
             <div className="fixed top-20 right-4 z-[1100] space-y-3">
                 {toasts.map((toast) => (
                     <div
@@ -132,6 +133,7 @@ const GlobalChatNotification = () => {
                     </div>
                 ))}
             </div>
+            )}
 
             {/* ────────── 벨 버튼 ────────── */}
             <button

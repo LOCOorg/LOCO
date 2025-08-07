@@ -1,22 +1,33 @@
 // 채팅 알림 전역상태 관리
 import { create } from 'zustand';
+import {updateUserPrefs} from "../api/userAPI.js";
+import useAuthStore from "./authStore.js";
 
-const useNotificationStore = create((set) => ({
+const useNotificationStore = create((set, get) => ({
     notifications: [],
+    /* 🎛️ 친구 요청 허용 */
     friendReqEnabled: JSON.parse(localStorage.getItem('friendReqEnabled') ?? 'true'),
+    async toggleFriendReq() {
+        const next = !get().friendReqEnabled;
+        set({ friendReqEnabled: next });
+        localStorage.setItem('friendReqEnabled', JSON.stringify(next));
 
-    setFriendReqEnabled: (val) =>
-        set(() => {
-            localStorage.setItem('friendReqEnabled', JSON.stringify(val));
-            return { friendReqEnabled: val };
-        }),
+        /* 서버-동기화 */
+        const userId = useAuthStore.getState().user?._id;
+        if (userId) await updateUserPrefs(userId, { friendReqEnabled: next });
+    },
+
     /* ✅ 토스트 사용 여부 */
     toastEnabled: JSON.parse(localStorage.getItem('toastEnabled') ?? 'true'),
-    setToastEnabled: (val) =>
-        set(() => {
-            localStorage.setItem('toastEnabled', JSON.stringify(val));
-            return { toastEnabled: val };
-        }),
+
+    async toggleToast() {
+        const next = !get().toastEnabled;
+        set({ toastEnabled: next });
+        localStorage.setItem('toastEnabled', JSON.stringify(next));
+
+        const userId = useAuthStore.getState().user?._id;
+        if (userId) await updateUserPrefs(userId, { toastEnabled: next });
+    },
     addNotification: (notification) =>
         set((state) => ({
             notifications: [...state.notifications, notification],
@@ -33,6 +44,7 @@ const useNotificationStore = create((set) => ({
             ),
         })),
     clearNotifications: () => set({ notifications: [] }),
+
 }));
 
 export default useNotificationStore;
