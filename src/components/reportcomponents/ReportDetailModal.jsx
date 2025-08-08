@@ -20,15 +20,24 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
 
     const navigate = useNavigate();
 
+    const [chatData, setChatData] = useState({ messages: [], roomType: '', totalMessages: 0 });
+
+
     const loadChatLog = async () => {
         try {
-            const msgs = await fetchReportChatLog(localReport._id);
-            setChatMessages(msgs);
+            const response = await fetchReportChatLog(localReport._id);
+            setChatData(response);
+            setChatMessages(response.messages || []);
             setShowChatModal(true);
         } catch (err) {
-            setModalInfo({ isOpen: true, title: '오류', message: err.message });
+            setModalInfo({
+                isOpen: true,
+                title: '오류',
+                message: err.message
+            });
         }
     };
+
 
     const goTarget = () => {
         if (!localReport?.anchor) return;
@@ -242,13 +251,20 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
 
             {showChatModal && (
                 <CommonModal
-                    title="채팅 내역"
+                    title={`(${chatData.roomType === 'friend' ? '친구 채팅' : '랜덤 채팅'}) - 총 ${chatData.totalMessages}개 메시지`}
                     isOpen={true}
                     onConfirm={() => setShowChatModal(false)}
                     showCancel={false}
                 >
                     {/* ── 스크롤 컨테이너 ────────────────────────── */}
                     <div className="max-h-[70vh] overflow-y-auto px-3 py-4 bg-gray-50 rounded-lg">
+
+                        {/* 친구 채팅방인 경우 날짜 범위 표시 */}
+                        {chatData.roomType === 'friend' && chatData.dateRange && (
+                            <div className="mb-4 p-2 bg-blue-50 rounded">
+                                📅 표시 범위: {new Date(chatData.dateRange.from).toLocaleDateString()} ~ {new Date(chatData.dateRange.to).toLocaleDateString()}
+                            </div>
+                        )}
 
                         {chatMessages.length === 0 && (
                             <p className="text-center text-gray-500 py-8">채팅 기록이 없습니다.</p>

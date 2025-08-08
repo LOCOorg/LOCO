@@ -21,6 +21,8 @@ const ReportListComponent = () => {
 
     const { user } = useAuthStore();
 
+    const [orderByDate, setOrderByDate] = useState('desc'); // 정렬 순서 state 추가
+
     // 신고 목록 불러오기 (필터 적용)
     const loadReports = async (page) => {
         try {
@@ -38,7 +40,7 @@ const ReportListComponent = () => {
                 filters.keyword = keyword.trim();
                 filters.searchType = searchType;
             }
-            const data = await fetchReports(page, pageSize, filters);
+            const data = await fetchReports(page, pageSize, filters, orderByDate);
             setPageData(data);
         } catch (err) {
             setError(err.message);
@@ -48,7 +50,7 @@ const ReportListComponent = () => {
     // currentPage, filterArea, filterCategory, filterStatus가 바뀔 때마다 목록을 다시 불러옴
     useEffect(() => {
         loadReports(currentPage);
-    }, [currentPage, filterArea, filterCategory, filterStatus]);
+    }, [currentPage, filterArea, filterCategory, filterStatus, orderByDate]);
 
     const handleDeleteClick = (id) => {
         setReportToDelete(id);
@@ -101,6 +103,13 @@ const ReportListComponent = () => {
         setFilterStatus(status);
         setCurrentPage(1); // 필터 변경 시 첫 페이지로 리셋
     };
+
+    // 정렬 순서 변경 핸들러 추가
+    const handleOrderChange = (order) => {
+        setOrderByDate(order);
+        setCurrentPage(1); // 정렬 변경 시 첫 페이지로 리셋
+    };
+
 
     // 검색 버튼 혹은 Enter 키 눌렀을 때
     const handleSearch = () => {
@@ -228,6 +237,38 @@ const ReportListComponent = () => {
                     className={`px-3 py-1 rounded ${filterStatus === "dismissed" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
                     경고처리
+                </button>
+            </div>
+            {/* 정렬 버튼 추가 */}
+            <div style={{ marginBottom: '10px' }}>
+                <strong>정렬: </strong>
+                <button
+                    onClick={() => handleOrderChange('desc')}
+                    style={{
+                        margin: '0 5px',
+                        padding: '5px 10px',
+                        backgroundColor: orderByDate === 'desc' ? '#007bff' : '#f8f9fa',
+                        color: orderByDate === 'desc' ? 'white' : 'black',
+                        border: '1px solid #007bff',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    최신순
+                </button>
+                <button
+                    onClick={() => handleOrderChange('asc')}
+                    style={{
+                        margin: '0 5px',
+                        padding: '5px 10px',
+                        backgroundColor: orderByDate === 'asc' ? '#007bff' : '#f8f9fa',
+                        color: orderByDate === 'asc' ? 'white' : 'black',
+                        border: '1px solid #007bff',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    오래된순
                 </button>
             </div>
 
