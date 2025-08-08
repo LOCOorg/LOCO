@@ -6,10 +6,15 @@ const host = `${import.meta.env.VITE_API_HOST}/api/report`;
  * 전체 신고 목록을 불러오는 함수
  * @returns {Promise<Array>} 신고 목록 배열
  */
-export const fetchReports = async (page = 1, size = 10, filters = {}) => {
+export const fetchReports = async (page = 1, size = 10, filters = {}, orderByDate = 'desc') => {
     try {
         const response = await axios.get(`${host}/reports`, {
-            params: { page, size, ...filters },
+            params: {
+                page,
+                size,
+                ...filters,
+                orderByDate  // 정렬 순서 파라미터 추가
+            },
             withCredentials: true,
         });
         return response.data;
@@ -17,6 +22,7 @@ export const fetchReports = async (page = 1, size = 10, filters = {}) => {
         throw new Error('신고 목록을 불러오지 못했습니다.');
     }
 };
+
 
 /**
  * 새로운 신고를 생성하는 함수
