@@ -335,10 +335,12 @@ const ChatRoom = ({roomId, userId}) => {
         }
     }, [messages]);
     // ────────── ③ participants 변경 시 상대 소환사명으로 전적 조회 ──────────
-    // 채팅방 참가자 변경 시 상대방 Riot ID로 전적 조회
+    // ChatRoom.jsx의 useEffect 부분을 다음과 같이 수정
     useEffect(() => {
         if (participants.length < 2 || participantsRef.current) return;
-        participantsRef.current = true; // ★ 여기서 바로 true 로 만들어 재호출 차단
+
+        participantsRef.current = true;
+
         const otherIds = participants
             .map(u => (typeof u === "object" ? u._id : u))
             .filter(id => id !== userId);
@@ -349,28 +351,35 @@ const ChatRoom = ({roomId, userId}) => {
         Promise.all(
             otherIds.map(async participantId => {
                 try {
+
                     const userInfo = await getUserInfo(participantId);
-                    const {riotGameName, riotTagLine} = userInfo;
+
+                    const { riotGameName, riotTagLine } = userInfo;
+
                     if (!riotGameName || !riotTagLine) {
                         throw new Error("Riot ID 정보가 없습니다.");
                     }
+
                     const leagueRecord = await getLeagueRecord(riotGameName, riotTagLine);
-                    return {participantId, userInfo, leagueRecord, error: null};
+
+                    return { participantId, userInfo, leagueRecord, error: null };
                 } catch (err) {
-                    return {participantId, userInfo: null, leagueRecord: null, error: err.message};
+                    console.error('전적 조회 오류:', err);
+                    return { participantId, userInfo: null, leagueRecord: null, error: err.message };
                 }
             })
         )
             .then(results => {
                 setPartnerRecords(results);
                 setRecordsLoading(false);
-                participantsRef.current = true;
             })
             .catch(err => {
+                console.error('전적 조회 전체 오류:', err);
                 setRecordsError(err.message);
                 setRecordsLoading(false);
             });
     }, [participants, userId]);
+
 
     return (
         <div
