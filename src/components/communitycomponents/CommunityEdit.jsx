@@ -22,6 +22,8 @@ const CommunityEdit = () => {
     const [title, setTitle] = useState('');
     const [contents, setContents] = useState('');
     const [category, setCategory] = useState('자유');
+    // ✅ 익명 작성 여부 추가
+    const [isAnonymous, setIsAnonymous] = useState(false);
 
     /* ───────── 이미지 입력 방식 ───────── */
     const [uploadMethod, setUploadMethod] = useState('file'); // 'url' | 'file'
@@ -80,6 +82,9 @@ const CommunityEdit = () => {
                 setContents(data.communityContents);
                 setCategory(data.communityCategory);
 
+                // ✅ 익명 여부 로드
+                setIsAnonymous(data.isAnonymous || false);
+
                 // 기존 이미지 → 절대경로 프리뷰
                 if (data.communityImages?.length) {
                     setExistingImages(data.communityImages.map((u) => `${API_HOST}${u}`));
@@ -98,6 +103,8 @@ const CommunityEdit = () => {
         fd.append('communityTitle', title);
         fd.append('communityContents', contents);
         fd.append('communityCategory', category);
+        // ✅ 익명 여부 추가
+        fd.append('isAnonymous', isAnonymous);
 
         /* ① 기존 이미지 중 blob 아닌 것 → 상대경로로 변환 */
         existingImages
@@ -150,6 +157,18 @@ const CommunityEdit = () => {
                         {error && (
                             <p className="text-center text-red-500 font-medium">{error}</p>
                         )}
+                        {/* ✅ 익명 작성 체크박스 추가 */}
+                        <div>
+                            <label className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    checked={isAnonymous}
+                                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-sm text-gray-700">익명으로 작성</span>
+                            </label>
+                        </div>
 
                         {/* 제목·카테고리 */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

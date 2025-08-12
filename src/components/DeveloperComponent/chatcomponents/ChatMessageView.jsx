@@ -42,6 +42,30 @@ const ChatMessageView = ({ messages, selectedRoom, currentUser }) => (
                         ? `${nick}(${real})`
                         : nick || real || '알 수 없음';
 
+                // System 메시지 체크
+                const isSystemMessage = msg.isSystem || msg.sender?.nickname === 'system';
+
+                if (isSystemMessage) {
+                    // System 메시지는 TailwindCSS로 중앙 정렬 스타일
+                    return (
+                        <div key={idx}>
+                            {showDateSeparator && (
+                                <div className="text-center my-2.5 py-1 text-gray-400 text-xs border-b border-gray-200">
+                                    {dateString}
+                                </div>
+                            )}
+                            <div className="text-center my-2 mx-auto max-w-[80%] px-3 py-1.5 bg-gray-100 rounded-xl text-sm text-gray-600">
+                                <div className="text-xs text-gray-400 mb-0.5">
+                                    {timeString}
+                                </div>
+                                <div className="italic">
+                                    {msg.text}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+
                 return (
                     <React.Fragment key={msg._id}>
                         {showDateSeparator && (
