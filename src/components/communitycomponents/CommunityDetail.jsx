@@ -501,6 +501,52 @@ const CommunityDetail = () => {
         }
     }, [hash, community]);                      // community 렌더 완료 후 실행
 
+    // 총 댓글 수 계산 함수 추가
+    const getTotalCommentCount = () => {
+        if (!community || !community.comments) return 0;
+
+        let totalCount = 0;
+
+        community.comments.forEach((comment) => {
+            // 삭제되지 않은 댓글 또는 자식 댓글이 있는 삭제된 댓글
+            const hasActiveReplies = comment.replies && comment.replies.some(reply =>
+                !reply.isDeleted || (reply.subReplies && reply.subReplies.some(sub => !sub.isDeleted))
+            );
+
+            if (!comment.isDeleted || hasActiveReplies) {
+                if (!comment.isDeleted) {
+                    totalCount++; // 댓글 자체가 삭제되지 않은 경우만 카운트
+                }
+
+                // 대댓글 카운트
+                if (comment.replies) {
+                    comment.replies.forEach((reply) => {
+                        // 삭제되지 않은 대댓글 또는 자식 댓글이 있는 삭제된 대댓글
+                        const hasActiveSubReplies = reply.subReplies && reply.subReplies.some(sub => !sub.isDeleted);
+
+                        if (!reply.isDeleted || hasActiveSubReplies) {
+                            if (!reply.isDeleted) {
+                                totalCount++; // 대댓글 자체가 삭제되지 않은 경우만 카운트
+                            }
+
+                            // 대대댓글 카운트
+                            if (reply.subReplies) {
+                                reply.subReplies.forEach((subReply) => {
+                                    if (!subReply.isDeleted) {
+                                        totalCount++; // 삭제되지 않은 대대댓글 카운트
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
+        return totalCount;
+    };
+
+
 
     if (loading) {
         return (
@@ -645,19 +691,19 @@ const CommunityDetail = () => {
                     )}
                     <p className="text-gray-800 mb-4" id={`post-${community._id}`}>{community.communityContents}</p>
                     <div className="mt-4 flex items-center gap-2">
-                            <button
-                                onClick={handleToggleRecommend}
-                                aria-label="추천하기"
-                                className={clsx(
-                                    'w-10 h-10 rounded-full border flex items-center justify-center transition-colors',
-                                    {
-                                        'bg-blue-500 border-blue-500 text-white': isRecommended,
-                                        'bg-transparent border-gray-300 text-gray-500 hover:bg-gray-100': !isRecommended,
-                                    }
-                                )}
-                            >
-                                <FaThumbsUp size={20} />
-                            </button>
+                        <button
+                            onClick={handleToggleRecommend}
+                            aria-label="추천하기"
+                            className={clsx(
+                                'w-10 h-10 rounded-full border flex items-center justify-center transition-colors',
+                                {
+                                    'bg-blue-500 border-blue-500 text-white': isRecommended,
+                                    'bg-transparent border-gray-300 text-gray-500 hover:bg-gray-100': !isRecommended,
+                                }
+                            )}
+                        >
+                            <FaThumbsUp size={20} />
+                        </button>
 
                         {community.userId !== currentUserId && (
                             <button
@@ -677,51 +723,93 @@ const CommunityDetail = () => {
                         )}
                     </div>
                     <div className="mt-6">
-                        <h3 className="text-xl font-semibold mb-3">댓글</h3>
+                        <h3 className="text-xl font-semibold mb-3">댓글 ({getTotalCommentCount()})</h3>
                         {community.comments && community.comments.length > 0 ? (
                             <ul className="space-y-3">
                                 {community.comments.map((comment) => {
+                                    // 삭제된 댓글인지 확인
+                                    const isCommentDeleted = comment.isDeleted;
+
+                                    // 자식 댓글(대댓글, 대대댓글)이 있는지 확인
+                                    const hasActiveReplies = comment.replies && comment.replies.some(reply =>
+                                        !reply.isDeleted || (reply.subReplies && reply.subReplies.some(sub => !sub.isDeleted))
+                                    );
+
+                                    // 삭제된 댓글이지만 자식 댓글이 없으면 렌더링하지 않음
+                                    if (isCommentDeleted && !hasActiveReplies) {
+                                        return null;
+                                    }
+
                                     const state = replyState[comment._id] || {open: false, text: '', file: null};
-                                    const nickname = userMap[comment.userId] || comment.userId;
+                                    const nickname = isCommentDeleted ? "삭제된 사용자" : (userMap[comment.userId] || comment.userId);
+
                                     return (
                                         <li
                                             key={comment._id}
                                             className="flex space-x-3 p-3 border border-gray-200 rounded hover:bg-gray-50 transition duration-200"
                                         >
-                                            <ProfileButton profile={profileMap[comment.userId]} area="커뮤니티"
-                                                           anchor={{
-                                                               type: 'comment',
-                                                               parentId: community._id,
-                                                               targetId: comment._id,
-                                                           }}/>
+                                            {/* 프로필 버튼 - 삭제된 댓글은 기본 프로필 */}
+                                            {!isCommentDeleted ? (
+                                                <ProfileButton
+                                                    profile={profileMap[comment.userId]}
+                                                    area="커뮤니티"
+                                                    anchor={{
+                                                        type: 'comment',
+                                                        parentId: community._id,
+                                                        targetId: comment._id,
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0"></div>
+                                            )}
 
                                             <div className="flex-1">
                                                 <div className="flex items-center space-x-2 mb-1">
-                        <span
-                            className={`text-sm font-semibold ${comment.userId === community.userId ? 'text-red-500' : ''}`}>
-                          {nickname}
-                        </span>
+                                <span
+                                    className={`text-sm font-semibold ${
+                                        !isCommentDeleted && comment.userId === community.userId ? 'text-red-500' :
+                                            isCommentDeleted ? 'text-gray-500' : ''
+                                    }`}
+                                >
+                                    {nickname}
+                                </span>
                                                     <span className="text-xs text-gray-500">
-                          {formatRelativeTime(comment.commentRegDate)}
-                        </span>
-                                                    {comment.userId === currentUserId || isAdmin ? (
-                                                        <button
-                                                            onClick={() => openCommentDeleteModal(comment._id)}
-                                                            className="text-red-500 text-xs ml-2 hover:underline"
-                                                        >
-                                                            삭제
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handleCommentReport(comment)}
-                                                            className="text-gray-500 text-xs ml-2 hover:text-rose-600 hover:underline"
-                                                        >
-                                                            신고
-                                                        </button>
+                                    {formatRelativeTime(comment.commentRegDate)}
+                                </span>
+
+                                                    {/* 액션 버튼들 - 삭제된 댓글은 표시하지 않음 */}
+                                                    {!isCommentDeleted && (
+                                                        <>
+                                                            {comment.userId === currentUserId || isAdmin ? (
+                                                                <button
+                                                                    onClick={() => openCommentDeleteModal(comment._id)}
+                                                                    className="text-red-500 text-xs ml-2 hover:underline"
+                                                                >
+                                                                    삭제
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => handleCommentReport(comment)}
+                                                                    className="text-gray-500 text-xs ml-2 hover:text-rose-600 hover:underline"
+                                                                >
+                                                                    신고
+                                                                </button>
+                                                            )}
+                                                        </>
                                                     )}
                                                 </div>
-                                                <p className="text-gray-800" id={`comment-${comment._id}`}>{comment.commentContents}</p>
-                                                {comment.commentImage && (
+
+                                                {/* 댓글 내용 */}
+                                                <p className="text-gray-800" id={`comment-${comment._id}`}>
+                                                    {isCommentDeleted ? (
+                                                        <span className="text-gray-500 italic">삭제된 댓글입니다.</span>
+                                                    ) : (
+                                                        comment.commentContents
+                                                    )}
+                                                </p>
+
+                                                {/* 댓글 이미지 - 삭제된 댓글은 이미지 숨김 */}
+                                                {!isCommentDeleted && comment.commentImage && (
                                                     <img
                                                         src={
                                                             comment.commentImage.startsWith('http') ||
@@ -733,48 +821,85 @@ const CommunityDetail = () => {
                                                         className="w-32 h-auto mt-2"
                                                     />
                                                 )}
+
+                                                {/* 대댓글 목록 */}
                                                 {comment.replies && comment.replies.length > 0 && (
                                                     <ul className="ml-4 mt-2 space-y-2 border-l pl-2">
                                                         {comment.replies.map((reply) => {
-                                                            const replyNickname = userMap[reply.userId] || reply.userId;
+                                                            // 삭제된 대댓글인지 확인
+                                                            const isReplyDeleted = reply.isDeleted;
+
+                                                            // 자식 댓글(대대댓글)이 있는지 확인
+                                                            const hasActiveSubReplies = reply.subReplies && reply.subReplies.some(subReply => !subReply.isDeleted);
+
+                                                            // 삭제된 대댓글이지만 자식 댓글이 없으면 렌더링하지 않음
+                                                            if (isReplyDeleted && !hasActiveSubReplies) {
+                                                                return null;
+                                                            }
+
+                                                            const replyNickname = isReplyDeleted ? "삭제된 사용자" : (userMap[reply.userId] || reply.userId);
+
                                                             return (
                                                                 <li key={reply._id}>
                                                                     <div className="flex items-start space-x-2">
-                                                                        {/* 대댓글 작성자 프로필 버튼 */}
-                                                                        <ProfileButton
-                                                                            profile={profileMap[reply.userId]} area="커뮤니티"
-                                                                            anchor={{
-                                                                                type: 'reply',
-                                                                                parentId: community._id,
-                                                                                targetId: reply._id,
-                                                                            }}/>
+                                                                        {/* 대댓글 작성자 프로필 버튼 - 삭제된 대댓글은 기본 프로필 */}
+                                                                        {!isReplyDeleted ? (
+                                                                            <ProfileButton
+                                                                                profile={profileMap[reply.userId]}
+                                                                                area="커뮤니티"
+                                                                                anchor={{
+                                                                                    type: 'reply',
+                                                                                    parentId: community._id,
+                                                                                    targetId: reply._id,
+                                                                                }}
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0"></div>
+                                                                        )}
+
                                                                         <div className="text-xs text-gray-500">
-                                    <span
-                                        className={`text-sm font-semibold ${reply.userId === community.userId ? 'text-red-500' : ''}`}>
-                                      {replyNickname}
-                                    </span>
+                            <span className={`text-sm font-semibold ${
+                                !isReplyDeleted && reply.userId === community.userId ? 'text-red-500' :
+                                    isReplyDeleted ? 'text-gray-500' : ''
+                            }`}>
+                                {replyNickname}
+                            </span>
                                                                             <span className="ml-2 text-gray-400">
-                                      {formatRelativeTime(reply.commentRegDate)}
-                                    </span>
-                                                                            {reply.userId === currentUserId || isAdmin ? (
-                                                                                <button
-                                                                                    onClick={() => openReplyDeleteModal(comment._id, reply._id)}
-                                                                                    className="text-red-500 text-xs ml-2 hover:underline"
-                                                                                >
-                                                                                    삭제
-                                                                                </button>
-                                                                            ) : (
-                                                                                <button
-                                                                                    onClick={() => handleReplyReport(reply)}
-                                                                                    className="text-purple-500 text-xs ml-2 hover:underline"
-                                                                                >
-                                                                                    신고
-                                                                                </button>
+                                {formatRelativeTime(reply.commentRegDate)}
+                            </span>
+
+                                                                            {/* 액션 버튼들 - 삭제된 대댓글은 표시하지 않음 */}
+                                                                            {!isReplyDeleted && (
+                                                                                <>
+                                                                                    {reply.userId === currentUserId || isAdmin ? (
+                                                                                        <button
+                                                                                            onClick={() => openReplyDeleteModal(comment._id, reply._id)}
+                                                                                            className="text-red-500 text-xs ml-2 hover:underline"
+                                                                                        >
+                                                                                            삭제
+                                                                                        </button>
+                                                                                    ) : (
+                                                                                        <button
+                                                                                            onClick={() => handleReplyReport(reply)}
+                                                                                            className="text-purple-500 text-xs ml-2 hover:underline"
+                                                                                        >
+                                                                                            신고
+                                                                                        </button>
+                                                                                    )}
+                                                                                </>
                                                                             )}
+
+                                                                            {/* 대댓글 내용 */}
                                                                             <div id={`reply-${reply._id}`} className="text-gray-800 mt-1">
-                                                                                {reply.commentContents}
+                                                                                {isReplyDeleted ? (
+                                                                                    <span className="text-gray-500 italic">삭제된 댓글입니다.</span>
+                                                                                ) : (
+                                                                                    reply.commentContents
+                                                                                )}
                                                                             </div>
-                                                                            {reply.replyImage && (
+
+                                                                            {/* 대댓글 이미지 - 삭제된 대댓글은 이미지 숨김 */}
+                                                                            {!isReplyDeleted && reply.replyImage && (
                                                                                 <div className="mt-2">
                                                                                     <img
                                                                                         src={
@@ -791,9 +916,10 @@ const CommunityDetail = () => {
                                                                         </div>
                                                                     </div>
 
-                                                                    {reply.subReplies && reply.subReplies.length > 0 && (
+                                                                    {/* 대대댓글 목록 */}
+                                                                    {reply.subReplies && reply.subReplies.filter(subReply => !subReply.isDeleted).length > 0 && (
                                                                         <ul className="ml-4 mt-1 space-y-2 border-l pl-2">
-                                                                            {reply.subReplies.map((subReply) => {
+                                                                            {reply.subReplies.filter(subReply => !subReply.isDeleted).map((subReply) => {
                                                                                 const subReplyNickname = userMap[subReply.userId] || subReply.userId;
                                                                                 return (
                                                                                     <li key={subReply._id}>
@@ -860,34 +986,34 @@ const CommunityDetail = () => {
                                                                         </ul>
                                                                     )}
 
+                                                                    {/* 대대댓글 작성 버튼 */}
                                                                     <button
                                                                         onClick={() => toggleSubReplyForm(reply._id, replyNickname)}
                                                                         className="text-blue-500 text-xs mt-1 hover:underline"
                                                                     >
                                                                         답글 쓰기
                                                                     </button>
+
+                                                                    {/* 대대댓글 작성 폼 */}
                                                                     {subReplyState[reply._id]?.open && (
                                                                         <div className="mt-2 ml-4 border-l pl-2">
-                                                                            {/* 대대댓글 작성 폼 */}
-                                                                            <div
-                                                                                className="border border-gray-300 rounded p-2">
-                                      <textarea
-                                          className="w-full border-none outline-none focus:ring-0 text-sm"
-                                          rows={2}
-                                          value={subReplyState[reply._id]?.text || ''}
-                                          onChange={(e) =>
-                                              setSubReplyState((prev) => ({
-                                                  ...prev,
-                                                  [reply._id]: {
-                                                      ...prev[reply._id],
-                                                      text: e.target.value.slice(0, 1000),
-                                                  },
-                                              }))
-                                          }
-                                          placeholder="답글을 입력하세요 (최대 1000자)"
-                                      />
-                                                                                <div
-                                                                                    className="flex items-center justify-between mt-2">
+                                                                            <div className="border border-gray-300 rounded p-2">
+                                                            <textarea
+                                                                className="w-full border-none outline-none focus:ring-0 text-sm"
+                                                                rows={2}
+                                                                value={subReplyState[reply._id]?.text || ''}
+                                                                onChange={(e) =>
+                                                                    setSubReplyState((prev) => ({
+                                                                        ...prev,
+                                                                        [reply._id]: {
+                                                                            ...prev[reply._id],
+                                                                            text: e.target.value.slice(0, 1000),
+                                                                        },
+                                                                    }))
+                                                                }
+                                                                placeholder="답글을 입력하세요 (최대 1000자)"
+                                                            />
+                                                                                <div className="flex items-center justify-between mt-2">
                                                                                     <label
                                                                                         className="flex items-center text-sm text-blue-600 border border-gray-300 px-2 py-1 rounded cursor-pointer">
                                                                                         사진
@@ -908,17 +1034,15 @@ const CommunityDetail = () => {
                                                                                             }}
                                                                                         />
                                                                                     </label>
-                                                                                    <span
-                                                                                        className="text-xs text-gray-400">
-                                          {(subReplyState[reply._id]?.text || '').length}/1000
-                                        </span>
+                                                                                    <span className="text-xs text-gray-400">
+                                                                    {(subReplyState[reply._id]?.text || '').length}/1000
+                                                                </span>
                                                                                 </div>
                                                                                 {subReplyState[reply._id]?.file && (
-                                                                                    <div
-                                                                                        className="mt-2 flex items-center space-x-2">
-                                          <span className="text-xs text-gray-600">
-                                            {subReplyState[reply._id]?.file.name}
-                                          </span>
+                                                                                    <div className="mt-2 flex items-center space-x-2">
+                                                                    <span className="text-xs text-gray-600">
+                                                                        {subReplyState[reply._id]?.file.name}
+                                                                    </span>
                                                                                         <button
                                                                                             type="button"
                                                                                             onClick={() =>
@@ -952,23 +1076,28 @@ const CommunityDetail = () => {
                                                         })}
                                                     </ul>
                                                 )}
-                                                <button
-                                                    onClick={() => toggleReplyForm(comment._id)}
-                                                    className="text-blue-500 text-xs mt-2 hover:underline"
-                                                >
-                                                    답글 쓰기
-                                                </button>
-                                                {state.open && (
+
+                                                {/* 대댓글 작성 버튼 - 삭제된 댓글은 표시하지 않음 */}
+                                                {!isCommentDeleted && (
+                                                    <button
+                                                        onClick={() => toggleReplyForm(comment._id)}
+                                                        className="text-blue-500 text-xs mt-2 hover:underline"
+                                                    >
+                                                        답글 쓰기
+                                                    </button>
+                                                )}
+
+                                                {/* 대댓글 작성 폼 - 삭제된 댓글은 표시하지 않음 */}
+                                                {!isCommentDeleted && state.open && (
                                                     <div className="mt-2 ml-4 border-l pl-2">
-                                                        {/* 대댓글 작성 폼 */}
                                                         <div className="border border-gray-300 rounded p-2">
-                            <textarea
-                                className="w-full border-none outline-none focus:ring-0 text-sm"
-                                rows={2}
-                                value={state.text}
-                                onChange={(e) => handleReplyTextChange(comment._id, e.target.value)}
-                                placeholder="대댓글을 입력하세요 (최대 1000자)"
-                            />
+                                        <textarea
+                                            className="w-full border-none outline-none focus:ring-0 text-sm"
+                                            rows={2}
+                                            value={state.text}
+                                            onChange={(e) => handleReplyTextChange(comment._id, e.target.value)}
+                                            placeholder="대댓글을 입력하세요 (최대 1000자)"
+                                        />
                                                             <div className="flex items-center justify-between mt-2">
                                                                 <label
                                                                     className="flex items-center text-sm text-blue-600 border border-gray-300 px-2 py-1 rounded cursor-pointer">
@@ -985,14 +1114,14 @@ const CommunityDetail = () => {
                                                                     />
                                                                 </label>
                                                                 <span className="text-xs text-gray-400">
-                                {state.text.length}/1000
-                              </span>
+                                                {state.text.length}/1000
+                                            </span>
                                                             </div>
                                                             {state.file && (
                                                                 <div className="mt-2 flex items-center space-x-2">
-                                <span className="text-xs text-gray-600">
-                                  {state.file.name}
-                                </span>
+                                                <span className="text-xs text-gray-600">
+                                                    {state.file.name}
+                                                </span>
                                                                     <button
                                                                         type="button"
                                                                         onClick={() =>
@@ -1030,6 +1159,8 @@ const CommunityDetail = () => {
                             <p className="text-gray-600">댓글이 없습니다.</p>
                         )}
                     </div>
+
+
                     <div className="mt-6">
                         <h3 className="text-xl font-semibold mb-2">댓글 작성</h3>
                         {commentError && <p className="text-red-500 mb-2">{commentError}</p>}
