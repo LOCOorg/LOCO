@@ -62,15 +62,20 @@ export const updateCommunity = async (id, updateData) => {
     }
 };
 
+// communityAPI.js에서 삭제 관련 에러 메시지 개선
 export const deleteCommunity = async (id) => {
     try {
         const response = await axios.delete(`${host}/${id}`);
         return response.data;
     } catch (error) {
         console.error("deleteCommunity error:", error);
+        if (error.response?.status === 404) {
+            throw new Error("삭제할 게시글을 찾을 수 없습니다.");
+        }
         throw error;
     }
 };
+
 
 export const recommendCommunity = async (id, userId) => {
     try {
