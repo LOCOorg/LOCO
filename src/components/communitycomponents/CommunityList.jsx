@@ -1,58 +1,65 @@
-// CommunityList.jsx
-import {useEffect, useState} from 'react';
-import {useNavigate, useSearchParams} from 'react-router-dom';
-import {fetchCommunities, fetchTopViewed, fetchTopCommented} from '../../api/communityApi.js';
-import {getUserInfo} from '../../api/userAPI.js';
+// src/components/communitycomponents/CommunityList.jsx
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { fetchCommunities, fetchTopViewed, fetchTopCommented } from '../../api/communityApi.js';
+import { getUserInfo } from '../../api/userAPI.js';
 import PageComponent from '../../common/pageComponent.jsx';
 import CommunityLayout from '../../layout/CommunityLayout/CommunityLayout.jsx';
 import LeftSidebar from '../../layout/CommunityLayout/LeftSidebar.jsx';
 import RightSidebar from '../../layout/CommunityLayout/RightSidebar.jsx';
 import useAuthStore from '../../stores/authStore.js';
 
+// 유틸리티 함수
 const formatRelativeTime = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffSeconds = Math.floor((now - date) / 1000);
-    if (diffSeconds < 60) {
-        return `${diffSeconds}초 전`;
-    } else if (diffSeconds < 3600) {
-        const minutes = Math.floor(diffSeconds / 60);
-        return `${minutes}분 전`;
-    } else if (diffSeconds < 86400) {
-        const hours = Math.floor(diffSeconds / 3600);
-        return `${hours}시간 전`;
-    } else {
-        const days = Math.floor(diffSeconds / 86400);
-        return `${days}일 전`;
-    }
+
+    if (diffSeconds < 60) return `${diffSeconds}초 전`;
+    if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}분 전`;
+    if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}시간 전`;
+    return `${Math.floor(diffSeconds / 86400)}일 전`;
 };
 
 const CommunityList = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const initialCategory = searchParams.get('category') || '전체';
+
+    // 사용자 정보
     const currentUser = useAuthStore((state) => state.user);
     const currentUserId = currentUser?._id;
     const API_HOST = import.meta.env.VITE_API_HOST;
 
+    // 페이지네이션 상태
     const [pageResponse, setPageResponse] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 5;
 
+    // 데이터 상태
     const [filteredCommunities, setFilteredCommunities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-    const [selectedSort, setSelectedSort] = useState('최신순');
     const [userMap, setUserMap] = useState({});
 
+    // 필터 및 정렬 상태
+    const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+    const [selectedSort, setSelectedSort] = useState('최신순');
+    const [keyword, setKeyword] = useState('');
+    const [searchType, setSearchType] = useState('title+content');
+
+    // 사이드바 상태
     const [topViewed, setTopViewed] = useState([]);
     const [topCommented, setTopCommented] = useState([]);
     const [sideTab, setSideTab] = useState('viewed');
 
-    const [keyword, setKeyword] = useState('');
-    const [searchType, setSearchType] = useState('title+content');
+    // 닉네임 표시 함수 (익명 처리)
+    const getDisplayNickname = (community) => {
+        if (community.isAnonymous) return '익명';
+        return userMap[community.userId] || community.userId;
+    };
 
+    // 커뮤니티 데이터 로드
     const loadCommunities = async (page) => {
         setLoading(true);
         try {
@@ -63,7 +70,7 @@ const CommunityList = () => {
                 (selectedCategory === '내 글' || selectedCategory === '내 댓글') ? currentUserId : null,
                 selectedSort,
                 keyword,
-                searchType      // 검색 타입 함께 전달
+                searchType
             );
             setPageResponse(data);
             setFilteredCommunities(data.dtoList || []);
@@ -74,63 +81,11 @@ const CommunityList = () => {
         }
     };
 
-    // 검색 실행 핸들러
+    // 이벤트 핸들러
     const handleSearch = () => {
         setCurrentPage(1);
         loadCommunities(1);
     };
-
-
-    useEffect(() => {
-        const fetchGlobalTop = async () => {
-            try {
-                const topViewedData = await fetchTopViewed();
-                setTopViewed(topViewedData);
-            } catch (error) {
-                console.error('최다 조회 데이터를 불러오지 못했습니다.', error);
-                setTopViewed([]);
-            }
-            try {
-                const topCommentedData = await fetchTopCommented();
-                setTopCommented(topCommentedData);
-            } catch (error) {
-                console.error('최다 댓글 데이터를 불러오지 못했습니다.', error);
-                setTopCommented([]);
-            }
-        };
-        fetchGlobalTop();
-    }, []);
-
-    // 현재 사용자가 필요한 카테고리일 때 userId가 로드되지 않았다면 호출하지 않음
-    useEffect(() => {
-        if ((selectedCategory === '내 글' || selectedCategory === '내 댓글') && !currentUserId) {
-            return;
-        }
-        loadCommunities(currentPage);
-    }, [currentPage, selectedCategory, selectedSort, currentUserId]);
-
-    useEffect(() => {
-        const fetchUserNames = async () => {
-            if (!pageResponse || !pageResponse.dtoList) return;
-            const userIds = new Set();
-            pageResponse.dtoList.forEach((comm) => {
-                userIds.add(comm.userId);
-            });
-            const newUserMap = {};
-            const promises = Array.from(userIds).map(async (uid) => {
-                try {
-                    const userInfo = await getUserInfo(uid);
-                    newUserMap[uid] = userInfo.nickname || userInfo.name || uid;
-                } catch (err) {
-                    newUserMap[uid] = uid;
-                    console.error(err);
-                }
-            });
-            await Promise.all(promises);
-            setUserMap(newUserMap);
-        };
-        fetchUserNames();
-    }, [pageResponse]);
 
     const handleCategoryClick = (category) => {
         setSelectedCategory(category);
@@ -146,6 +101,61 @@ const CommunityList = () => {
         setCurrentPage(page);
     };
 
+    // Effects
+    useEffect(() => {
+        const fetchGlobalTop = async () => {
+            try {
+                const [topViewedData, topCommentedData] = await Promise.all([
+                    fetchTopViewed(),
+                    fetchTopCommented()
+                ]);
+                setTopViewed(topViewedData);
+                setTopCommented(topCommentedData);
+            } catch (error) {
+                console.error('사이드바 데이터 로드 실패:', error);
+                setTopViewed([]);
+                setTopCommented([]);
+            }
+        };
+        fetchGlobalTop();
+    }, []);
+
+    useEffect(() => {
+        if ((selectedCategory === '내 글' || selectedCategory === '내 댓글') && !currentUserId) {
+            return;
+        }
+        loadCommunities(currentPage);
+    }, [currentPage, selectedCategory, selectedSort, currentUserId]);
+
+    useEffect(() => {
+        const fetchUserNames = async () => {
+            if (!pageResponse?.dtoList) return;
+
+            const userIds = new Set();
+            pageResponse.dtoList.forEach((comm) => {
+                if (comm.userId && !comm.isAnonymous) {
+                    userIds.add(comm.userId);
+                }
+            });
+
+            const newUserMap = {};
+            await Promise.all(
+                Array.from(userIds).map(async (uid) => {
+                    try {
+                        const userInfo = await getUserInfo(uid);
+                        newUserMap[uid] = userInfo.nickname || userInfo.name || uid;
+                    } catch (err) {
+                        newUserMap[uid] = uid;
+                        console.error(err);
+                    }
+                })
+            );
+            setUserMap(newUserMap);
+        };
+        fetchUserNames();
+    }, [pageResponse]);
+
+    // 로딩 상태
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -153,6 +163,8 @@ const CommunityList = () => {
             </div>
         );
     }
+
+    // 에러 상태
     if (error) {
         return <div className="text-red-500 text-center mt-4">{error}</div>;
     }
@@ -175,7 +187,7 @@ const CommunityList = () => {
             }
         >
             <div className="space-y-8">
-                {/* 헤더: 카테고리명 + 정렬 버튼 */}
+                {/* 헤더 */}
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
                         커뮤니티 목록<span className="text-blue-600"> ({selectedCategory})</span>
@@ -197,7 +209,7 @@ const CommunityList = () => {
                     </div>
                 </div>
 
-                {/* 검색폼 + 새 글 버튼 */}
+                {/* 검색 및 글쓰기 */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <select
                         value={searchType}
@@ -223,7 +235,6 @@ const CommunityList = () => {
                             onClick={handleSearch}
                             className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
                         >
-                            {/* Heroicon: Search */}
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 className="h-5 w-5"
@@ -249,7 +260,7 @@ const CommunityList = () => {
                     </button>
                 </div>
 
-                {/* 게시글 리스트 */}
+                {/* 게시글 목록 */}
                 {filteredCommunities.length === 0 ? (
                     <div className="p-6 text-center text-gray-500 bg-gray-50 rounded-md">
                         게시글이 없습니다.
@@ -266,14 +277,12 @@ const CommunityList = () => {
                                     key={community._id}
                                     className="flex bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
                                 >
-                                    {/* 썸네일 */}
                                     <img
                                         src={thumb}
                                         alt="thumbnail"
                                         className="h-20 w-28 shrink-0 object-cover rounded mr-4"
                                     />
 
-                                    {/* 콘텐츠 */}
                                     <div className="flex-1 flex flex-col justify-between">
                                         <button
                                             onClick={() => navigate(`/community/${community._id}`)}
@@ -281,42 +290,42 @@ const CommunityList = () => {
                                         >
                                             {community.communityTitle}{' '}
                                             <span className="text-sm text-gray-500">
-                                        ({community.communityCategory})
-                                      </span>
+                                                ({community.communityCategory})
+                                            </span>
                                         </button>
 
                                         <div className="mt-2 text-xs text-gray-500 flex flex-wrap gap-2">
-                                      <span>
-                                        작성일{' '}
-                                          <span className="font-medium text-gray-700">
-                                          {formatRelativeTime(community.communityRegDate)}
-                                            </span>
-                                      </span>
                                             <span>
-                                            조회수{' '}
+                                                작성일{' '}
                                                 <span className="font-medium text-gray-700">
-                                          {community.communityViews}
+                                                    {formatRelativeTime(community.communityRegDate)}
+                                                </span>
                                             </span>
-                                        </span>
+                                            <span>
+                                                조회수{' '}
+                                                <span className="font-medium text-gray-700">
+                                                    {community.communityViews}
+                                                </span>
+                                            </span>
                                             <span>
                                                 추천{' '}
                                                 <span className="font-medium text-gray-700">
-                                          {community.recommended}
-                                        </span>
-                                          </span>
-                                            <span>
-                                            댓글{' '}
-                                                <span className="font-medium text-gray-700">
-                                              {community.commentCount ?? 0}
+                                                    {community.recommended}
+                                                </span>
                                             </span>
-                                          </span>
+                                            <span>
+                                                댓글{' '}
+                                                <span className="font-medium text-gray-700">
+                                                    {community.commentCount ?? 0}
+                                                </span>
+                                            </span>
                                         </div>
 
                                         <div className="mt-1 text-xs text-gray-500">
                                             작성자:{' '}
                                             <span className="font-medium text-gray-700">
-                                        {userMap[community.userId] || community.userId}
-                                      </span>
+                                                {getDisplayNickname(community)}
+                                            </span>
                                         </div>
                                     </div>
                                 </li>
@@ -337,7 +346,6 @@ const CommunityList = () => {
             </div>
         </CommunityLayout>
     );
-
 };
 
 export default CommunityList;
