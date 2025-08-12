@@ -118,7 +118,12 @@ export const addReply = async (communityId, commentId, replyData) => {
     try {
         const response = await axios.post(
             `${host}/${communityId}/comments/${commentId}/replies`,
-            replyData
+            replyData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            }
         );
         return response.data;
     } catch (error) {
