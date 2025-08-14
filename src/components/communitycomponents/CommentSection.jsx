@@ -547,7 +547,7 @@ const CommentSection = ({
                                                                                     )}
                                                                                     <span
                                                                                         className={`text-sm font-semibold ${
-                                                                                            subReply.userId === community.userId ? 'text-red-500' : ''
+                                                                                            subReply.userId === community.userId ? 'text-gray-500' : ''
                                                                                         }`}
                                                                                     >
                                                                                         {getDisplayNickname(subReply)}
