@@ -17,7 +17,7 @@ const CommunityForm = () => {
     /* ─────────────────── 기본 입력 ─────────────────── */
     const [title, setTitle] = useState('');
     const [contents, setContents] = useState('');
-    const [category, setCategory] = useState('자유');
+    const [category, setCategory] = useState('전체');
     // ✅ 익명 작성 여부 상태 추가
     const [isAnonymous, setIsAnonymous] = useState(false);
 
@@ -102,11 +102,15 @@ const CommunityForm = () => {
             setError('게시글 생성에 실패했습니다.');
         }
     };
+    const handleCategoryNav = (category) => navigate(`/community?category=${category}`);
 
     /* ─────────────────── 렌더 ─────────────────── */
     return (
         <CommunityLayout
-            leftSidebar={<LeftSidebar />}
+            leftSidebar={        <LeftSidebar
+                selectedCategory={category}
+                handleCategoryClick={handleCategoryNav}
+            />}
             rightSidebar={
                 <RightSidebar
                     sideTab={sideTab}
