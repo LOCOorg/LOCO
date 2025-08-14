@@ -1,5 +1,6 @@
 // src/api/userAPI.js
-import axios from "axios"; // axios 모듈 import
+import axios from "axios";
+import instance from "./axiosInstance.js"; // axios 모듈 import
 
 const host = `${import.meta.env.VITE_API_HOST}/api/user`;
 
@@ -227,5 +228,29 @@ export const updateUserPrefs = async (userId, prefs) => {
         return response.data.data;
     } catch (error) {
         throw new Error(error.response?.data.message || error.message);
+    }
+};
+
+
+// 닉네임 중복 체크
+export const checkNickname = async (nickname, userId = null) => {
+    try {
+        const params = userId ? { userId } : {};
+        const response = await instance.get(`/api/user/check-nickname/${encodeURIComponent(nickname)}`, { params });
+        return response.data;
+    } catch (error) {
+        console.error('닉네임 중복 체크 에러:', error);
+        throw error;
+    }
+};
+
+// 닉네임/성별 변경 가능 여부 확인
+export const checkChangeAvailability = async (userId) => {
+    try {
+        const response = await instance.get(`/api/user/${userId}/change-availability`);
+        return response.data;
+    } catch (error) {
+        console.error('변경 가능 여부 확인 에러:', error);
+        throw error;
     }
 };
