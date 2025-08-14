@@ -30,6 +30,7 @@ const GlobalChatNotification = () => {
     );
     const toastEnabled = useNotificationStore((s) => s.toastEnabled);
     const clearNotifications = useNotificationStore((s) => s.clearNotifications);
+    const cleanupOldNotifications = useNotificationStore((s) => s.cleanupOldNotifications);
 
     /* ----------------- 컴포넌트 상태 ----------------- */
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -81,11 +82,12 @@ const GlobalChatNotification = () => {
             setTimeout(() => {
                 setToasts((prev) => prev.filter((t) => t.id !== id));
             }, 5000);
+            cleanupOldNotifications();
         };
 
         socket.on('chatNotification', handler);
         return () => socket.off('chatNotification', handler);
-    }, [socket, pathname, toastEnabled, addNotification]);
+    }, [socket, pathname, toastEnabled, addNotification, cleanupOldNotifications]);
 
     /* ----------------- UI 핸들러 ----------------- */
     const toggleDropdown = () => setDropdownOpen((p) => !p);

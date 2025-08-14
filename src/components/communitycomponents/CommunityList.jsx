@@ -277,11 +277,6 @@ const CommunityList = () => {
                                     key={community._id}
                                     className="flex bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
                                 >
-                                    <img
-                                        src={thumb}
-                                        alt="thumbnail"
-                                        className="h-20 w-28 shrink-0 object-cover rounded mr-4"
-                                    />
 
                                     <div className="flex-1 flex flex-col justify-between">
                                         <button
@@ -328,6 +323,13 @@ const CommunityList = () => {
                                             </span>
                                         </div>
                                     </div>
+                                    {community.communityImages?.length > 0 && (
+                                        <img
+                                            src={thumb}
+                                            alt="thumbnail"
+                                            className="h-20 w-28 shrink-0 object-cover rounded mr-4"
+                                        />
+                                    )}
                                 </li>
                             );
                         })}

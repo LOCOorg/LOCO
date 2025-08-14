@@ -14,6 +14,7 @@ export default function LogoutButton() {
         try {
             // 1) 클라이언트 상태 먼저 정리
             clearUser();
+            localStorage.clear();
             
             // 2) 서버에 로그아웃 요청 (서버에서 쿠키 삭제)
             console.log('서버에 로그아웃 요청 전송');
