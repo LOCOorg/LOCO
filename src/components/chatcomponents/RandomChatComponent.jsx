@@ -12,6 +12,7 @@ import {
     fetchUserLeftRooms
 } from "../../api/chatAPI";
 import CommonModal from "../../common/CommonModal";
+import SimpleProfileModal from "../MyPageComponent/SimpleProfileModal.jsx";
 import useAuthStore from "../../stores/authStore.js";
 import useBlockedStore from "../../stores/useBlockedStore.js";
 
@@ -26,6 +27,8 @@ const RandomChatComponent = () => {
     const [modalButtons, setModalButtons] = useState([]);
     const [showBlockedModal, setShowBlockedModal] = useState(false);
     const [timeLeft, setTimeLeft]   = useState(null);   // ☆ 추가
+    const [selectedProfile, setSelectedProfile] = useState(null);
+    const [showProfileModal, setShowProfileModal] = useState(false);
 
     const blockedUsers          = useBlockedStore((s) => s.blockedUsers);
     const setBlockedUsersStore  = useBlockedStore((s) => s.setBlockedUsers);
@@ -106,12 +109,28 @@ const RandomChatComponent = () => {
         try {
             await unblockUser(userId, blockedUserId);
             removeBlockedUser(blockedUserId);
+            setModalTitle("성공");
+            setModalMessage("차단이 해제되었습니다.");
+            setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
+            setModalOpen(true);
         } catch {
             setModalTitle("에러");
             setModalMessage("차단 해제에 실패했습니다.");
             setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
             setModalOpen(true);
         }
+    };
+
+    // 프로필 클릭 핸들러
+    const handleProfileClick = (user) => {
+        setSelectedProfile(user);
+        setShowProfileModal(true);
+    };
+
+    // 프로필 모달 닫기
+    const handleCloseProfileModal = () => {
+        setShowProfileModal(false);
+        setSelectedProfile(null);
     };
 
     // 랜덤 채팅방 찾기 및 생성 함수
@@ -178,7 +197,7 @@ const RandomChatComponent = () => {
             const tryMatch = async () => {
                 const age         = calculateAge(userInfo.birthdate);
                 const ageGroup    = age >= 19 ? "adult" : "minor";
-                const blockedIds  = blockedUsers.map((u) => u._id);
+                const blockedIds  = (blockedUsers || []).map((u) => u._id);
 
                 // (1) 방 목록 조회
                 const query = {
@@ -427,26 +446,39 @@ const RandomChatComponent = () => {
                 showCancel={false}
                 onConfirm={() => setShowBlockedModal(false)}
             >
-                {blockedUsers.length > 0 ? (
+                {(blockedUsers || []).length > 0 ? (
                     <ul className="space-y-3 max-h-64 overflow-y-auto">
-                        {blockedUsers.map(u => (
+                        {(blockedUsers || []).map(u => (
                             <li
                                 key={u._id}
                                 className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm
-                         hover:bg-gray-50 transition"
+                         hover:bg-gray-50 transition cursor-pointer"
+                                onClick={() => handleProfileClick(u)}
                             >
                                 <div className="flex items-center space-x-3">
-                                    {u.photo?.[0] && (
-                                        <img
-                                            src={u.photo[0]}
-                                            alt={u.nickname}
-                                            className="w-10 h-10 rounded-full object-cover"
-                                        />
-                                    )}
+                                    {/* 프로필 이미지 */}
+                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                        {u.profilePhoto ? (
+                                            <img
+                                                src={u.profilePhoto}
+                                                alt={u.nickname}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                                                <span className="text-white font-medium text-sm">
+                                                    {u.nickname?.[0]?.toUpperCase() || '?'}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
                                     <span className="font-medium text-gray-800">{u.nickname}</span>
                                 </div>
                                 <button
-                                    onClick={() => handleUnblock(u._id)}
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // 클릭 이벤트 버블링 방지
+                                        handleUnblock(u._id);
+                                    }}
                                     className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
                                 >
                                     차단 해제
@@ -458,6 +490,15 @@ const RandomChatComponent = () => {
                     <p className="text-gray-600 text-center">차단된 사용자가 없습니다.</p>
                 )}
             </CommonModal>
+
+            {/* 프로필 모달 */}
+            {showProfileModal && selectedProfile && (
+                <SimpleProfileModal
+                    profile={selectedProfile}
+                    onClose={handleCloseProfileModal}
+                    area="차단목록"
+                />
+            )}
         </div>
     );
 
