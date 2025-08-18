@@ -15,6 +15,8 @@ function QnaWriteComponent() {
     const [qnaData, setQnaData] = useState({
         qnaTitle: '',
         qnaContents: '',
+        isAnonymous: false,
+        isAdminOnly: false,
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -32,10 +34,11 @@ function QnaWriteComponent() {
     }, [user]);
 
     const handleChange = (e) => {
-        setQnaData({
-            ...qnaData,
-            [e.target.name]: e.target.value,
-        });
+        const { name, type, value, checked } = e.target;
+        setQnaData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value,
+        }));
     };
 
     const confirmSubmit = async () => {
@@ -76,6 +79,26 @@ function QnaWriteComponent() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                    <label>
+                        <input
+                            type="checkbox"
+                            name="isAnonymous"
+                            checked={qnaData.isAnonymous}
+                            onChange={handleChange}
+                        />
+                        익명으로 작성
+                    </label>
+                    </div>
+                    <label>
+                        <input
+                            type="checkbox"
+                            name="isAdminOnly"
+                            checked={qnaData.isAdminOnly}
+                            onChange={handleChange}
+                        />
+                        비공개 작성
+                    </label>
                     {/* 제목 */}
                     <div>
                         <label
