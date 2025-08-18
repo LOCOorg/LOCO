@@ -1,7 +1,7 @@
 import React, {useMemo, useState} from 'react';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
 import useAuthStore from '../../stores/authStore';
-import {sendFriendRequest, blockUser, deleteFriend} from "../../api/userAPI.js";
+import {sendFriendRequest, blockUser, deleteFriend, unblockUser} from "../../api/userAPI.js";
 import CommonModal from '../../common/CommonModal.jsx';
 import PhotoGallery from './PhotoGallery.jsx';
 import { useNavigate } from 'react-router-dom';
@@ -14,13 +14,17 @@ import {CheckIcon, XMarkIcon} from "@heroicons/react/24/solid";
 
 const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requestId, onAccept, onDecline }) => {
     const authUser = useAuthStore(state => state.user);
+    const blockedUsers = useBlockedStore(state => state.blockedUsers);
     const isOwnProfile = authUser && profile._id === authUser._id; // 내 프로필인지 확인
+    const isBlocked = blockedUsers.some(blocked => blocked._id === profile._id); // 차단된 사용자인지 확인
     const [isReportModalVisible, setIsReportModalVisible] = useState(false);
     const [alertModalOpen, setAlertModalOpen] = useState(false);
     const [alertModalMessage, setAlertModalMessage] = useState("");
     const [confirmBlockOpen, setConfirmBlockOpen] = useState(false);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const [confirmUnblockOpen, setConfirmUnblockOpen] = useState(false);
     const addBlockedUser = useBlockedStore((s) => s.addBlockedUser);
+    const removeBlockedUser = useBlockedStore((s) => s.removeBlockedUser);
     const setUser    = useAuthStore((s) => s.setUser);
 
     const friends = useFriendListStore((s) => s.friends);              // 추가
@@ -96,6 +100,19 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
         }
         setAlertModalOpen(true);
         onClose();
+    };
+
+    const handleUnblockUser = async () => {
+        try {
+            await unblockUser(authUser._id, profile._id);
+            removeBlockedUser(profile._id);
+            setAlertModalMessage("차단이 해제되었습니다.");
+        } catch (error) {
+            setAlertModalMessage(error.response?.data?.message || error.message);
+        } finally {
+            setConfirmUnblockOpen(false);
+            setAlertModalOpen(true);
+        }
     };
 
     return createPortal(
@@ -201,14 +218,26 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
                                 </button>
                             )}
 
-                            {/* 차단 : 빨강 700 */}
-                            <button
-                                onClick={() => setConfirmBlockOpen(true)}
-                                className="inline-flex items-center justify-center gap-1 rounded-md
-                   bg-blue-600 px-4 py-2 text-sm font-medium text-white
-                   shadow-sm transition hover:bg-rose-700 active:scale-95">
-                                차단
-                            </button>
+                            {/* 차단/차단해제 버튼 */}
+                            {isBlocked ? (
+                                <button
+                                    onClick={() => setConfirmUnblockOpen(true)}
+                                    className="inline-flex items-center justify-center gap-1 rounded-md
+                     bg-green-600 px-4 py-2 text-sm font-medium text-white
+                     shadow-sm transition hover:bg-green-700 active:scale-95"
+                                >
+                                    차단 해제
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setConfirmBlockOpen(true)}
+                                    className="inline-flex items-center justify-center gap-1 rounded-md
+                     bg-blue-600 px-4 py-2 text-sm font-medium text-white
+                     shadow-sm transition hover:bg-rose-700 active:scale-95"
+                                >
+                                    차단
+                                </button>
+                            )}
 
                             {/* 신고 : 빨강 500 */}
                             {!hideReport && (
@@ -336,6 +365,32 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
                             onConfirm={handleDeleteFriend}
                         >
                             <p>정말 이 친구를 삭제하시겠습니까?</p>
+                        </CommonModal>
+                    </div>
+                </div>
+            )}
+
+            {/* ---------- 차단 해제 확인 모달 ---------- */}
+            {confirmUnblockOpen && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-60"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmUnblockOpen(false);
+                    }}
+                >
+                    <div
+                        className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-sm relative"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <CommonModal
+                            isOpen={confirmUnblockOpen}
+                            onClose={() => setConfirmUnblockOpen(false)}
+                            title="차단 해제"
+                            showCancel={true}
+                            onConfirm={handleUnblockUser}
+                        >
+                            <p>정말 이 사용자를 차단 해제하시겠습니까?</p>
                         </CommonModal>
                     </div>
                 </div>
