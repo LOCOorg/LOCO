@@ -4,7 +4,7 @@ import QnaDetailModal from './QnaDetailModal';
 import { getQnaPageByStatus, deleteQna } from '../../api/qnaAPI.js';
 import useAuthStore from '../../stores/authStore';
 import CommonModal from '../../common/CommonModal.jsx';
-import {toKST} from "../../util/dateUtils.js";
+import {toKST} from "../../utils/dateUtils.js";
 
 function QnaListComponent() {
     // 현재 활성 탭: "답변대기" 또는 "답변완료"
