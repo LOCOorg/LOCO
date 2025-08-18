@@ -5,6 +5,7 @@ import useAuthStore from '../stores/authStore';
 import FriendChatDropdown from '../components/MyPageComponent/FriendChatDropdown.jsx';
 import FriendRequestNotification from '../components/MyPageComponent/FriendRequestNotification.jsx';
 import GlobalFriendChatOverlay from "../components/chatcomponents/GlobalFriendChatOverlay.jsx";
+import LoginModal from "../components/loginComponent/LoginModal.jsx";
 import React, {useEffect, useRef, useState} from "react";
 //import LogoutButton from '../components/authComponent/LogoutButton.jsx';
 //import MyMenus from './layoutMyMenus/MyMenus.jsx';
@@ -16,6 +17,7 @@ import NotificationToggleButton from "./NotificationToggleButton.jsx";
 const BasicLayout = ({ children }) => {
     const { user } = useAuthStore();
     const [overflowOpen, setOverflowOpen] = useState(false);
+    const [loginModalOpen, setLoginModalOpen] = useState(false);
 
     // ① 드롭다운 전체를 감쌀 ref
     const dropdownRef = useRef(null);
@@ -122,9 +124,12 @@ const BasicLayout = ({ children }) => {
                         // 내부에서 authStore.user._id 로 프로필을 가져와 렌더링
                         <MyMenuDrop user={user} />
                     ) : (
-                        <Link to="/loginPage">
-                            <button className="hover:text-gray-300 whitespace-nowrap">로그인</button>
-                        </Link>
+                        <button 
+                            onClick={() => setLoginModalOpen(true)}
+                            className="hover:text-gray-300 whitespace-nowrap"
+                        >
+                            로그인
+                        </button>
                     )}
                 </div>
             </header>
@@ -135,6 +140,12 @@ const BasicLayout = ({ children }) => {
 
 
             <GlobalFriendChatOverlay />  {/* 전역 채팅 */}
+            
+            {/* 로그인 모달 */}
+            <LoginModal 
+                isOpen={loginModalOpen} 
+                onClose={() => setLoginModalOpen(false)} 
+            />
         </div>
     );
 };
