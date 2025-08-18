@@ -3,6 +3,9 @@
 import React from "react";
 import UserFriendList from "./UserFriendList.jsx";
 import PhotoGallery  from "./PhotoGallery";
+import NicknameHistoryList from "./NicknameHistoryList.jsx";
+import GenderHistoryList from "./GenderHistoryList.jsx";
+import BlockedUsersList from "./BlockedUsersList.jsx";
 
 
 
@@ -19,6 +22,9 @@ export default function HistoryPanel({ user, view, className = "" }) {
     const viewComponents = {
         friends: UserFriendList,
         photos:  PhotoGallery,
+        "nickname-history": NicknameHistoryList,
+        "gender-history": GenderHistoryList,
+        "blocked-users": BlockedUsersList,
     };
 
     const Selected = viewComponents[view];

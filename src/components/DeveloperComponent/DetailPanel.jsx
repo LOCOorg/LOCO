@@ -9,6 +9,9 @@ import axios from "axios";
 const modes = [
     { key: "friends", label: "친구내역" },
     { key: "photos",  label: "사진 업로드내역" },
+    { key: "nickname-history", label: "닉네임 히스토리" },
+    { key: "gender-history", label: "성별 히스토리" },
+    { key: "blocked-users", label: "차단목록" },
     // { key: "logs",    label: "활동 내역" },  // 예시로 추가 가능
 ];
 
@@ -70,8 +73,7 @@ const DetailPanel = ({ user, view, setView }) => {
     return (
         <div className="w-1/3 p-6 bg-white overflow-y-auto">
             <h2 className="mb-4 text-2xl font-semibold border-b border-gray-300 pb-2">User Details</h2>
-            <div className="space-y-4 max-w-xl">
-                <div className="flex space-x-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4">
                     {modes.map(modeItem => (
                         <button
                             key={modeItem.key}
@@ -86,6 +88,7 @@ const DetailPanel = ({ user, view, setView }) => {
                         </button>
                     ))}
                 </div>
+                <div className="space-y-4 max-w-xl">
                 {/* 프로필 사진 */}
                 <div>
                     <label className="block font-bold mb-1">Profile Photo:</label>
