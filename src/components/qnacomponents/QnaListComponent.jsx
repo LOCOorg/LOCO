@@ -37,6 +37,13 @@ function QnaListComponent() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
 
+    // QnA 필터링(관리자만 볼 수 있음 처리)
+    const isAdmin = user?.role === 'admin' || user?.userLv >= 2; // admin 판정
+    const isOwner = (qna, user) =>
+        user &&
+        (String(user._id) === String(qna.userId) ||
+            String(user._id) === String(qna.userId?._id));
+
     // "답변대기" 목록 데이터 불러오기 (검색어 반영)
     useEffect(() => {
         const fetchWaitingQnas = async () => {
@@ -219,33 +226,39 @@ function QnaListComponent() {
                 <>
                     {waitingQnas.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {waitingQnas.map((qna) => (
+                            {waitingQnas.map(qna => {
+                                const hide = qna.isAdminOnly && !isAdmin && !isOwner(qna, user);
+                                const showNickname = !qna.isAnonymous || isAdmin || isOwner(qna, user);
+                                return (
                                 <div
-                                    key={qna._id}
-                                    onClick={() => handleQnaClick(qna)}
-                                    className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-xl transform hover:scale-105 transition p-6 cursor-pointer"
-                                >
-                                    <h3 className="text-xl font-semibold text-gray-800 mb-2">{qna.qnaTitle}</h3>
-                                    <p className="text-sm text-gray-500 mb-4">작성자: {qna.userId?.nickname || "알 수 없음"}</p>
-                                    <p className="text-gray-600 leading-relaxed mb-6">
-                                        {qna.qnaContents.substring(0, 100)}…
-                                    </p>
-                                    <p className="text-sm text-gray-500 mb-4">작성일: {toKST(qna.qnaRegdate)}</p>
-                                    <div className="flex justify-between items-center text-sm">
+                                key={qna._id}
+                            onClick={() => handleQnaClick(qna)}
+                            className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-xl transform hover:scale-105 transition p-6 cursor-pointer"
+                        >
+                            <h3 className="text-xl font-semibold text-gray-800 mb-2">{hide ? '비공개 게시글입니다.' : qna.qnaTitle}</h3>
+                            <p className="text-sm text-gray-500 mb-4">작성자: {showNickname ? (qna.userNickname || qna.userId?.nickname || "알 수 없음") : '익명'}</p>
+                            <p className="text-gray-600 leading-relaxed mb-6">
+                                {hide ? <i>비공개</i> : qna.qnaContents.substring(0, 100) + '…'}
+                            </p>
+                            <p className="text-sm text-gray-500 mb-4">작성일: {toKST(qna.qnaRegdate)}</p>
+                            <div className="flex justify-between items-center text-sm">
                                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
                                         {qna.qnaStatus}
                                       </span>
-                                        {(user?.userLv >= 2 || user?._id === qna.userId?._id) && (
-                                            <button
-                                                onClick={e => { e.stopPropagation(); requestDelete(qna._id); }}
-                                                className="px-3 py-1 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition"
-                                            >
-                                                삭제
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                                {(user?.userLv >= 2 || user?._id === qna.userId?._id) && (
+                                    <button
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            requestDelete(qna._id);
+                                        }}
+                                        className="px-3 py-1 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition"
+                                    >
+                                        삭제
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                                )})}
                         </div>
                     ) : (
                         <p className="text-center text-gray-500">검색 조건에 맞는 문의가 없습니다.</p>
@@ -293,37 +306,43 @@ function QnaListComponent() {
                 <>
                     {answeredQnas.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {answeredQnas.map((qna) => (
+                            {answeredQnas.map(qna => {
+                                const hide = qna.isAdminOnly && !isAdmin && !isOwner(qna, user);
+                                const showNickname = !qna.isAnonymous || isAdmin || isOwner(qna, user);
+                                return(
                                 <div
-                                    key={qna._id}
-                                    onClick={() => handleQnaClick(qna)}
-                                    className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-xl transform hover:scale-105 transition p-6 cursor-pointer"
-                                >
-                                    <h3 className="text-xl font-semibold text-gray-800 mb-2">{qna.qnaTitle}</h3>
-                                    <p className="text-sm text-gray-500 mb-4">
-                                        작성자: {qna.userId?.nickname || "알 수 없음"}
-                                        <span className="ml-4">답변자: {qna.answerUserId?.nickname || "알 수 없음"}</span>
-                                    </p>
-                                    <p className="text-gray-600 leading-relaxed mb-6">
-                                        {qna.qnaContents.substring(0, 100)}…
-                                    </p>
-                                    <p className="text-sm text-gray-500 mb-4">작성일: {toKST(qna.qnaRegdate)}</p>
-                                    <p className="text-sm text-gray-500 mb-4">답변일: {toKST(qna.updatedAt)}</p>
-                                    <div className="flex justify-between items-center text-sm">
+                                key={qna._id}
+                            onClick={() => handleQnaClick(qna)}
+                            className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-xl transform hover:scale-105 transition p-6 cursor-pointer"
+                        >
+                            <h3 className="text-xl font-semibold text-gray-800 mb-2">{hide ? '비공개 게시글입니다.' : qna.qnaTitle}</h3>
+                            <p className="text-sm text-gray-500 mb-4">
+                                작성자: {showNickname ? (qna.userNickname || qna.userId?.nickname || "알 수 없음") : '익명'}
+                                <span className="ml-4">답변자: {qna.answerUserId?.nickname || "알 수 없음"}</span>
+                            </p>
+                            <p className="text-gray-600 leading-relaxed mb-6">
+                                {hide ? <i>비공개</i> : qna.qnaContents.substring(0, 100) + '…'}
+                            </p>
+                            <p className="text-sm text-gray-500 mb-4">작성일: {toKST(qna.qnaRegdate)}</p>
+                            <p className="text-sm text-gray-500 mb-4">답변일: {toKST(qna.updatedAt)}</p>
+                            <div className="flex justify-between items-center text-sm">
                                       <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full">
                                         {qna.qnaStatus}
                                       </span>
-                                        {(user?.userLv >= 2 || user?._id === qna.userId?._id) && (
-                                            <button
-                                                onClick={e => { e.stopPropagation(); requestDelete(qna._id); }}
-                                                className="px-3 py-1 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition"
-                                            >
-                                                삭제
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                                {(user?.userLv >= 2 || user?._id === qna.userId?._id) && (
+                                    <button
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            requestDelete(qna._id);
+                                        }}
+                                        className="px-3 py-1 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition"
+                                    >
+                                        삭제
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                                )})}
                         </div>
                     ) : (
                         <p className="text-center text-gray-500">검색 조건에 맞는 문의가 없습니다.</p>

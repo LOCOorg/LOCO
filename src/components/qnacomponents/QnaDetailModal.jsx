@@ -10,6 +10,16 @@ function QnaDetailModal({ qna, onClose }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    const isAdmin = user?.role === 'admin' || user?.userLv >= 2;
+    const isOwner = user && (
+        String(user._id) === String(qna.userId) ||
+        String(user._id) === String(qna.userId?._id)
+    );
+// QnA 내용 및 답변 표시 로직
+    const shouldHideContent = qna.isAdminOnly && !isAdmin && !isOwner;
+    const showNickname = !qna.isAnonymous || isAdmin || isOwner;
+
+
     const handleAnswerSubmit = async () => {
         setLoading(true);
         setError('');
@@ -53,12 +63,12 @@ function QnaDetailModal({ qna, onClose }) {
 
                 {/* Header */}
                 <h2 className="text-2xl font-semibold text-gray-800 mb-3">
-                    {qna.qnaTitle}
+                    {shouldHideContent ? '비공개 게시글입니다.' : qna.qnaTitle}
                 </h2>
                 <div className="flex text-sm text-gray-500 mb-5 space-x-6">
                     <div>
                         <span className="font-medium text-gray-700">작성자</span>:{' '}
-                        {qna.userId?.nickname || '알 수 없음'}
+                        {showNickname ? (qna.userNickname || qna.userId?.nickname || "알 수 없음") : '익명'}
                     </div>
                     <div>
                         <span className="font-medium text-gray-700">답변자</span>:{' '}
@@ -68,14 +78,14 @@ function QnaDetailModal({ qna, onClose }) {
 
                 {/* Question Content */}
                 <div className="prose prose-sm max-w-full mb-6 text-gray-700">
-                    {qna.qnaContents}
+                    {shouldHideContent ? '비공개 게시글입니다. 관리자만 내용을 볼 수 있습니다.' : qna.qnaContents}
                 </div>
 
                 {/* Existing Answer */}
                 {qna.qnaAnswer && !isEditing && (
                     <div className="bg-gray-50 p-4 rounded-lg mb-5 border border-gray-200">
                         <h3 className="text-lg font-medium text-gray-800 mb-2">답변</h3>
-                        <p className="text-gray-700">{qna.qnaAnswer}</p>
+                        <p className="text-gray-700">{shouldHideContent ? '비공개 답변입니다.' : qna.qnaAnswer}</p>
                     </div>
                 )}
 
