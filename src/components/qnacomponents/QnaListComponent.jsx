@@ -245,6 +245,7 @@ function QnaListComponent() {
                                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
                                         {qna.qnaStatus}
                                       </span>
+                                {qna.isAdminOnly && <span style={{ color: 'gray', fontWeight: 'bold' }}>비공개</span>}
                                 {(user?.userLv >= 2 || user?._id === qna.userId?._id) && (
                                     <button
                                         onClick={e => {
@@ -329,6 +330,7 @@ function QnaListComponent() {
                                       <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full">
                                         {qna.qnaStatus}
                                       </span>
+                                {qna.isAdminOnly && <span style={{ color: 'gray', fontWeight: 'bold' }}>비공개</span>}
                                 {(user?.userLv >= 2 || user?._id === qna.userId?._id) && (
                                     <button
                                         onClick={e => {
