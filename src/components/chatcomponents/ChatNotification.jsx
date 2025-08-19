@@ -28,7 +28,7 @@ const GlobalChatNotification = () => {
     const removeNotificationsByRoom = useNotificationStore(
         (s) => s.removeNotificationsByRoom
     );
-    const toastEnabled = useNotificationStore((s) => s.toastEnabled);
+    const chatPreviewEnabled = useNotificationStore((s) => s.chatPreviewEnabled);
     const clearNotifications = useNotificationStore((s) => s.clearNotifications);
     const cleanupOldNotifications = useNotificationStore((s) => s.cleanupOldNotifications);
 
@@ -64,7 +64,7 @@ const GlobalChatNotification = () => {
             if (pathname.startsWith(`/chat/${data.chatRoom}`)) return;
 
             /* 토스트가 꺼져 있으면 드롭다운 목록만 추가 */
-            if (!toastEnabled) {
+            if (!chatPreviewEnabled) {
                 addNotification({ id: Date.now(), ...data });
                 return;
             }
@@ -87,7 +87,7 @@ const GlobalChatNotification = () => {
 
         socket.on('chatNotification', handler);
         return () => socket.off('chatNotification', handler);
-    }, [socket, pathname, toastEnabled, addNotification, cleanupOldNotifications]);
+    }, [socket, pathname, chatPreviewEnabled, addNotification, cleanupOldNotifications]);
 
     /* ----------------- UI 핸들러 ----------------- */
     const toggleDropdown = () => setDropdownOpen((p) => !p);
@@ -117,7 +117,7 @@ const GlobalChatNotification = () => {
     return (
         <div className="relative" ref={dropdownRef}>
             {/* ────────── 토스트 ────────── */}
-            {toastEnabled && (
+            {chatPreviewEnabled && (
             <div className="fixed top-20 right-4 z-[1100] space-y-3">
                 {toasts.map((toast) => (
                     <div

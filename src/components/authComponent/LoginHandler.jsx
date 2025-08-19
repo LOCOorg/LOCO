@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"; // URL 쿼리 �
 // import axios from "axios";                                // HTTP 요청 라이브러리 임포트
 import { loginWithKakao } from '../../api/authAPI.js';
 import useAuthStore from "../../stores/authStore.js";
+import useNotificationStore from "../../stores/notificationStore.js";
 /**
  * LoginHandler 컴포넌트
  * - URL 쿼리에서 인가 코드를 추출하고, 백엔드의 /api/auth/kakao/callback API를 호출합니다.
@@ -21,6 +22,9 @@ const LoginHandler = () => {                              // 함수 컴포넌트
     const setAccessToken = useAuthStore(s => s.setAccessToken);
     const setUser        = useAuthStore(s => s.setUser);
 
+    // ✅ notificationStore 동기화 함수 추가
+    const syncWithUserPrefs = useNotificationStore(s => s.syncWithUserPrefs);
+
 
     useEffect(() => {
         if (!code) return;
@@ -31,13 +35,18 @@ const LoginHandler = () => {                              // 함수 컴포넌트
                     navigate('/signupPage');
                 } else if (data.status === 'success') {
                     setUser(data.user);
+                    // ✅ 알림 설정 동기화
+                    await syncWithUserPrefs({
+                        friendReqEnabled: data.user.friendReqEnabled ?? true,
+                        chatPreviewEnabled: data.user.chatPreviewEnabled ?? true,
+                    });
                     navigate('/');
                 }
             } catch (err) {
                 console.error('카카오 로그인 처리 에러:', err);
             }
         })();
-    }, [code, navigate, setAccessToken, setUser]);
+    }, [code, navigate, setAccessToken, setUser, syncWithUserPrefs]);
 
 
 
