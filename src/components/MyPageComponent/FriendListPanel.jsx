@@ -11,6 +11,7 @@ import CommonModal from "../../common/CommonModal.jsx";
 import useAuthStore from "../../stores/authStore.js";
 import useFriendChatStore from "../../stores/useFriendChatStore.js";
 import useFriendListStore from "../../stores/useFriendListStore.js";
+import { useOnlineStatus } from "../../hooks/useOnlineStatus.js";
 
 const FriendListPanel = () => {
     const [user, setUser] = useState(null);
@@ -28,6 +29,10 @@ const FriendListPanel = () => {
 
     const authUser = useAuthStore((state) => state.user);
     const { openFriendChat, addFriendRoom  } = useFriendChatStore();
+
+    // 🔧 친구들의 온라인 상태 추적 (이미 백엔드에서 온라인 상태를 내려주지만 실시간 업데이트를 위해 추가)
+    const friendIds = friends.map(friend => friend._id).filter(Boolean);
+    const { onlineStatus } = useOnlineStatus(friendIds);
 
     const PAGE_SIZE = 5;
 
@@ -129,19 +134,40 @@ const FriendListPanel = () => {
                         <div className="flex-1 overflow-y-auto">
                             {friends.length ? (
                                 <ul className="divide-y divide-gray-200">
-                                    {friends.map((f) => (
-                                        <li key={f._id} className="p-3 flex items-center">
-                                            <div className="cursor-pointer" onClick={() => {}}>
-                                                <ProfileButton profile={f} size="sm" area="친구채팅"/>
-                                            </div>
-                                            <span
-                                                className="ml-3 font-medium hover:text-blue-600 cursor-pointer"
-                                                onClick={() => handleFriendSelect(f)}
-                                            >
-                        {f.nickname}
-                      </span>
-                                        </li>
-                                    ))}
+                                    {friends.map((f) => {
+                                        // 친구의 온라인 상태: 백엔드에서 온 데이터 우선, 실시간 데이터로 fallback
+                                        const isOnline = f.isOnline ?? onlineStatus[f._id] ?? false;
+                                        
+                                        return (
+                                            <li key={f._id} className="p-3 flex items-center justify-between">
+                                                <div className="flex items-center">
+                                                    <div className="cursor-pointer relative" onClick={() => {}}>
+                                                        <ProfileButton profile={f} size="sm" area="친구채팅"/>
+                                                        {/* 온라인 상태 지시자 */}
+                                                        <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+                                                            isOnline ? 'bg-green-400' : 'bg-gray-400'
+                                                        }`} />
+                                                    </div>
+                                                    <div className="ml-3">
+                                                        <span
+                                                            className="font-medium hover:text-blue-600 cursor-pointer"
+                                                            onClick={() => handleFriendSelect(f)}
+                                                        >
+                                                            {f.nickname}
+                                                        </span>
+                                                        <div className="text-xs text-gray-500">
+                                                            {isOnline ? '온라인' : '오프라인'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* 오른쪽 온라인 상태 아이콘 */}
+                                                <div className={`w-2 h-2 rounded-full ${
+                                                    isOnline ? 'bg-green-400' : 'bg-gray-300'
+                                                }`} />
+                                            </li>
+                                        );
+                                    })}
                                 </ul>
                             ) : (
                                 <p className="text-gray-400 text-center py-10">아직 친구가 없어요.</p>
