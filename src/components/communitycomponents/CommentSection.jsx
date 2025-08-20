@@ -5,6 +5,7 @@ import { getUserInfo } from '../../api/userAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import ProfileButton from '../MyPageComponent/ProfileButton.jsx';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
+import CommentPollManager from "./CommentPollManager.jsx";
 
 const CommentSection = ({
                             community,
@@ -429,6 +430,17 @@ const CommentSection = ({
                                                 }
                                                 alt="댓글 이미지"
                                                 className="w-32 h-auto mt-2"
+                                            />
+                                        )}
+
+                                        {/* 댓글 투표 관리자 - 여기가 핵심! */}
+                                        {!isCommentDeleted && (
+                                            <CommentPollManager
+                                                comment={comment}
+                                                community={community}
+                                                setCommunity={setCommunity}
+                                                currentUserId={currentUserId}
+                                                isAdmin={isAdmin}
                                             />
                                         )}
 

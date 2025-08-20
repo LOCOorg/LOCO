@@ -8,7 +8,7 @@ import {
     addComment,
     fetchTopViewed,
     fetchTopCommented,
-    cancelRecommendCommunity,
+    cancelRecommendCommunity
 } from '../../api/communityApi.js';
 import { getUserInfo } from '../../api/userAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
@@ -19,8 +19,9 @@ import RightSidebar from "../../layout/CommunityLayout/RightSidebar.jsx";
 import ReportForm from "../reportcomponents/ReportForm.jsx";
 import ProfileButton from '../../components/MyPageComponent/ProfileButton.jsx';
 import CommentSection from './CommentSection.jsx'; // 새로 분리할 컴포넌트
-import { FaThumbsUp } from 'react-icons/fa';
+import {FaThumbsUp} from 'react-icons/fa';
 import clsx from 'clsx';
+import PollManager from "./PollManager.jsx";
 
 // 유틸리티 함수
 const formatRelativeTime = (dateString) => {
@@ -400,6 +401,14 @@ const CommunityDetail = () => {
                             </button>
                         )}
                     </div>
+                    {/* 투표 관리자 컴포넌트 */}
+                    <PollManager
+                        community={community}
+                        setCommunity={setCommunity}
+                        currentUserId={currentUserId}
+                        isAdmin={isAdmin}
+                    />
+
 
                     {/* 댓글 섹션 - 별도 컴포넌트로 분리 */}
                     <CommentSection
@@ -419,6 +428,7 @@ const CommunityDetail = () => {
                         commentIsAnonymous={commentIsAnonymous}
                         setCommentIsAnonymous={setCommentIsAnonymous}
                         onAddComment={handleAddComment}
+                        onCancelVote={() => handleCancelVote(poll._id)}
                     />
 
                     {/* 게시글 관리 버튼 */}

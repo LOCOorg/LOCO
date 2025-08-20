@@ -93,6 +93,48 @@ const useNotificationStore = create((set, get) => ({
         const userId = useAuthStore.getState().user?._id;
         if (userId) await updateUserPrefs(userId, { toastEnabled: next });
     },
+    chatPreviewEnabled: (() => {
+        const stored = getDecryptedItem('chatPreviewEnabled');
+        return stored !== null ? stored : true;
+    })(),
+
+    async toggleChatPreview() {
+        const next = !get().chatPreviewEnabled;
+        set({ chatPreviewEnabled: next });
+        setEncryptedItem('chatPreviewEnabled', next);
+
+        const userId = useAuthStore.getState().user?._id;
+        if (userId) {
+            try {
+                await updateUserPrefs(userId, { chatPreviewEnabled: next });
+            } catch (error) {
+                // 서버 업데이트 실패 시 로컬 상태 롤백
+                set({ chatPreviewEnabled: !next });
+                setEncryptedItem('chatPreviewEnabled', !next);
+                console.error('채팅 미리보기 설정 업데이트 실패:', error);
+            }
+        }
+    },
+
+// syncWithUserPrefs 함수에도 추가
+    syncWithUserPrefs: async (userPrefs) => {
+        if (userPrefs && typeof userPrefs.friendReqEnabled === 'boolean') {
+            set({ friendReqEnabled: userPrefs.friendReqEnabled });
+            setEncryptedItem('friendReqEnabled', userPrefs.friendReqEnabled);
+        }
+
+        if (userPrefs && typeof userPrefs.toastEnabled === 'boolean') {
+            set({ toastEnabled: userPrefs.toastEnabled });
+            setEncryptedItem('toastEnabled', userPrefs.toastEnabled);
+        }
+
+        // ✅ 채팅 미리보기 설정 동기화 추가
+        if (userPrefs && typeof userPrefs.chatPreviewEnabled === 'boolean') {
+            set({ chatPreviewEnabled: userPrefs.chatPreviewEnabled });
+            setEncryptedItem('chatPreviewEnabled', userPrefs.chatPreviewEnabled);
+        }
+    },
+
 }));
 
 export default useNotificationStore;
