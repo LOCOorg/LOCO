@@ -3,6 +3,7 @@
 import {useEffect, useRef} from 'react';
 import { refresh, fetchCurrentUser } from '../../api/authAPI.js';
 import useAuthStore from '../../stores/authStore.js';
+import { useSocket } from '../../hooks/useSocket.js';
 
 
 const AuthInit = () => {
@@ -10,6 +11,8 @@ const AuthInit = () => {
     const setUser        = useAuthStore(s => s.setUser);
     const setAccessToken = useAuthStore(s => s.setAccessToken);
     const logout = useAuthStore((s) => s.logout);
+    const user = useAuthStore(s => s.user);  // 🔧 현재 사용자 정보
+    const socket = useSocket();  // 🔧 소켓 인스턴스
 
 
 
@@ -38,6 +41,14 @@ const AuthInit = () => {
             }
         })();
     }, [setUser, setAccessToken, logout]);
+
+    // 🔧 사용자 로그인 완료 후 소켓 등록
+    useEffect(() => {
+        if (socket && user && user._id) {
+            console.log('🟢 소켓에 사용자 등록:', user._id);
+            socket.emit('register', user._id);
+        }
+    }, [socket, user]);
 
     return null; // 화면에 그릴 내용 없음. 초기화 용 컴포넌트
 

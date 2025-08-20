@@ -6,6 +6,7 @@ import PRFilter from "./PRFilter";
 import PRProfileGrid from "./PRProfileCardGrid";
 import PRLoadMore from "./PRLoadMore";
 import SimpleProfileModal from "../MyPageComponent/SimpleProfileModal.jsx"
+import { useOnlineStatus } from "../../hooks/useOnlineStatus.js";
 
 const PRPageComponent = () => {
     const [topUsers, setTopUsers] = useState([]);
@@ -18,6 +19,10 @@ const PRPageComponent = () => {
     const [loading, setLoading] = useState(false);
     const [selectedProfile, setSelectedProfile] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // 🔧 실시간 온라인 상태 추적 (백엔드에서 온 데이터의 실시간 업데이트를 위해)
+    const allUserIds = [...topUsers, ...allUsers].map(user => user._id).filter(Boolean);
+    const { onlineStatus } = useOnlineStatus(allUserIds);
 
     // Top 10 불러오기 (unchanged)
     useEffect(() => {
@@ -86,11 +91,21 @@ const PRPageComponent = () => {
             <main className="bg-[#F5F7FA] px-6 py-4">
                 {/* 상단 슬라이더 (전체 폭) */}
 
-                <PRTopSlider topUsers={topUsers} />
+                <PRTopSlider 
+                    topUsers={topUsers.map(user => ({
+                        ...user,
+                        // 백엔드에서 온 데이터 우선, 실시간 데이터로 fallback
+                        isOnline: user.isOnline ?? onlineStatus[user._id] ?? false
+                    }))}
+                />
 
                 {/* 카드 그리드 */}
                 <PRProfileGrid
-                    allUsers={allUsers}
+                    allUsers={allUsers.map(user => ({
+                        ...user,
+                        // 백엔드에서 온 데이터 우선, 실시간 데이터로 fallback
+                        isOnline: user.isOnline ?? onlineStatus[user._id] ?? false
+                    }))}
                     onCardClick={handleCardClick}
                 />
 

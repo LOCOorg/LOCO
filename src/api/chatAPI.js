@@ -82,10 +82,17 @@ export const deleteMessage = async (messageId) => {
     }
 };
 
-// 사용자 참가
-export const joinChatRoom = async (roomId, userId) => {
+// 사용자 참가 (성별 선택 정보 포함)
+export const joinChatRoom = async (roomId, userId, selectedGender = null) => {
     try {
-        const response = await axios.post(`${host}/rooms/${roomId}/join`, { userId });
+        const requestData = { userId };
+        
+        // 🔧 selectedGender가 있으면 포함해서 전송
+        if (selectedGender) {
+            requestData.selectedGender = selectedGender;
+        }
+        
+        const response = await axios.post(`${host}/rooms/${roomId}/join`, requestData);
         console.log("채팅방 참가 성공:", response.data);
         return response.data;
     } catch (error) {

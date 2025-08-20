@@ -71,20 +71,26 @@ const ChatRoomListPanel = ({
                 >
                     <p className="text-sm text-gray-600">방 ID: {room._id}</p>
                     <p className="text-sm text-gray-600">타입: {room.roomType}</p>
-                    {/* 참여자 닉네임 목록 */}
-                    {Array.isArray(room.chatUsers) && room.chatUsers.length > 0 && (
+                    {/* 참여자 닉네임 목록 (성별 선택 정보 포함) */}
+                    {Array.isArray(room.chatUsersWithGender || room.chatUsers) && (room.chatUsersWithGender || room.chatUsers).length > 0 && (
                         <p className="text-sm text-gray-600">
                             참여자:{" "}
-                            {room.chatUsers
-                                .map(u =>
-                                    u.nickname && u.name
+                            {(room.chatUsersWithGender || room.chatUsers)
+                                .map(u => {
+                                    // 🔧 성별 선택 정보가 없으면 방의 matchedGender 사용
+                                    const userGender = u.selectedGender || room.matchedGender || 'any';
+                                    
+                                    const genderText = userGender === 'opposite' ? '이성' 
+                                          : userGender === 'same' ? '동성'
+                                          : userGender === 'any' ? '상관없음'
+                                          : '알 수 없음';
+                                    
+                                    const displayName = u.nickname && u.name
                                         ? `${u.nickname}(${u.name})`
-                                        : u.nickname
-                                            ? u.nickname
-                                            : u.name
-                                                ? u.name
-                                                : u._id
-                                )         /* u가 객체면 u.nickname, 아니면 그냥 ID */
+                                        : u.nickname || u.name || u._id;
+                                    
+                                    return `${displayName}(${genderText})`;
+                                })
                                 .join(", ")}
                         </p>
                     )}

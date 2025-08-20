@@ -23,6 +23,7 @@ import ReportRouter from "./ReportRouter.jsx";
 
 import PRRouter from "./PRRouter.jsx";
 import DeveloperRouter from "./DeveloperRouter.jsx";
+import NewsRouter from "./NewsRouter.jsx";
 
 const MainRouter = createBrowserRouter([
     {
@@ -43,6 +44,7 @@ const MainRouter = createBrowserRouter([
             QnaRouter,
             ...ReportRouter,
             MyPageRouter,
+            NewsRouter,
             PRRouter,
             DeveloperRouter,
         ],

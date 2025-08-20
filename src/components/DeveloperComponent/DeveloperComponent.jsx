@@ -11,6 +11,7 @@ import {useChatConversation} from "../../hooks/useChatConversation";  // 공통 
 import {useLv} from "../../hooks/useLv";
 import {Navigate} from "react-router-dom";
 import HistoryPanel from "./HistoryPanel.jsx";
+import {useSocket} from "../../hooks/useSocket.js";
 import axios from "axios";
 
 const PAGE_SIZE = 30;
@@ -41,6 +42,11 @@ const DeveloperComponent = () => {
     const [femaleUsers, setFemaleUsers] = useState(0);
     const [socialMaleUsers, setSocialMaleUsers] = useState(0);
     const [socialFemaleUsers, setSocialFemaleUsers] = useState(0);
+    // 🔧 온라인 통계 상태 추가
+    const [onlineStats, setOnlineStats] = useState({ total: 0, online: 0, offline: 0 });
+    
+    // 🔧 소켓 인스턴스
+    const socket = useSocket();
 
     // 2) 모드 & 선택된 채팅 유저
     const [mode, setMode] = useState("user");     // "user" 또는 "chat"
@@ -94,7 +100,36 @@ const DeveloperComponent = () => {
                 }
             })
             .catch(console.error);
-    }, []);
+            
+        // 🔧 3) 온라인 통계 조회 및 실시간 업데이트 리스너 등록
+        const fetchOnlineStats = () => {
+            axios
+                .get("/api/online-status/stats")
+                .then(res => {
+                    if (res.data.success) {
+                        setOnlineStats(res.data.data);
+                        console.log('📊 온라인 통계 업데이트:', res.data.data);
+                    }
+                })
+                .catch(console.error);
+        };
+        
+        fetchOnlineStats();
+        
+        // 🔧 소켓 리스너 등록 (사용자 상태 변경 시 실시간 업데이트)
+        if (socket) {
+            const handleStatusChange = () => {
+                console.log('🔄 사용자 상태 변경 감지 - 통계 새로고침');
+                fetchOnlineStats();
+            };
+            
+            socket.on('userStatusChanged', handleStatusChange);
+            
+            return () => {
+                socket.off('userStatusChanged', handleStatusChange);
+            };
+        }
+    }, [socket]);  // 🔧 socket 의존성 추가
 
 
     return (
@@ -105,6 +140,9 @@ const DeveloperComponent = () => {
                 <span className="text-lg text-gray-600">여자: {femaleUsers}명</span>
                 <span className="text-lg text-gray-600">소셜 (남자 : {socialMaleUsers}명</span>
                 <span className="text-lg text-gray-600">여자 : {socialFemaleUsers}명)</span>
+                {/* 🔧 온라인 통계 추가 */}
+                <span className="text-lg text-green-600">🟢 온라인: {onlineStats.online}명</span>
+                <span className="text-lg text-red-600">🔴 오프라인: {onlineStats.offline}명</span>
             </div>
 
             <ModeToggle mode={mode} setMode={setMode}/>
