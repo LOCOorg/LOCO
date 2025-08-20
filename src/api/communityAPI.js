@@ -205,3 +205,100 @@ export const fetchTopCommented = async () => {
     }
 };
 
+export const createPoll = async (postId, pollData) => {
+    const response = await fetch(`${host}/${postId}/polls`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pollData)
+    });
+    return await response.json();
+};
+
+export const votePoll = async (postId, pollId, userId, optionIndex) => {
+    const response = await fetch(`${host}/${postId}/polls/${pollId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, optionIndex })
+    });
+    return await response.json();
+};
+
+export const getPollResults = async (postId, pollId) => {
+    const response = await fetch(`${host}/${postId}/polls/${pollId}/results`);
+    return await response.json();
+};
+
+export const getUserVoteStatus = async (postId, pollId, userId) => {
+    const response = await fetch(`${host}/${postId}/polls/${pollId}/status?userId=${userId}`);
+    return await response.json();
+};
+
+export const cancelVote = async (communityId, pollId, userId) => {
+    const response = await fetch(`${host}/${communityId}/polls/${pollId}/cancel-vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+    });
+    return await response.json();
+};
+
+export const deletePoll = async (communityId, pollId, userId) => {
+    const response = await fetch(`${host}/${communityId}/polls/${pollId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+    });
+    return await response.json();
+};
+
+// 댓글 투표 생성
+export const createCommentPoll = async (communityId, commentId, pollData) => {
+    const response = await fetch(`${host}/${communityId}/comments/${commentId}/polls`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pollData)
+    });
+    return await response.json();
+};
+
+// 댓글 투표 참여
+export const voteCommentPoll = async (communityId, commentId, pollId, userId, optionIndex) => {
+    const response = await fetch(`${host}/${communityId}/comments/${commentId}/polls/${pollId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, optionIndex })
+    });
+    return await response.json();
+};
+
+// 댓글 투표 결과 조회
+export const getCommentPollResults = async (communityId, commentId, pollId) => {
+    const response = await fetch(`${host}/${communityId}/comments/${commentId}/polls/${pollId}/results`);
+    return await response.json();
+};
+
+// 댓글 투표 상태 확인
+export const getCommentUserVoteStatus = async (communityId, commentId, pollId, userId) => {
+    const response = await fetch(`${host}/${communityId}/comments/${commentId}/polls/${pollId}/status?userId=${userId}`);
+    return await response.json();
+};
+
+// 댓글 투표 취소
+export const cancelCommentVote = async (communityId, commentId, pollId, userId) => {
+    const response = await fetch(`${host}/${communityId}/comments/${commentId}/polls/${pollId}/cancel-vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+    });
+    return await response.json();
+};
+
+// 댓글 투표 삭제
+export const deleteCommentPoll = async (communityId, commentId, pollId, userId) => {
+    const response = await fetch(`${host}/${communityId}/comments/${commentId}/polls/${pollId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+    });
+    return await response.json();
+};

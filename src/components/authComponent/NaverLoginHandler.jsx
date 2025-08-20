@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { loginWithNaver } from '../../api/authAPI.js';
 // import axios from 'axios';
 import useAuthStore from "../../stores/authStore.js";
+import useNotificationStore from "../../stores/notificationStore.js";
 
 const NaverLoginHandler = () => {
     const navigate = useNavigate();
@@ -16,6 +17,9 @@ const NaverLoginHandler = () => {
     const setAccessToken = useAuthStore(s => s.setAccessToken);
     const setUser        = useAuthStore(s => s.setUser);
 
+    // ✅ notificationStore 동기화 함수 추가
+    const syncWithUserPrefs = useNotificationStore(s => s.syncWithUserPrefs);
+
     useEffect(() => {
         if (!(code && state)) return;
         (async () => {
@@ -25,13 +29,18 @@ const NaverLoginHandler = () => {
                     navigate('/signupPage');
                 } else if (data.status === 'success') {
                     setUser(data.user);
+                    // ✅ 알림 설정 동기화
+                    await syncWithUserPrefs({
+                        friendReqEnabled: data.user.friendReqEnabled ?? true,
+                        chatPreviewEnabled: data.user.chatPreviewEnabled ?? true,
+                    });
                     navigate('/');
                 }
             } catch (err) {
                 console.error('네이버 로그인 처리 에러:', err);
             }
         })();
-    }, [code, state, navigate, setAccessToken, setUser]);
+    }, [code, state, navigate, setAccessToken, setUser, syncWithUserPrefs]);
 
 
     // useEffect(() => {
