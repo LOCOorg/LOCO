@@ -270,7 +270,7 @@ const RandomChatComponent = () => {
                             text: "확인",
                             action: async () => {
                                 try {
-                                    await joinChatRoom(target._id, userId);
+                                    await joinChatRoom(target._id, userId, matchedGender);  // 🔧 selectedGender 전달
                                     navigate(`/chat/${target._id}/${userId}`);
                                 } catch (err) {
                                     if (err.response?.status === 403) {
@@ -304,7 +304,7 @@ const RandomChatComponent = () => {
                                     matchedGender,
                                     ageGroup
                                 );
-                                await joinChatRoom(room._id, userId);
+                                await joinChatRoom(room._id, userId, matchedGender);  // 🔧 selectedGender 전달
                                 navigate(`/chat/${room._id}/${userId}`);
                             } catch (err) {
                                 if (err.response?.status === 403) {
