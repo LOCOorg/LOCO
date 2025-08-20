@@ -185,7 +185,7 @@ export const getBlockedUsers = async (userId) => {
         const response = await axios.get(
             `${host}/${userId}/blocked`
         );
-        console.log('getBlockedUsers API 응답:', response.data); // 디버깅용
+        // console.log('getBlockedUsers API 응답:', response.data); // 디버깅용
         return response.data.blockedUsers; // blockedUsers 필드로 수정
     } catch (error) {
         console.error('getBlockedUsers API 오류:', error);
