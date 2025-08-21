@@ -17,7 +17,7 @@ const CommunityForm = () => {
     /* ─────────────────── 기본 입력 ─────────────────── */
     const [title, setTitle] = useState('');
     const [contents, setContents] = useState('');
-    const [category, setCategory] = useState('전체');
+    const [category, setCategory] = useState('자유');
     // ✅ 익명 작성 여부 상태 추가
     const [isAnonymous, setIsAnonymous] = useState(false);
 
