@@ -17,7 +17,7 @@ const ProfileButton = ({ profile: externalProfile, area = '프로필', onModalTo
 
     useEffect(() => {
         // 사용할 사용자 ID 결정
-        const userId = externalProfile?._id || authUser?._id;
+        const userId = externalProfile?._id || externalProfile?.id || authUser?._id;
         if (!userId) return;
 
         let cancelled = false;
