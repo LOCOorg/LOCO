@@ -2,6 +2,7 @@
 import FriendListPanel from './MyPageComponent/FriendListPanel.jsx';
 import PaymentStatusModal     from './pay/PaymentStatusModal.jsx';
 import ReportNotificationModal from './reportcomponents/ReportNotificationModal.jsx';
+import MainBannerComponent from './bannerComponent/MainBannerComponent.jsx';
 
 import RightSidebar from '../layout/CommunityLayout/RightSidebar.jsx';
 import useSidebarData from '../hooks/useSidebarData.js';
@@ -21,8 +22,11 @@ function MainComponent() {
                 {/* 왼쪽: 친구 목록 */}
                 <FriendListPanel />
 
-                {/* 중앙: 주요 액션 버튼 */}
+                {/* 중앙: 배너 + 주요 액션 버튼 */}
                 <div className="flex flex-col items-center lg:items-start space-y-4 flex-1">
+                    {/* 배너 영역 */}
+                    <MainBannerComponent />
+                    
                     <div className="w-full">
                         <RandomChatComponent />
                     </div>
