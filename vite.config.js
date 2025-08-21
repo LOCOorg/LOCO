@@ -11,6 +11,7 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: "http://localhost:3000", // 백엔드 서버 주소
+        // target: 'http://192.168.219.104:3000',
         changeOrigin: true,
         secure: false,
       }

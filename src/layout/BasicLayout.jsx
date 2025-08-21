@@ -62,6 +62,9 @@ const BasicLayout = ({ children }) => {
                         {user && user.userLv >= 2 && (
                             <li ><Link to="/report/list" className="hover:text-gray-300">관리자</Link></li>
                         )}
+                        {user && user.userLv >= 2 && (
+                            <li ><Link to="/admin/banners" className="hover:text-gray-300">배너관리</Link></li>
+                        )}
                         {user && user.userLv >= 3 && (
                             <li ><Link to="/adminproducts" className="hover:text-gray-300">상품등록</Link></li>
                         )}
@@ -107,6 +110,9 @@ const BasicLayout = ({ children }) => {
                                 <li><Link to="/qna" className="block px-4 py-2 hover:bg-gray-100">QNA</Link></li>
                                 {user && user.userLv >= 2 && (
                                     <li><Link to="/report/list" className="block px-4 py-2 hover:bg-gray-100">관리자</Link></li>
+                                )}
+                                {user && user.userLv >= 2 && (
+                                    <li><Link to="/admin/banners" className="block px-4 py-2 hover:bg-gray-100">배너관리</Link></li>
                                 )}
                                 {user && user.userLv >= 3 && (
                                     <>

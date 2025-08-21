@@ -150,17 +150,31 @@ const FriendListPanel = () => {
                                                     </div>
                                                     <div className="ml-3">
                                                         <span
-                                                            className="font-medium hover:text-blue-600 cursor-pointer"
-                                                            onClick={() => handleFriendSelect(f)}
-                                                        >
+                                                            className="font-medium hover:text-blue-600 cursor-pointer">
                                                             {f.nickname}
                                                         </span>
+                                                        {/* 채팅 아이콘 버튼 */}
+                                                        <button
+                                                            className="ml-2 p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all duration-200 hover:scale-110 active:scale-95"
+                                                            onClick={() => handleFriendSelect(f)}
+                                                            title={`${f.nickname}님과 채팅하기`}
+                                                        >
+                                                            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                                                                <path
+                                                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="2"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                />
+                                                            </svg>
+                                                        </button>
                                                         <div className="text-xs text-gray-500">
                                                             {isOnline ? '온라인' : '오프라인'}
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 {/* 오른쪽 온라인 상태 아이콘 */}
                                                 <div className={`w-2 h-2 rounded-full ${
                                                     isOnline ? 'bg-green-400' : 'bg-gray-300'

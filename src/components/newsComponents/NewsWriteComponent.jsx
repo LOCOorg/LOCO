@@ -1,12 +1,15 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { newsService } from '../../api/newsAPI.js';
 import { editorService } from '../../api/editorAPI.js';
 import { toast } from 'react-toastify';
-import MDEditor from '@uiw/react-md-editor';
+import NovelEditor from '../editor/NovelEditor.jsx';
+import ImageUploadTest from '../editor/ImageUploadTest.jsx';
 
 const NewsWriteComponent = () => {
     const navigate = useNavigate();
+    const editorRef = useRef(null);
+    
     const [formData, setFormData] = useState({
         title: '',
         content: '',
@@ -15,9 +18,7 @@ const NewsWriteComponent = () => {
     });
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [uploadingImage, setUploadingImage] = useState(false);
     const fileInputRef = useRef(null);
-    const editorRef = useRef(null);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -27,104 +28,52 @@ const NewsWriteComponent = () => {
         }));
     };
 
-    const handleContentChange = (val) => {
+    const handleContentChange = (content) => {
         setFormData(prev => ({
             ...prev,
-            content: val || ''
+            content: content
         }));
     };
 
-    // 이미지 업로드 후 커서 위치에 삽입하는 함수
-    const insertImageAtCursor = useCallback(async (file) => {
-        if (!file || !file.type.startsWith('image/')) {
-            toast.error('이미지 파일만 업로드 가능합니다.');
-            return;
-        }
-
-        if (file.size > 5 * 1024 * 1024) {
-            toast.error('이미지 파일은 5MB 이하만 업로드 가능합니다.');
-            return;
-        }
-
+    // 커스텀 이미지 업로드 핸들러 (에디터에서 사용)
+    const handleImageUpload = async (file) => {
         try {
-            setUploadingImage(true);
+            console.log('이미지 업로드 시도:', file.name, file.size);
+            
+            // 서버 업로드 시도
             const response = await editorService.uploadEditorImage(file);
             
-            if (response.success) {
+            console.log('서버 응답:', response);
+            
+            // 서버 업로드 성공 시
+            if (response && response.success) {
                 const imageUrl = `${import.meta.env.VITE_API_HOST}${response.data.url}`;
-                const markdownImage = `![${response.data.originalName}](${imageUrl})`;
+                console.log('서버 업로드 성공:', imageUrl);
+                return imageUrl;
+            } else {
+                // 서버 업로드 실패 시 Base64로 폴백
+                console.warn('서버 업로드 실패, Base64로 폴백:', response?.message || '알 수 없는 오류');
                 
-                // 현재 커서 위치 가져오기
-                const textarea = document.querySelector('.w-md-editor-text-textarea');
-                if (textarea) {
-                    const start = textarea.selectionStart;
-                    const end = textarea.selectionEnd;
-                    const currentContent = formData.content;
-                    
-                    // 커서 위치에 이미지 삽입
-                    const newContent = currentContent.slice(0, start) + 
-                                     '\n' + markdownImage + '\n' + 
-                                     currentContent.slice(end);
-                    
-                    setFormData(prev => ({
-                        ...prev,
-                        content: newContent
-                    }));
-                    
-                    // 커서 위치 복원
-                    setTimeout(() => {
-                        const newCursorPos = start + markdownImage.length + 2;
-                        textarea.focus();
-                        textarea.setSelectionRange(newCursorPos, newCursorPos);
-                    }, 100);
-                } else {
-                    // 폴백: 내용 끝에 추가
-                    setFormData(prev => ({
-                        ...prev,
-                        content: prev.content + '\n' + markdownImage + '\n'
-                    }));
-                }
-                
-                toast.success('이미지가 삽입되었습니다!');
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        console.log('Base64 변환 완료');
+                        resolve(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                });
             }
         } catch (error) {
             console.error('이미지 업로드 오류:', error);
-            toast.error('이미지 업로드에 실패했습니다.');
-        } finally {
-            setUploadingImage(false);
-        }
-    }, [formData.content]);
-
-    // 드래그 앤 드롭 핸들러
-    const handleDrop = useCallback((e) => {
-        e.preventDefault();
-        const files = Array.from(e.dataTransfer.files);
-        const imageFiles = files.filter(file => file.type.startsWith('image/'));
-        
-        if (imageFiles.length > 0) {
-            imageFiles.forEach(file => insertImageAtCursor(file));
-        }
-    }, [insertImageAtCursor]);
-
-    const handleDragOver = useCallback((e) => {
-        e.preventDefault();
-    }, []);
-
-    // 클립보드 붙여넣기 핸들러
-    const handlePaste = useCallback((e) => {
-        const items = Array.from(e.clipboardData.items);
-        const imageItems = items.filter(item => item.type.startsWith('image/'));
-        
-        if (imageItems.length > 0) {
-            e.preventDefault();
-            imageItems.forEach(item => {
-                const file = item.getAsFile();
-                if (file) {
-                    insertImageAtCursor(file);
-                }
+            
+            // 예외 발생 시도 Base64로 폴백
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
             });
         }
-    }, [insertImageAtCursor]);
+    };
 
     // 기존 첨부 이미지 관리
     const handleImageChange = (e) => {
@@ -238,66 +187,35 @@ const NewsWriteComponent = () => {
                     </label>
                 </div>
 
-                {/* 내용 입력 */}
+                {/* 내용 입력 - Novel Editor */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        내용 (마크다운 지원)
+                        내용
                     </label>
                     
                     {/* 사용법 안내 */}
                     <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <h4 className="text-sm font-medium text-blue-800 mb-2">💡 이미지 삽입 방법</h4>
+                        <h4 className="text-sm font-medium text-blue-800 mb-2">💡 Novel Editor 사용법</h4>
                         <ul className="text-xs text-blue-700 space-y-1">
-                            <li>• <strong>드래그 앤 드롭</strong>: 이미지를 에디터에 끌어다 놓기</li>
-                            <li>• <strong>붙여넣기</strong>: 복사한 이미지를 Ctrl+V로 붙여넣기</li>
-                            <li>• <strong>직접 업로드</strong>: 아래 첨부 이미지 섹션 이용</li>
+                            <li>• <strong>슬래시 명령어</strong>: <code>/</code> 입력 후 원하는 기능 선택 (제목, 목록, 이미지 등)</li>
+                            <li>• <strong>이미지 삽입</strong>: <code>/image</code> 또는 드래그앤드롭</li>
+                            <li>• <strong>서식</strong>: 텍스트 선택 후 팝업 메뉴로 굵게, 기울임 등 적용</li>
+                            <li>• <strong>제목</strong>: <code>/h1</code>, <code>/h2</code>, <code>/h3</code></li>
+                            <li>• <strong>목록</strong>: <code>/ul</code> (불릿), <code>/ol</code> (번호)</li>
+                            <li>• <strong>인용</strong>: <code>/quote</code></li>
+                            <li>• <strong>코드</strong>: <code>/code</code></li>
                         </ul>
                     </div>
                     
-                    {uploadingImage && (
-                        <div className="mb-3 text-center">
-                            <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-lg">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
-                                이미지 업로드 중...
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* 마크다운 에디터 */}
-                    <div 
-                        data-color-mode="light"
-                        onDrop={handleDrop}
-                        onDragOver={handleDragOver}
-                        onPaste={handlePaste}
-                        className="border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors"
-                    >
-                        <MDEditor
-                            ref={editorRef}
-                            value={formData.content}
-                            onChange={handleContentChange}
-                            height={400}
-                            placeholder="내용을 입력해주세요. 이미지를 드래그하거나 붙여넣기하여 삽입할 수 있습니다."
-                        />
-                    </div>
-                    
-                    {/* 마크다운 도움말 */}
-                    <div className="mt-2 text-xs text-gray-500">
-                        <details>
-                            <summary className="cursor-pointer hover:text-gray-700">마크다운 도움말</summary>
-                            <div className="mt-2 p-3 bg-gray-50 rounded">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    <div><code># 제목 1</code> → <strong>큰 제목</strong></div>
-                                    <div><code>## 제목 2</code> → <strong>중간 제목</strong></div>
-                                    <div><code>**굵게**</code> → <strong>굵게</strong></div>
-                                    <div><code>*기울임*</code> → <em>기울임</em></div>
-                                    <div><code>- 목록</code> → • 목록</div>
-                                    <div><code>[링크](URL)</code> → 링크</div>
-                                    <div><code>![이미지](URL)</code> → 이미지</div>
-                                    <div><code>드래그 & 드롭</code> → 자동 삽입</div>
-                                </div>
-                            </div>
-                        </details>
-                    </div>
+                    {/* Novel Editor 컴포넌트 사용 */}
+                    <NovelEditor
+                        ref={editorRef}
+                        value={formData.content}
+                        onChange={handleContentChange}
+                        onImageUpload={handleImageUpload}
+                        placeholder="/ 를 입력하여 명령어를 사용하거나 바로 내용을 입력하세요..."
+                        className="min-h-[400px]"
+                    />
                 </div>
 
                 {/* 추가 첨부 이미지 (하단 표시용) */}
@@ -352,12 +270,72 @@ const NewsWriteComponent = () => {
                     </button>
                     <button
                         type="submit"
-                        disabled={loading || uploadingImage}
+                        disabled={loading}
                         className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         {loading ? '작성 중...' : '게시글 작성'}
                     </button>
                 </div>
+
+                {/* 테스트용 이미지 업로드 컴포넌트 (개발용) */}
+                {import.meta.env.DEV && (
+                    <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <h4 className="text-sm font-medium text-yellow-800 mb-3">🛠️ 개발자 도구 - 이미지 업로드 테스트</h4>
+                        <ImageUploadTest />
+                    </div>
+                )}
+
+                {/* 테스트용 도구 (개발용) */}
+                {import.meta.env.DEV && (
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <h4 className="text-sm font-medium text-yellow-800 mb-2">🔧 개발자 도구</h4>
+                        <div className="space-x-2">
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    try {
+                                        const response = await fetch(`${import.meta.env.VITE_API_HOST}/api/debug/editor-uploads`);
+                                        const data = await response.json();
+                                        console.log('📂 에디터 업로드 파일 목록:', data);
+                                        toast.info(`에디터 파일 ${data.fileCount}개 확인됨`);
+                                    } catch (error) {
+                                        console.error('파일 목록 확인 실패:', error);
+                                    }
+                                }}
+                                className="px-3 py-1 text-xs bg-yellow-200 text-yellow-800 rounded hover:bg-yellow-300"
+                            >
+                                업로드 파일 확인
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const editor = editorRef.current;
+                                    if (editor) {
+                                        const testImageUrl = `${import.meta.env.VITE_API_HOST}/uploads/news/editor/editor-1755707385705-313828660.jpg`;
+                                        editor.insertImage(testImageUrl, '테스트 이미지');
+                                        toast.info('테스트 이미지 삽입됨');
+                                    }
+                                }}
+                                className="px-3 py-1 text-xs bg-blue-200 text-blue-800 rounded hover:bg-blue-300"
+                            >
+                                테스트 이미지 삽입
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const editor = editorRef.current;
+                                    if (editor) {
+                                        console.log('📝 에디터 HTML:', editor.getHTML());
+                                        console.log('📝 현재 content state:', formData.content);
+                                    }
+                                }}
+                                className="px-3 py-1 text-xs bg-green-200 text-green-800 rounded hover:bg-green-300"
+                            >
+                                내용 확인
+                            </button>
+                        </div>
+                    </div>
+                )}
             </form>
         </div>
     );

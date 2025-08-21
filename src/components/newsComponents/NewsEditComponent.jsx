@@ -3,11 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { newsService } from '../../api/newsAPI.js';
 import { editorService } from '../../api/editorAPI.js';
 import { toast } from 'react-toastify';
-import MDEditor from '@uiw/react-md-editor';
+import NovelEditor from '../editor/NovelEditor.jsx';
 
 const NewsEditComponent = () => {
     const navigate = useNavigate();
     const { id } = useParams();
+    const editorRef = useRef(null);
+    
     const [formData, setFormData] = useState({
         title: '',
         content: '',
@@ -19,9 +21,7 @@ const NewsEditComponent = () => {
     const [existingImages, setExistingImages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [loadingNews, setLoadingNews] = useState(true);
-    const [uploadingImage, setUploadingImage] = useState(false);
     const fileInputRef = useRef(null);
-    const editorImageInputRef = useRef(null);
 
     useEffect(() => {
         loadNews();
@@ -62,11 +62,26 @@ const NewsEditComponent = () => {
         }));
     };
 
-    const handleContentChange = (val) => {
+    const handleContentChange = (content) => {
         setFormData(prev => ({
             ...prev,
-            content: val || ''
+            content: content
         }));
+    };
+
+    // 커스텀 이미지 업로드 핸들러
+    const handleImageUpload = async (file) => {
+        try {
+            const response = await editorService.uploadEditorImage(file);
+            if (response.success) {
+                return `${import.meta.env.VITE_API_HOST}${response.data.url}`;
+            } else {
+                throw new Error(response.message || '업로드 실패');
+            }
+        } catch (error) {
+            console.error('이미지 업로드 오류:', error);
+            throw error;
+        }
     };
 
     const handleImageChange = (e) => {
@@ -211,21 +226,31 @@ const NewsEditComponent = () => {
                     </div>
                 </div>
 
-                {/* 내용 입력 */}
+                {/* 내용 입력 - Novel Editor */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        내용 (마크다운 지원)
+                        내용
                     </label>
                     
-                    {/* 마크다운 에디터 */}
-                    <div data-color-mode="light">
-                        <MDEditor
-                            value={formData.content}
-                            onChange={handleContentChange}
-                            height={400}
-                            placeholder="내용을 입력해주세요. 마크다운 문법을 사용할 수 있습니다."
-                        />
+                    {/* 사용법 안내 */}
+                    <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <h4 className="text-sm font-medium text-blue-800 mb-2">💡 Novel Editor 사용법</h4>
+                        <ul className="text-xs text-blue-700 space-y-1">
+                            <li>• <strong>슬래시 명령어</strong>: <code>/</code> 입력 후 원하는 기능 선택</li>
+                            <li>• <strong>이미지 삽입</strong>: <code>/image</code> 또는 드래그앤드롭</li>
+                            <li>• <strong>서식</strong>: 텍스트 선택 후 팝업 메뉴 사용</li>
+                        </ul>
                     </div>
+                    
+                    {/* Novel Editor 컴포넌트 사용 */}
+                    <NovelEditor
+                        ref={editorRef}
+                        value={formData.content}
+                        onChange={handleContentChange}
+                        onImageUpload={handleImageUpload}
+                        placeholder="/ 를 입력하여 명령어를 사용하거나 바로 내용을 입력하세요..."
+                        className="min-h-[400px]"
+                    />
                 </div>
 
                 {/* 기존 이미지 */}
