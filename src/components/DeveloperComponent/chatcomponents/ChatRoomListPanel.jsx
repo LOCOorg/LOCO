@@ -1,5 +1,6 @@
 // src/components/DeveloperComponent/chatcomponents/ChatRoomListPanel.jsx
-import React, { useState, useMemo } from 'react';
+import {useState, useMemo, useEffect} from 'react';
+import {fetchChatRoomHistory} from "../../../api/chatAPI.js";
 
 const ChatRoomListPanel = ({
                                rooms,
@@ -14,6 +15,28 @@ const ChatRoomListPanel = ({
 
     // 1) 현재 선택된 필터 타입 상태
     const [filterType, setFilterType] = useState('all');
+
+    // 🔧 히스토리 데이터만 추가
+    const [historyData, setHistoryData] = useState({});
+
+    // 🔧 히스토리 데이터 로드 (한 번만)
+    useEffect(() => {
+        const loadHistoryData = async () => {
+            try {
+                const histories = await fetchChatRoomHistory({});
+                const historyMap = {};
+                histories.forEach(h => {
+                    if (h.chatRoomId && h.meta?.genderSelections) {
+                        historyMap[h.chatRoomId] = h.meta.genderSelections;
+                    }
+                });
+                setHistoryData(historyMap);
+            } catch (err) {
+                console.error('히스토리 로드 실패:', err);
+            }
+        };
+        loadHistoryData();
+    }, []);
 
     // 2) 유니크한 타입 목록 뽑기
     const typeOptions = useMemo(() => {
@@ -72,28 +95,31 @@ const ChatRoomListPanel = ({
                     <p className="text-sm text-gray-600">방 ID: {room._id}</p>
                     <p className="text-sm text-gray-600">타입: {room.roomType}</p>
                     {/* 참여자 닉네임 목록 (성별 선택 정보 포함) */}
-                    {Array.isArray(room.chatUsersWithGender || room.chatUsers) && (room.chatUsersWithGender || room.chatUsers).length > 0 && (
-                        <p className="text-sm text-gray-600">
-                            참여자:{" "}
-                            {(room.chatUsersWithGender || room.chatUsers)
-                                .map(u => {
-                                    // 🔧 성별 선택 정보가 없으면 방의 matchedGender 사용
-                                    const userGender = u.selectedGender || room.matchedGender || 'any';
-                                    
-                                    const genderText = userGender === 'opposite' ? '이성' 
-                                          : userGender === 'same' ? '동성'
-                                          : userGender === 'any' ? '상관없음'
-                                          : '알 수 없음';
-                                    
-                                    const displayName = u.nickname && u.name
-                                        ? `${u.nickname}(${u.name})`
-                                        : u.nickname || u.name || u._id;
-                                    
-                                    return `${displayName}(${genderText})`;
-                                })
-                                .join(", ")}
-                        </p>
-                    )}
+                    {/* 🔧 성별 선택 정보만 수정된 부분 */}
+                    {Array.isArray(room.chatUsersWithGender || room.chatUsers) &&
+                        (room.chatUsersWithGender || room.chatUsers).length > 0 && (
+                            <div>
+                                참여자:{" "}
+                                {(room.chatUsersWithGender || room.chatUsers)
+                                    .map(u => {
+                                        // 🔧 ChatRoomHistory의 genderSelections를 우선 사용
+                                        const historyGender = historyData[room._id]?.[u._id.toString()];
+                                        const userGender = historyGender || u.selectedGender || room.matchedGender || 'any';
+
+                                        const genderText = userGender === 'opposite' ? '이성'
+                                            : userGender === 'same' ? '동성'
+                                                : userGender === 'any' ? '상관없음'
+                                                    : '알 수 없음';
+
+                                        const displayName = u.nickname && u.name
+                                            ? `${u.nickname}(${u.name})`
+                                            : u.nickname || u.name || u._id;
+
+                                        return `${displayName}(${genderText})`;
+                                    })
+                                    .join(", ")}
+                            </div>
+                        )}
                     {/* 생성 일자 추가 */}
                     {room.createdAt && (
                         <p className="text-xs text-gray-500">
