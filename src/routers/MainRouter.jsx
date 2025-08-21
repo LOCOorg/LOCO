@@ -24,6 +24,7 @@ import ReportRouter from "./ReportRouter.jsx";
 import PRRouter from "./PRRouter.jsx";
 import DeveloperRouter from "./DeveloperRouter.jsx";
 import NewsRouter from "./NewsRouter.jsx";
+import BannerRouter from "./BannerRouter.jsx";
 
 const MainRouter = createBrowserRouter([
     {
@@ -45,6 +46,10 @@ const MainRouter = createBrowserRouter([
             ...ReportRouter,
             MyPageRouter,
             NewsRouter,
+            {
+                path: "admin/banners/*",
+                element: <BannerRouter />,
+            },
             PRRouter,
             DeveloperRouter,
         ],
