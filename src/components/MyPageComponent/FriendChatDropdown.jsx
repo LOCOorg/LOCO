@@ -265,14 +265,16 @@ const FriendChatDropdown = () => {
                                 채팅방이 없습니다.
                             </p>
                         ) : (
-                            friendRooms.map(({ roomId, friend }) => (
+                            friendRooms
+                                .filter(({ friend }) => friend) // undefined friend 제거
+                                .map(({ roomId, friend }) => (
                                 <button
                                     key={roomId}
                                     onClick={() => handleOpenChat({ roomId, friend })}
                                     className="flex w-full items-center gap-2 px-4 py-2 text-left transition hover:bg-gray-50"
                                 >
                                     <span className="truncate text-sm text-gray-800">
-                    {friend.nickname || friend.name}
+                    {friend?.nickname || friend?.name || '알 수 없는 사용자'}
                   </span>
                                 </button>
                             ))
