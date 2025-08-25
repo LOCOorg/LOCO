@@ -5,10 +5,9 @@ import { refresh, fetchCurrentUser } from '../../api/authAPI.js';
 import useAuthStore from '../../stores/authStore.js';
 import { useSocket } from '../../hooks/useSocket.js';
 
-// AuthInit 전용 ref를 외부로 export
-export const authInitRef = { triedOnce: false };
 
 const AuthInit = () => {
+    const triedOnce = useRef(false);
     const setUser        = useAuthStore(s => s.setUser);
     const setAccessToken = useAuthStore(s => s.setAccessToken);
     const logout = useAuthStore((s) => s.logout);
@@ -19,8 +18,8 @@ const AuthInit = () => {
 
 
     useEffect(() => {
-        if (authInitRef.triedOnce) return; // 이미 시도했으면 무시
-        authInitRef.triedOnce = true;
+        if (triedOnce.current) return; // 이미 시도했으면 무시
+        triedOnce.current = true;
 
         (async () => {
             try {

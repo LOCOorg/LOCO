@@ -138,8 +138,6 @@ const SignupForm = () => {
                     // 기타 생년월일 관련 정보 (원본 데이터)
                     birthday: kakaoData.birthday || naverData.birthday || "",
                     birthyear: kakaoData.birthyear || naverData.birthyear || "",
-                    // 네이버 액세스 토큰 전달 (로그아웃 시 토큰 삭제용)
-                    naverAccessToken: naverData.access_token || "",
                     info,
                     nickname,
                     email,
@@ -203,7 +201,7 @@ const SignupForm = () => {
                     <input
                         type="text"
                         value={nickname}
-                        onChange={handleNicknameChange}
+                        onChange={(e) => setNickname(e.target.value)}
                         className={getNicknameInputStyle()}
                         required
                         placeholder="2-12자로 입력해주세요"
