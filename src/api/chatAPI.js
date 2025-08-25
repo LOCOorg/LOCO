@@ -127,3 +127,13 @@ export const toggleFriendRoomActive = async (roomId, active) =>
     axios.patch(`${host}/rooms/${roomId}/active`, { active })
         .then(res => res.data);
 
+export const fetchChatRoomHistory = async (params = {}) => {
+    try {
+        const response = await axios.get(`${host}/search/chat-room-history`, { params });
+        return response.data.dtoList || [];
+    } catch (error) {
+        console.error("채팅방 히스토리 불러오는 중 오류 발생:", error);
+        return [];
+    }
+};
+
