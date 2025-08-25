@@ -45,7 +45,21 @@ export const fetchCurrentUser = () =>
 
 
 
+// ✅ 네이버 연동해제 포함 로그아웃 함수
 export const logoutAPI = async () => {
-    // withCredentials: true 는 axiosInstance에 이미 설정되어 있습니다.
-    await instance.post("/api/auth/logout");
+    try {
+        console.log('로그아웃 API 호출 시작...');
+        
+        // withCredentials: true 는 axiosInstance에 이미 설정되어 있습니다.
+        const response = await instance.post("/api/auth/logout");
+        
+        console.log('로그아웃 API 응답:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('로그아웃 API 호출 실패:', error.response?.data || error.message);
+        throw error;
+    }
 };
+
+// ✅ 호환성을 위한 alias 추가
+export const logout = logoutAPI;

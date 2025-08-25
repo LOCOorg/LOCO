@@ -201,7 +201,7 @@ const SignupForm = () => {
                     <input
                         type="text"
                         value={nickname}
-                        onChange={(e) => setNickname(e.target.value)}
+                        onChange={handleNicknameChange}
                         className={getNicknameInputStyle()}
                         required
                         placeholder="2-12자로 입력해주세요"
