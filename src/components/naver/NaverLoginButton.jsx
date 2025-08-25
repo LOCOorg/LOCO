@@ -5,8 +5,14 @@ const NaverLoginButton = ({ className, iconColor, textColor, customText }) => {
     // 실제 클라이언트 ID로 교체하세요.
     const CLIENT_ID = '43hZkVrMUbaFIEUbgRCI';
     const REDIRECT_URI = 'http://localhost:5173/auth/naver/callback';
-    // state는 CSRF 보호용으로, 실제 서비스에서는 보안에 맞게 랜덤 값을 생성하여 사용합니다.
-    const state = 'randomState123'; //?
+    // ✅ State 동적 생성 - CSRF 보호 및 재로그인 시 새로운 세션 구분
+    const generateState = () => {
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2);
+        return `${timestamp}_${random}`;
+    };
+    
+    const state = generateState();
     const naverLoginUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}`;
 
     const defaultClassName = "inline-block px-6 py-3 bg-green-500 text-white text-lg rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500";
