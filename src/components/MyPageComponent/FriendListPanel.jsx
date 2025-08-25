@@ -38,7 +38,10 @@ const FriendListPanel = () => {
 
     /* ① 내 프로필 + 첫 페이지 */
     useEffect(() => {
-        if (!authUser) return;
+        if (!authUser) {
+            setLoading(false); // 로그인하지 않은 상태에서는 로딩 완료
+            return;
+        }
         (async () => {
             try {
                 const me = await getUserInfo(authUser._id);
@@ -117,7 +120,14 @@ const FriendListPanel = () => {
     return (
         <div className="w-80 bg-gray-50 shadow-lg rounded-xl p-5 flex flex-col">
             {loading ? (
-                <p className="text-gray-400 text-center py-10">로그인 해주세요!</p>
+                <div className="flex justify-center items-center h-64">
+                    <p className="text-gray-500">로딩 중...</p>
+                </div>
+            ) : !authUser ? (
+                <div className="flex flex-col justify-center items-center h-64 text-center">
+                    <p className="text-gray-500 text-lg mb-2">로그인 해주세요!</p>
+                    <p className="text-sm text-gray-400">친구 목록을 확인하려면<br/>로그인이 필요합니다</p>
+                </div>
             ) : (
                 user && (
                     <>
