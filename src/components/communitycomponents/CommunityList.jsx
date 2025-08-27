@@ -47,11 +47,21 @@ const CommunityList = () => {
     const [selectedSort, setSelectedSort] = useState('최신순');
     const [keyword, setKeyword] = useState('');
     const [searchType, setSearchType] = useState('title+content');
+    const [selectedPeriod, setSelectedPeriod] = useState('전체');
 
     // 사이드바 상태
     const [topViewed, setTopViewed] = useState([]);
     const [topCommented, setTopCommented] = useState([]);
     const [sideTab, setSideTab] = useState('viewed');
+
+    // 시간 범위 옵션 정의
+    const periodOptions = [
+        '전체',
+        '지난 1일',
+        '지난 1주',
+        '지난 1달',
+        '지난 1년'
+    ];
 
     // 닉네임 표시 함수 (익명 처리)
     const getDisplayNickname = (community) => {
@@ -70,7 +80,8 @@ const CommunityList = () => {
                 (selectedCategory === '내 글' || selectedCategory === '내 댓글') ? currentUserId : null,
                 selectedSort,
                 keyword,
-                searchType
+                searchType,
+                selectedPeriod
             );
             setPageResponse(data);
             setFilteredCommunities(data.dtoList || []);
@@ -95,6 +106,12 @@ const CommunityList = () => {
 
     const handleSortChange = (sortOption) => {
         setSelectedSort(sortOption);
+        setCurrentPage(1);
+    };
+
+    // 새로 추가: 시간 범위 변경 핸들러
+    const handlePeriodChange = (period) => {
+        setSelectedPeriod(period);
         setCurrentPage(1);
     };
 
@@ -126,7 +143,7 @@ const CommunityList = () => {
             return;
         }
         loadCommunities(currentPage);
-    }, [currentPage, selectedCategory, selectedSort, currentUserId]);
+    }, [currentPage, selectedCategory, selectedSort, currentUserId, selectedPeriod]);
 
     useEffect(() => {
         const fetchUserNames = async () => {
@@ -203,7 +220,7 @@ const CommunityList = () => {
                                     : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
                             }`}
                         >
-                            최신순
+                            최신
                         </button>
 
                         <button
@@ -214,7 +231,7 @@ const CommunityList = () => {
                                     : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
                             }`}
                         >
-                            인기순
+                            인기
                         </button>
 
                         <button
@@ -225,7 +242,7 @@ const CommunityList = () => {
                                     : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
                             }`}
                         >
-                            추천순
+                            추천
                         </button>
                     </div>
 
@@ -274,11 +291,27 @@ const CommunityList = () => {
                         </button>
                     </div>
 
+                    {/* 시간 범위 옵션 */}
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-gray-600">기간:</span>
+                        <select
+                            value={selectedPeriod}
+                            onChange={(e) => handlePeriodChange(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                        >
+                            {periodOptions.map((period) => (
+                                <option key={period} value={period}>
+                                    {period}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
                     <button
                         onClick={() => navigate('/community/new')}
                         className="w-full sm:w-auto bg-blue-500 text-white px-5 py-2 rounded-md hover:bg-blue-600 transition-colors"
                     >
-                        새 게시글 작성
+                        ✏️ 글쓰기
                     </button>
                 </div>
 

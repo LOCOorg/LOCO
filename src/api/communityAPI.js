@@ -10,14 +10,16 @@ export const fetchCommunities = async (
     userId = null,
     sort = '최신순',
     keyword = '',
-    searchType = 'title+content'   // 추가
+    searchType = 'title+content',
+    period = '전체'
 ) => {
     let url = `${host}?page=${page}&size=${size}`;
     if (category)    url += `&category=${encodeURIComponent(category)}`;
     if (userId)      url += `&userId=${userId}`;
     if (sort)        url += `&sort=${encodeURIComponent(sort)}`;
     if (keyword)     url += `&keyword=${encodeURIComponent(keyword)}`;
-    if (searchType)  url += `&searchType=${encodeURIComponent(searchType)}`;  // 추가
+    if (searchType)  url += `&searchType=${encodeURIComponent(searchType)}`;
+    if (period) url += `&period=${encodeURIComponent(period)}`;
 
     const response = await axios.get(url);
     return response.data;
