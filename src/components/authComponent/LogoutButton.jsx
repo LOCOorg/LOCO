@@ -1,5 +1,5 @@
 // src/components/LogoutButton.jsx
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../../stores/authStore";
 import { logoutAPI } from "../../api/authAPI";
@@ -7,24 +7,41 @@ import { logoutAPI } from "../../api/authAPI";
 export default function LogoutButton() {
     const navigate = useNavigate();
     const clearUser = useAuthStore((state) => state.logout);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const handleLogout = async () => {
-        console.log('로그아웃 버튼 클릭');
+        if (isLoggingOut) return; // 중복 클릭 방지
         
         try {
-            // 1) 클라이언트 상태 먼저 정리
+            setIsLoggingOut(true);
+            console.log('로그아웃 버튼 클릭');
+            
+            // 1) ✅ 백엔드 로그아웃 API 호출 (네이버 연동해제 포함)
+            console.log('네이버 연동해제 포함 로그아웃 요청 전송...');
+            const response = await logoutAPI();
+            console.log('네이버 연동해제 포함 로그아웃 성공:', response);
+            
+            // 2) 프론트엔드 상태 초기화
             clearUser();
             localStorage.clear();
+            sessionStorage.clear();
             
-            // 2) 서버에 로그아웃 요청 (서버에서 쿠키 삭제)
-            console.log('서버에 로그아웃 요청 전송');
-            await logoutAPI();
-            console.log('서버 로그아웃 요청 성공');
+            console.log('로그아웃 완료 - 메인 페이지로 이동');
+            navigate('/');
             
         } catch (err) {
-            console.warn("POST /api/auth/logout 실패", err);
+            console.error("로그아웃 처리 중 오류:", err);
+            
+            // 오류가 발생해도 프론트엔드 상태는 초기화
+            clearUser();
+            localStorage.clear();
+            sessionStorage.clear();
+            navigate('/');
+            
         } finally {
-            // 3) 카카오 로그아웃으로 이동 → 우리 서버의 /logout-redirect에서 쿠키 재삭제(세이프가드)
+            setIsLoggingOut(false);
+            
+            // 3) ✅ 카카오 로그아웃 처리도 유지 (기존 기능)
             const apiHost  = import.meta.env.VITE_API_HOST;
             const kakaoKey = import.meta.env.VITE_KAKAO_REST_API_KEY;
 
@@ -40,11 +57,14 @@ export default function LogoutButton() {
             }
         }
     };
+    
     return (
-        <li className="block px-4 py-2 hover:bg-gray-100 transition cursor-pointer"
+        <li className={`block px-4 py-2 hover:bg-gray-100 transition cursor-pointer ${
+                isLoggingOut ? 'opacity-50 pointer-events-none' : ''
+            }`}
             onClick={handleLogout}
         >
-            로그아웃
+            {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
         </li>
     );
 }
