@@ -95,6 +95,7 @@ const CommunityList = () => {
 
     const handleSortChange = (sortOption) => {
         setSelectedSort(sortOption);
+        setCurrentPage(1);
     };
 
     const changePage = (page) => {
@@ -192,21 +193,42 @@ const CommunityList = () => {
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
                         커뮤니티 목록<span className="text-blue-600"> ({selectedCategory})</span>
                     </h1>
-                    <div className="inline-flex space-x-2">
-                        {['최신순', '인기순'].map((option) => (
-                            <button
-                                key={option}
-                                onClick={() => handleSortChange(option)}
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                    selectedSort === option
-                                        ? 'bg-blue-500 text-white'
-                                        : 'text-gray-600 hover:bg-gray-100'
-                                }`}
-                            >
-                                {option}
-                            </button>
-                        ))}
+                    {/* 정렬 버튼 섹션 - TailwindCSS */}
+                    <div className="flex space-x-2 my-5">
+                        <button
+                            onClick={() => handleSortChange('최신순')}
+                            className={`px-4 py-2 rounded border text-sm font-medium transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                selectedSort === '최신순'
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                            }`}
+                        >
+                            최신순
+                        </button>
+
+                        <button
+                            onClick={() => handleSortChange('인기순')}
+                            className={`px-4 py-2 rounded border text-sm font-medium transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                selectedSort === '인기순'
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                            }`}
+                        >
+                            인기순
+                        </button>
+
+                        <button
+                            onClick={() => handleSortChange('추천순')}
+                            className={`px-4 py-2 rounded border text-sm font-medium transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                selectedSort === '추천순'
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                            }`}
+                        >
+                            추천순
+                        </button>
                     </div>
+
                 </div>
 
                 {/* 검색 및 글쓰기 */}
