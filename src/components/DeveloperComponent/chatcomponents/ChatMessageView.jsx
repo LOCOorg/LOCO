@@ -103,7 +103,7 @@ const ChatMessageView = ({ messages, selectedRoom, currentUser }) => (
                                 </p>
 
                                 {/* 메시지 본문 */}
-                                <p className="whitespace-pre-wrap">{msg.text}</p>
+                                <p className="whitespace-pre-wrap break-all">{msg.text}</p>
 
                                 {/* 삭제 표시 */}
                                 {msg.isDeleted && (
