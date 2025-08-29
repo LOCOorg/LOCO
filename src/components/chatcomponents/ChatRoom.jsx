@@ -490,7 +490,7 @@ const ChatRoom = ({roomId, userId}) => {
                       {formatTime(msg.textTime)}
                     </span>
                                             </div>
-                                            <p className="whitespace-pre-wrap">
+                                            <p className="whitespace-pre-wrap break-all">
                                                 {msg.isDeleted ? '삭제된 메시지입니다.' : msg.text}
                                             </p>
                                         </div>
