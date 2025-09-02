@@ -426,7 +426,7 @@ const CommentSection = ({
                                                     comment.commentImage.startsWith('http') ||
                                                     comment.commentImage.startsWith('data:')
                                                         ? comment.commentImage
-                                                        : `${API_HOST}${comment.commentImage}`
+                                                        : `${API_HOST}/uploads${comment.commentImage}`
                                                 }
                                                 alt="댓글 이미지"
                                                 className="w-32 h-auto mt-2"
@@ -526,7 +526,7 @@ const CommentSection = ({
                                                                                     reply.replyImage.startsWith('http') ||
                                                                                     reply.replyImage.startsWith('data:')
                                                                                         ? reply.replyImage
-                                                                                        : `${API_HOST}${reply.replyImage}`
+                                                                                        : `${API_HOST}/uploads${reply.replyImage}`
                                                                                 }
                                                                                 alt="대댓글 이미지"
                                                                                 className="w-32 h-auto"
@@ -599,7 +599,7 @@ const CommentSection = ({
                                                                                                 subReply.subReplyImage.startsWith('http') ||
                                                                                                 subReply.subReplyImage.startsWith('data:')
                                                                                                     ? subReply.subReplyImage
-                                                                                                    : `${API_HOST}${subReply.subReplyImage}`
+                                                                                                    : `${API_HOST}/uploads${subReply.subReplyImage}`
                                                                                             }
                                                                                             alt="대대댓글 이미지"
                                                                                             className="w-32 h-auto"

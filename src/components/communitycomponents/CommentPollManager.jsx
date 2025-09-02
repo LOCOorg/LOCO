@@ -26,9 +26,7 @@ const CommentPollManager = ({
     // 댓글 투표 생성 권한 확인
     const canCreateCommentPoll = () => {
         return currentUserId && (
-            comment.userId === currentUserId ||
-            community.userId === currentUserId ||
-            isAdmin
+            comment.userId === currentUserId
         );
     };
 

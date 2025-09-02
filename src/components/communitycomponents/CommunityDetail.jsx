@@ -363,7 +363,7 @@ const CommunityDetail = () => {
                             {community.communityImages.map((src) => (
                                 <img
                                     key={src}
-                                    src={`${API_HOST}${src}`}
+                                    src={`${API_HOST}/uploads${src}`}
                                     alt="본문 이미지"
                                     className="max-h-96 w-auto rounded object-contain"
                                 />

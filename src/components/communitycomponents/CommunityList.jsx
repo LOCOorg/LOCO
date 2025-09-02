@@ -324,7 +324,7 @@ const CommunityList = () => {
                     <ul className="grid grid-cols-1 gap-4">
                         {filteredCommunities.map((community) => {
                             const thumb = community.communityImages?.length
-                                ? `${API_HOST}${community.communityImages[0]}`
+                                ? `${API_HOST}/uploads${community.communityImages[0]}`
                                 : '/no-thumb.png';
 
                             return (
