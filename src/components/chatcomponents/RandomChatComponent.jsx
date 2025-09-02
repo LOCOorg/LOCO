@@ -75,7 +75,7 @@ const RandomChatComponent = () => {
         const tick = () => {
             const diff = new Date(userInfo.nextRefillAt) - Date.now();
             if (diff <= 0) {
-                fetchUserInfoAsync(userId);
+                setTimeLeft(null);
                 return;
             }
             const h = String(Math.floor(diff / 3_600_000)).padStart(2, "0");
