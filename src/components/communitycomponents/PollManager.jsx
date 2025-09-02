@@ -25,8 +25,7 @@ const PollManager = ({
     // 투표 생성 권한 확인 (게시글 작성자나 관리자만)
     const canCreatePoll = () => {
         return currentUserId && (
-            community?.userId === currentUserId ||
-            isAdmin
+            community?.userId === currentUserId
         );
     };
 
