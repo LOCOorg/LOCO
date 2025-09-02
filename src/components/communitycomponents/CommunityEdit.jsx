@@ -101,7 +101,7 @@ const CommunityEdit = () => {
                 if (data.communityImages?.length) {
                     const existingImages = data.communityImages.map((imagePath, index) => ({
                         type: 'existing',
-                        src: `${API_HOST}${imagePath}`,
+                        src: `${API_HOST}/uploads${imagePath}`,
                         originalPath: imagePath,
                         id: `existing-${index}`
                     }));
