@@ -2,7 +2,7 @@
 import { Link, Outlet } from 'react-router-dom';
 import ChatNotification from "../components/chatcomponents/ChatNotification.jsx";
 import useAuthStore from '../stores/authStore';
-import FriendChatDropdown from '../components/MyPageComponent/FriendChatDropdown.jsx';
+import FriendChatSidePanel from '../components/MyPageComponent/FriendChatSidePanel.jsx';
 import FriendRequestNotification from '../components/MyPageComponent/FriendRequestNotification.jsx';
 import GlobalFriendChatOverlay from "../components/chatcomponents/GlobalFriendChatOverlay.jsx";
 import LoginModal from "../components/loginComponent/LoginModal.jsx";
@@ -123,7 +123,7 @@ const BasicLayout = ({ children }) => {
                             </ul>
                         </DropdownTransition>
                     </ul>
-                    <FriendChatDropdown />
+                    <FriendChatSidePanel />
                     <ChatNotification />
                     <FriendRequestNotification />
                     <NotificationToggleButton/>
