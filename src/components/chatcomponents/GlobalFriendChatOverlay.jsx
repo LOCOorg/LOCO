@@ -67,7 +67,7 @@ function GlobalFriendChatOverlay() {
     };
 
     return (
-        <>
+        <div className="chat-overlay-container">
             {visibleChats.map((chat, index) => {
                 const friendInfo = getFriendInfo(chat); // 최신 친구 정보 가져오기
                 return (
@@ -146,7 +146,7 @@ function GlobalFriendChatOverlay() {
 
                 </div>
             )}
-        </>
+        </div>
     );
 }
 
