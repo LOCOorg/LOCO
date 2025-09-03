@@ -63,6 +63,9 @@ const ChatRoom = ({roomId, userId}) => {
     };
 
     const handleReceiveMessage = async (message) => {
+        // 현재 채팅방의 메시지만 처리
+        if (message.chatRoom !== roomId) return;
+
         if (typeof message.sender === "string") {
             try {
                 const user = await getUserInfo(message.sender);
