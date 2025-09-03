@@ -71,12 +71,19 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
     useEffect(() => {
         if (socket && roomId) {
             socket.emit("joinRoom", roomId);
-            socket.on("receiveMessage", (message) => {
+
+            // 메시지 수신 핸들러를 변수로 저장
+            const handleReceiveMessage = (message) => {
+                // 현재 채팅방의 메시지만 처리
+                if (message.chatRoom !== roomId) return;
+
                 const normalizedMessage = {
                     ...message,
-                    sender: message.sender.id
-                        ? { _id: message.sender.id, name: message.sender.name, nickname: message.sender.nickname }
-                        : message.sender,
+                    sender: message.sender.id ? {
+                        _id: message.sender.id,
+                        name: message.sender.name,
+                        nickname: message.sender.nickname
+                    } : message.sender,
                 };
 
                 setMessages((prevMessages) => {
@@ -86,13 +93,16 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
                     }
                     return prevMessages;
                 });
-            });
+            };
+
+            socket.on("receiveMessage", handleReceiveMessage);
 
             return () => {
-                socket.off("receiveMessage");
+                socket.off("receiveMessage", handleReceiveMessage); // ✅ 핸들러 명시
             };
         }
     }, [socket, roomId]);
+
 
     // 채팅방 기존 메시지 불러오기
     useEffect(() => {
@@ -175,7 +185,7 @@ function ChatOverlay({ roomId: propRoomId, customStyle = {}, onClose, friend }) 
     if (hiddenRoomIds.includes(roomId)) return null;
 
     return (
-        <div className="fixed bottom-5 right-5 w-[350px] h-[450px] bg-white shadow-lg
+        <div className="chat-overlay-container fixed bottom-5 right-5 w-[350px] h-[450px] bg-white shadow-lg
                  rounded-lg flex flex-col overflow-hidden z-[900]"
              style={customStyle}>
             {/* ── 헤더 ── */}

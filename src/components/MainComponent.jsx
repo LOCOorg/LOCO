@@ -19,8 +19,8 @@ function MainComponent() {
             <ReportNotificationModal />
 
             <div className="flex flex-col lg:flex-row items-start justify-start min-h-screen bg-gray-50 p-6 lg:space-x-6">
-                {/* 왼쪽: 친구 목록 */}
-                <FriendListPanel />
+                {/*/!* 왼쪽: 친구 목록 *!/*/}
+                {/*<FriendListPanel />*/}
 
                 {/* 중앙: 배너 + 주요 액션 버튼 */}
                 <div className="flex flex-col items-center lg:items-start space-y-4 flex-1">
