@@ -144,6 +144,13 @@ const useFriendChatStore = create((set, get) => ({
             return newState;
         });
     },
+    // ✅ 채팅방이 열려있고 보이는 상태인지 확인하는 함수
+    isChatOpenAndVisible: (roomId) => {
+        const state = get();
+        const isOpen = state.friendChats.some(chat => chat.roomId === roomId);
+        const isVisible = !state.hiddenRoomIds.includes(roomId);
+        return isOpen && isVisible;
+    },
 }));
 
 export default useFriendChatStore;

@@ -21,7 +21,7 @@ const GlobalChatNotification = () => {
     const { user } = useAuthStore();
     const userId   = user?._id;
 
-    const { openFriendChat } = useFriendChatStore();
+    const { openFriendChat, friendChats, hiddenRoomIds, isChatOpenAndVisible  } = useFriendChatStore();
 
     const notifications          = useNotificationStore((s) => s.notifications);
     const addNotification        = useNotificationStore((s) => s.addNotification);
@@ -63,6 +63,24 @@ const GlobalChatNotification = () => {
             /* 내가 이미 보고 있는 채팅방이면 무시 */
             if (pathname.startsWith(`/chat/${data.chatRoom}`)) return;
 
+            /* 친구 채팅방이 열려있고 보이는 상태라면 알림 차단 */
+            if (data.roomType === 'friend' && isChatOpenAndVisible(data.chatRoom)) {
+                return;
+            }
+
+            // ✅ 친구 채팅이 열려있고 숨겨지지 않은 상태라면 알림 차단
+            if (data.roomType === 'friend') {
+                const isOpenAndVisible = friendChats.some(chat =>
+                    chat.roomId === data.chatRoom &&
+                    !hiddenRoomIds.includes(data.chatRoom)
+                );
+
+                if (isOpenAndVisible) {
+                    console.log(`친구 채팅방 ${data.chatRoom}이 열려있어 알림을 차단합니다.`);
+                    return;
+                }
+            }
+
             /* 토스트가 꺼져 있으면 드롭다운 목록만 추가 */
             if (!chatPreviewEnabled) {
                 addNotification({ id: Date.now(), ...data });
@@ -87,7 +105,7 @@ const GlobalChatNotification = () => {
 
         socket.on('chatNotification', handler);
         return () => socket.off('chatNotification', handler);
-    }, [socket, pathname, chatPreviewEnabled, addNotification, cleanupOldNotifications]);
+    }, [socket, pathname, chatPreviewEnabled, addNotification, cleanupOldNotifications, friendChats, hiddenRoomIds]);
 
     /* ----------------- UI 핸들러 ----------------- */
     const toggleDropdown = () => setDropdownOpen((p) => !p);
