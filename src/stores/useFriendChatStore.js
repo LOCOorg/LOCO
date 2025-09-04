@@ -1,37 +1,40 @@
 import { create } from "zustand";
-import { toggleFriendRoomActive } from "../api/chatAPI.js";
 import { getDecryptedItem, setEncryptedItem } from "../utils/storageUtils.js";
 
-// ✅ 초기 데이터 직접 복원
 const getInitialState = () => {
     try {
         const stored = getDecryptedItem('friend-chat-storage');
         if (stored?.state) {
             return {
-                friendChats: stored.state.friendChats || [],
-                hiddenRoomIds: stored.state.hiddenRoomIds || [],
                 friendRooms: stored.state.friendRooms || [],
+                roomSummaries: {}, // 각 채팅방의 요약 정보
+                sidePanelOpen: false,
+                selectedRoomId: null,
+                activeRightTab: 'chatlist',
+                shouldOpenPanel: false,
+                targetRoomId: null,
+                targetFriendInfo: null,
             };
         }
     } catch (error) {
         console.error('초기 데이터 복원 실패:', error);
     }
     return {
-        friendChats: [],
-        hiddenRoomIds: [],
         friendRooms: [],
+        roomSummaries: {},
+        sidePanelOpen: false,
+        selectedRoomId: null,
+        activeRightTab: 'chatlist',
+        shouldOpenPanel: false,
+        targetRoomId: null,
+        targetFriendInfo: null,
     };
 };
 
-// ✅ 저장 헬퍼 함수
 const saveToStorage = (state) => {
     try {
         setEncryptedItem('friend-chat-storage', {
-            state: {
-                friendChats: state.friendChats,
-                hiddenRoomIds: state.hiddenRoomIds,
-                friendRooms: state.friendRooms,
-            },
+            state: { friendRooms: state.friendRooms },
             version: 0
         });
     } catch (error) {
@@ -40,69 +43,88 @@ const saveToStorage = (state) => {
 };
 
 const useFriendChatStore = create((set, get) => ({
-    // ✅ 초기 상태를 직접 복원
     ...getInitialState(),
 
-    openFriendChat: (chat) => {
-        set((state) => {
-            let newState;
-            if (state.hiddenRoomIds.includes(chat.roomId)) {
-                newState = {
-                    ...state,
-                    hiddenRoomIds: state.hiddenRoomIds.filter((id) => id !== chat.roomId),
-                };
-            } else {
-                if (state.friendChats.some((c) => c.roomId === chat.roomId)) return state;
-                newState = { ...state, friendChats: [...state.friendChats, chat] };
-            }
-
-            // ✅ 상태 변경 후 즉시 저장
-            saveToStorage(newState);
-            return newState;
-        });
-    },
-
-    closeFriendChat: async (roomId) => {
-        set((state) => {
-            const newState = {
-                ...state,
-                friendChats: state.friendChats.filter((c) => c.roomId !== roomId),
-                friendRooms: state.friendRooms.filter((r) => r.roomId !== roomId),
-                hiddenRoomIds: state.hiddenRoomIds.filter((id) => id !== roomId),
-            };
-
-            // ✅ 상태 변경 후 즉시 저장
-            saveToStorage(newState);
-            return newState;
-        });
-
-        try {
-            await toggleFriendRoomActive(roomId, false);
-        } catch (e) {
-            console.error(e);
-        }
-    },
-
-    toggleHideChat: (roomId) => {
-        set((state) => {
-            const newState = {
-                ...state,
-                hiddenRoomIds: state.hiddenRoomIds.includes(roomId)
-                    ? state.hiddenRoomIds.filter((id) => id !== roomId)
-                    : [...state.hiddenRoomIds, roomId],
-            };
-
-            // ✅ 상태 변경 후 즉시 저장
-            saveToStorage(newState);
-            return newState;
-        });
-    },
-
+    // 친구 채팅방 목록 관리
     setFriendRooms: (rooms) => {
         set((state) => {
             const newState = { ...state, friendRooms: rooms };
             saveToStorage(newState);
             return newState;
+        });
+    },
+
+    // 채팅방 요약 정보 설정 - 새 객체 생성 보장
+    setRoomSummary: (roomId, summary) => {
+        set((state) => ({
+            ...state,
+            roomSummaries: {
+                ...state.roomSummaries,
+                [roomId]: { ...summary } // 새 객체 생성 보장
+            }
+        }));
+    },
+
+    // 여러 채팅방 요약 정보 한번에 설정
+    setRoomSummaries: (summaries) => {
+        set((state) => ({
+            ...state,
+            roomSummaries: { ...summaries } // 완전히 새로운 객체
+        }));
+    },
+
+    // 실시간 메시지 업데이트 (효율적인 단일 채팅방 업데이트)
+    updateRoomMessage: (roomId, messageData) => {
+        set((state) => {
+            const currentSummary = state.roomSummaries[roomId] || {
+                lastMessage: '',
+                lastMessageTime: null,
+                unreadCount: 0
+            };
+
+            const newSummary = {
+                lastMessage: messageData.text || currentSummary.lastMessage,
+                lastMessageTime: messageData.timestamp || messageData.textTime || Date.now(),
+                // ✅ isFromOther가 true일 때만 unreadCount 증가
+                unreadCount: messageData.isFromOther ?
+                    (currentSummary.unreadCount + 1) :
+                    currentSummary.unreadCount
+            };
+
+            return {
+                ...state,
+                roomSummaries: {
+                    ...state.roomSummaries,
+                    [roomId]: newSummary
+                }
+            };
+        });
+    },
+    // ✅ 활성 채팅방 상태 추가
+    setActiveChat: (roomId) => {
+        set({ activeRoomId: roomId });
+    },
+
+    clearActiveChat: () => {
+        set({ activeRoomId: null });
+    },
+
+    // 채팅방 읽음 처리
+    markRoomAsRead: (roomId) => {
+        set((state) => {
+            const currentSummary = state.roomSummaries[roomId];
+            if (!currentSummary) return state;
+
+            return {
+                ...state,
+                roomSummaries: {
+                    ...state.roomSummaries,
+                    [roomId]: {
+                        ...currentSummary,
+                        unreadCount: 0
+                    }
+                }
+            };
         });
     },
 
@@ -126,30 +148,34 @@ const useFriendChatStore = create((set, get) => ({
         });
     },
 
-    swapFriendChat: (selectedRoomId, maxWindows) => {
-        set((state) => {
-            if (state.friendChats.length <= maxWindows) return state;
+    // 사이드패널 상태 관리
+    setSidePanelOpen: (open) => set({ sidePanelOpen: open }),
+    setSelectedRoomId: (roomId) => set({ selectedRoomId: roomId }),
+    setActiveRightTab: (tab) => set({ activeRightTab: tab }),
 
-            const chats = [...state.friendChats];
-            const removed = chats.shift();
-            const idx = chats.findIndex((c) => c.roomId === selectedRoomId);
-            if (idx === -1) return state;
-
-            const [selected] = chats.splice(idx, 1);
-            chats.splice(maxWindows - 1, 0, selected);
-            chats.push(removed);
-
-            const newState = { ...state, friendChats: chats };
-            saveToStorage(newState);
-            return newState;
+    // 외부에서 사이드패널 열기
+    openSidePanelWithChat: (roomId, friendInfo) => {
+        set({
+            shouldOpenPanel: true,
+            targetRoomId: roomId,
+            targetFriendInfo: friendInfo,
         });
     },
-    // ✅ 채팅방이 열려있고 보이는 상태인지 확인하는 함수
-    isChatOpenAndVisible: (roomId) => {
+
+    clearOpenSignal: () => {
+        set({
+            shouldOpenPanel: false,
+            targetRoomId: null,
+            targetFriendInfo: null,
+        });
+    },
+
+    // 사이드패널 체크 함수
+    isSidePanelChatVisible: (roomId) => {
         const state = get();
-        const isOpen = state.friendChats.some(chat => chat.roomId === roomId);
-        const isVisible = !state.hiddenRoomIds.includes(roomId);
-        return isOpen && isVisible;
+        return state.sidePanelOpen &&
+            state.activeRightTab === 'chat' &&
+            state.selectedRoomId === roomId;
     },
 }));
 
