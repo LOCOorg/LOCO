@@ -137,3 +137,58 @@ export const fetchChatRoomHistory = async (params = {}) => {
     }
 };
 
+// 1. 메시지 읽음 처리
+export const markRoomAsRead = async (roomId, userId) => {
+    try {
+        const response = await axios.patch(`${host}/rooms/${roomId}/read`, {
+            userId: userId
+        });
+
+        return {
+            success: true,
+            readAt: response.data.readAt || Date.now(),
+            modifiedCount: response.data.modifiedCount || 0
+        };
+    } catch (error) {
+        console.error("메시지 읽음 처리 중 오류 발생:", error);
+        throw error;
+    }
+};
+
+// 2. 안읽은 메시지 개수 조회
+export const getUnreadCount = async (roomId, userId) => {
+    try {
+        const response = await axios.get(`${host}/rooms/${roomId}/unread`, {
+            params: { userId: userId }
+        });
+
+        return {
+            unreadCount: response.data.unreadCount || 0
+        };
+    } catch (error) {
+        console.error("안읽은 메시지 개수 조회 중 오류 발생:", error);
+        return { unreadCount: 0 };
+    }
+};
+
+// 3. 채팅방 입장 시간 기록
+export const recordRoomEntry = async (roomId, userId) => {
+    try {
+        const response = await axios.post(`${host}/rooms/${roomId}/entry`, {
+            userId: userId,
+            entryTime: new Date().toISOString()
+        });
+
+        // 입장과 동시에 읽음 처리
+        await markRoomAsRead(roomId, userId);
+
+        return {
+            success: true,
+            entryTime: response.data.entryTime || Date.now()
+        };
+    } catch (error) {
+        console.error("채팅방 입장 시간 기록 중 오류 발생:", error);
+        throw error;
+    }
+};
+
