@@ -147,7 +147,6 @@ const BasicLayout = ({ children }) => {
             </main>
 
 
-            <GlobalFriendChatOverlay />  {/* 전역 채팅 */}
             
             {/* 로그인 모달 */}
             <LoginModal 
