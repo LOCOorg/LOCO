@@ -28,7 +28,7 @@ const FriendListPanel = () => {
     const [fetching, setFetching] = useState(false);
 
     const authUser = useAuthStore((state) => state.user);
-    const { openFriendChat, addFriendRoom  } = useFriendChatStore();
+    const { addFriendRoom, openSidePanelWithChat  } = useFriendChatStore();
 
     // 🔧 친구들의 온라인 상태 추적 (이미 백엔드에서 온라인 상태를 내려주지만 실시간 업데이트를 위해 추가)
     const friendIds = friends.map(friend => friend._id).filter(Boolean);
@@ -101,7 +101,7 @@ const FriendListPanel = () => {
                 newRoom = { ...room, chatUsers: [user._id, friendId] };
             }
 
-            openFriendChat({ roomId: newRoom._id, friend });
+            openSidePanelWithChat({ roomId: newRoom._id, friend });
             addFriendRoom({ roomId: newRoom._id, friend });
             // 드롭다운에 보여야 하므로 isActive true 로 전환
             try { await toggleFriendRoomActive(newRoom._id, true); } catch (e) { console.error(e); }
