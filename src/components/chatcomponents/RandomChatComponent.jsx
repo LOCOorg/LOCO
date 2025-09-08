@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSocket } from "../../hooks/useSocket.js";
 import {
     getUserInfo,
     getBlockedUsers,
@@ -9,7 +10,7 @@ import {
     createChatRoom,
     joinChatRoom,
     fetchChatRooms,
-    fetchUserLeftRooms
+    fetchUserLeftRooms, leaveChatRoom
 } from "../../api/chatAPI";
 import CommonModal from "../../common/CommonModal";
 import SimpleProfileModal from "../MyPageComponent/SimpleProfileModal.jsx";
@@ -29,6 +30,12 @@ const RandomChatComponent = () => {
     const [timeLeft, setTimeLeft]   = useState(null);   // ☆ 추가
     const [selectedProfile, setSelectedProfile] = useState(null);
     const [showProfileModal, setShowProfileModal] = useState(false);
+    const [isWaiting, setIsWaiting] = useState(false);
+    const [waitingRoomId, setWaitingRoomId] = useState(null);
+    const [currentParticipants, setCurrentParticipants] = useState([]);
+    const [waitingCapacity, setWaitingCapacity] = useState(0);
+
+    const socket = useSocket(); // 소켓 연결
 
     const blockedUsers          = useBlockedStore((s) => s.blockedUsers);
     const setBlockedUsersStore  = useBlockedStore((s) => s.setBlockedUsers);
@@ -88,6 +95,40 @@ const RandomChatComponent = () => {
         return () => clearInterval(id);       // 클린업
     }, [userInfo?.nextRefillAt]);
 
+    // 소켓 이벤트 리스너 설정
+    useEffect(() => {
+        if (!socket || !isWaiting) return;
+
+        // 사용자가 방에 참가했을 때
+        const handleRoomJoined = ({ roomId, activeUsers, capacity }) => {
+            if (roomId === waitingRoomId) {
+                setCurrentParticipants(activeUsers);
+                setWaitingCapacity(capacity);
+
+                // 방이 가득 찼으면 ChatRoom으로 이동
+                if (activeUsers.length >= capacity) {
+                    setIsWaiting(false);
+                    navigate(`/chat/${roomId}/${userId}`);
+                }
+            }
+        };
+
+        // 사용자가 방을 떠났을 때
+        const handleUserLeft = ({ roomId, activeUsers }) => {
+            if (roomId === waitingRoomId) {
+                setCurrentParticipants(activeUsers);
+            }
+        };
+
+        socket.on("roomJoined", handleRoomJoined);
+        socket.on("userLeft", handleUserLeft);
+
+        return () => {
+            socket.off("roomJoined", handleRoomJoined);
+            socket.off("userLeft", handleUserLeft);
+        };
+    }, [socket, isWaiting, waitingRoomId, userId, navigate]);
+
     // 유저 정보 호출 함수
     const fetchUserInfoAsync = async (userId) => {
         try {
@@ -134,9 +175,6 @@ const RandomChatComponent = () => {
     };
 
     // 랜덤 채팅방 찾기 및 생성 함수
-// ────────────────────────────────────────────────────────────────
-//  RandomChatComponent.jsx  –  findOrCreateRandomRoom 교체본
-// ────────────────────────────────────────────────────────────────
     const findOrCreateRandomRoom = async (capacity, matchedGender) => {
         if (!userId) return;
 
@@ -259,8 +297,7 @@ const RandomChatComponent = () => {
 
                 // (3-A) 참여 가능한 대기방이 존재할 때
                 if (availableRooms.length) {
-                    const target =
-                        availableRooms[Math.floor(Math.random() * availableRooms.length)];
+                    const target = availableRooms[Math.floor(Math.random() * availableRooms.length)];
                     setModalTitle("알림");
                     setModalMessage(
                         `랜덤 채팅방(${capacity}명, ${genderLabels[matchedGender]})에 참가합니다.`
@@ -270,21 +307,26 @@ const RandomChatComponent = () => {
                             text: "확인",
                             action: async () => {
                                 try {
-                                    await joinChatRoom(target._id, userId, matchedGender);  // 🔧 selectedGender 전달
-                                    navigate(`/chat/${target._id}/${userId}`);
+                                    await joinChatRoom(target._id, userId, matchedGender);
+
+                                    // 대기 상태로 전환 (바로 navigate 하지 않음)
+                                    setIsWaiting(true);
+                                    setWaitingRoomId(target._id);
+
+                                    // 소켓 방 참가
+                                    socket.emit("joinRoom", target._id, "random");
+
                                 } catch (err) {
                                     if (err.response?.status === 403) {
-                                        // 차단 관계 – 모달 닫고 다시 탐색
                                         setModalOpen(false);
-                                        await tryMatch();
+                                        await tryMatch(); // 차단 관계시 재시도
                                     } else {
                                         throw err;
                                     }
                                 }
                             }
-                        }
-                    ]);
-                    setModalOpen(true);
+                        }]);
+                                setModalOpen(true);
                     return;
                 }
 
@@ -298,17 +340,18 @@ const RandomChatComponent = () => {
                         text: "생성",
                         action: async () => {
                             try {
-                                const room = await createChatRoom(
-                                    "random",
-                                    capacity,
-                                    matchedGender,
-                                    ageGroup
-                                );
-                                await joinChatRoom(room._id, userId, matchedGender);  // 🔧 selectedGender 전달
-                                navigate(`/chat/${room._id}/${userId}`);
+                                const room = await createChatRoom("random", capacity, matchedGender, ageGroup);
+                                await joinChatRoom(room._id, userId, matchedGender);
+
+                                // 대기 상태로 전환
+                                setIsWaiting(true);
+                                setWaitingRoomId(room._id);
+
+                                // 소켓 방 참가
+                                socket.emit("joinRoom", room._id, "random");
+
                             } catch (err) {
                                 if (err.response?.status === 403) {
-                                    // 생성-직후에도 차단 충돌 – 모달 닫고 다시 탐색
                                     setModalOpen(false);
                                     await tryMatch();
                                 } else {
@@ -321,7 +364,6 @@ const RandomChatComponent = () => {
                 setModalOpen(true);
             };
 
-            /* ─── 3. 최초 호출 ─── */
             await tryMatch();
         } catch (e) {
             console.error(e);
@@ -331,6 +373,62 @@ const RandomChatComponent = () => {
             setModalOpen(true);
         }
     };
+
+    // 대기 취소 함수
+    const cancelWaiting = async () => {
+        if (waitingRoomId && socket) {
+            try {
+                await leaveChatRoom(waitingRoomId, userId);
+                socket.emit("leaveRoom", { roomId: waitingRoomId, userId });
+            } catch (error) {
+                console.error("방 나가기 실패:", error);
+            }
+        }
+
+        setIsWaiting(false);
+        setWaitingRoomId(null);
+        setCurrentParticipants([]);
+        setWaitingCapacity(0);
+    };
+
+    // 대기 중 UI 렌더링
+    if (isWaiting) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+                <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-6">매칭 대기 중...</h2>
+
+                    <div className="mb-6">
+                        <p className="text-lg font-semibold text-gray-700 mb-4">
+                            {currentParticipants.length} / {waitingCapacity}명
+                        </p>
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {currentParticipants.map((participant, index) => (
+                                <div
+                                    key={index}
+                                    className="bg-blue-100 text-blue-800 px-3 py-2 rounded-lg font-medium"
+                                >
+                                    {participant.nickname || '참가자'}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="mb-6 flex justify-center">
+                        {/* 로딩 애니메이션 */}
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    </div>
+
+                    <button
+                        onClick={cancelWaiting}
+                        className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+                    >
+                        대기 취소
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
 
     if (error) return <div>{error}</div>;
