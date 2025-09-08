@@ -184,11 +184,6 @@ const FriendListPanel = () => {
                                                         </div>
                                                     </div>
                                                 </div>
-
-                                                {/* 오른쪽 온라인 상태 아이콘 */}
-                                                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                                    isOnline ? 'bg-green-400' : 'bg-gray-300'
-                                                }`} />
                                             </div>
                                         );
                                     })}

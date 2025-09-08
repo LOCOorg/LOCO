@@ -26,10 +26,6 @@ function MainComponent() {
                 <div className="flex flex-col items-center lg:items-start space-y-4 flex-1">
                     {/* 배너 영역 */}
                     <MainBannerComponent />
-                    
-                    <div className="w-full">
-                        <RandomChatComponent />
-                    </div>
                 </div>
 
                 {/* 오른쪽: 분리된 사이드바 (lg 이상에서만 표시) */}

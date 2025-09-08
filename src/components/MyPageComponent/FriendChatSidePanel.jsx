@@ -409,7 +409,6 @@ const FriendChatSidePanel = () => {
         if (!room || !room.roomId || !user?._id) return;
 
         setSelectedRoom(room);
-        setActiveRightTabLocal('chat');
 
         try {
             await recordRoomEntry(room.roomId, user._id);
@@ -421,11 +420,6 @@ const FriendChatSidePanel = () => {
         } catch (error) {
             console.error('채팅방 입장 처리 실패:', error);
         }
-    };
-
-    const handleBackToChatList = () => {
-        setActiveRightTabLocal('chatlist');
-        setSelectedRoom(null);
     };
 
     const handleClosePanel = () => {
@@ -459,10 +453,14 @@ const FriendChatSidePanel = () => {
             {showPanel && (
                 <div
                     ref={panelRef}
-                    className="fixed right-0 top-0 h-full w-[900px] bg-white shadow-2xl z-50 flex"
+                    className={`fixed right-0 top-0 h-full bg-white shadow-2xl z-50 flex transition-all duration-300 ${
+                        selectedRoom ? 'w-[65vw]' : 'w-[40vw]'
+                    }`}
                 >
                     {/* 왼쪽: 친구목록/친구요청 */}
-                    <div className="w-2/5 border-r border-gray-200 flex flex-col">
+                    <div className={`border-r border-gray-200 flex flex-col transition-all duration-300 ${
+                        selectedRoom ? 'w-1/4' : 'w-2/5'
+                    }`}>
                         <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
                             <div className="flex gap-2">
                                 <button
@@ -473,7 +471,7 @@ const FriendChatSidePanel = () => {
                                             : 'text-gray-600 hover:text-gray-900'
                                     }`}
                                 >
-                                    <UserGroupIcon className="w-4 h-4" />
+                                    <UserGroupIcon className="w-4 h-4"/>
                                     친구목록
                                 </button>
                                 <button
@@ -566,99 +564,118 @@ const FriendChatSidePanel = () => {
                     </div>
 
                     {/* 오른쪽: 채팅 영역 */}
-                    <div className="w-3/5 flex flex-col">
-                        <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
-                            {activeRightTab === 'chat' && selectedRoom ? (
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={handleBackToChatList}
-                                        className="p-2 text-gray-600 hover:text-gray-900 transition-colors hover:bg-gray-100 rounded-lg"
-                                    >
-                                        <ArrowLeftIcon className="w-5 h-5" />
-                                    </button>
-                                    <ProfileButton profile={selectedRoom.friend} size="sm" />
-                                    <h3 className="text-lg font-semibold text-gray-900">
-                                        {selectedRoom.friend?.nickname || '채팅'}
-                                    </h3>
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-between w-full">
-                                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                                        <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
-                                        채팅
-                                    </h3>
-                                    {/* ✅ 채팅 섹션에 안읽은 메시지 개수 표시 */}
-                                    {totalUnreadCount > 0 && (
-                                        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                                            {totalUnreadCount}개의 안읽은 메시지
-                                        </span>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                    <div className={`flex transition-all duration-300 ${
+                        selectedRoom ? 'w-3/4' : 'w-3/5'
+                    }`}>
+                        {/* 왼쪽: 채팅목록 영역 */}
+                        <div className={`${selectedRoom ? 'w-2/5' : 'w-full'} ${selectedRoom ? 'border-r border-gray-200' : ''} flex flex-col transition-all duration-300`}>
+                            <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                    <ChatBubbleLeftEllipsisIcon className="w-5 h-5"/>
+                                    채팅
+                                </h3>
+                                {/* ✅ 채팅 섹션에 안읽은 메시지 개수 표시 */}
+                                {totalUnreadCount > 0 && (
+                                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                            {totalUnreadCount}개의 안읽은 메시지
+                        </span>
+                                )}
+                            </div>
 
-                        <div className="flex-1 overflow-hidden">
-                            {activeRightTab === 'chatlist' ? (
-                                <div className="p-4 space-y-3 h-full overflow-y-auto">
-                                    {!friendRooms || friendRooms.length === 0 ? (
-                                        <div className="text-center py-12 text-gray-500">
-                                            <ChatBubbleLeftEllipsisIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                                            <p className="text-lg font-medium mb-2">활성화된 채팅방이 없습니다</p>
-                                            <p className="text-sm">친구와 채팅을 시작해보세요</p>
-                                        </div>
-                                    ) : (
-                                        friendRooms.map((room) => {
-                                            if (!room || !room.roomId || !room.friend) return null;
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                                {!friendRooms || friendRooms.length === 0 ? (
+                                    <div className="text-center py-12 text-gray-500">
+                                        <ChatBubbleLeftEllipsisIcon className="w-16 h-16 mx-auto mb-4 text-gray-300"/>
+                                        <p className="text-lg font-medium mb-2">활성화된 채팅방이 없습니다</p>
+                                        <p className="text-sm">친구와 채팅을 시작해보세요</p>
+                                    </div>
+                                ) : (
+                                    friendRooms.map((room) => {
+                                        if (!room || !room.roomId || !room.friend) return null;
 
-                                            const summary = roomSummaries?.[room.roomId] || {};
+                                        const summary = roomSummaries?.[room.roomId] || {};
+                                        const isSelected = selectedRoom?.roomId === room.roomId;
 
-                                            return (
-                                                <div
-                                                    key={room.roomId}
-                                                    onClick={() => handleSelectChat(room)}
-                                                    className="w-full flex items-start gap-3 p-4 bg-white border rounded-lg hover:shadow-sm hover:border-blue-300 transition-all cursor-pointer relative"
-                                                >
-                                                    <div className="relative">
-                                                        <ProfileButton profile={room.friend} size="md" />
-                                                        {(summary.unreadCount || 0) > 0 && (
-                                                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                                                {summary.unreadCount > 9 ? '9+' : summary.unreadCount}
-                                                            </span>
+                                        return (
+                                            <div
+                                                key={room.roomId}
+                                                onClick={() => handleSelectChat(room)}
+                                                className={`w-full flex items-start gap-3 p-4 border rounded-lg hover:shadow-sm transition-all cursor-pointer relative
+                                        ${isSelected
+                                                    ? 'bg-blue-50 border-blue-300 shadow-sm'
+                                                    : 'bg-white hover:border-blue-300'
+                                                }`}
+                                            >
+                                                <div className="relative">
+                                                    <ProfileButton profile={room.friend} size="md"/>
+                                                    {(summary.unreadCount || 0) > 0 && (
+                                                        <span
+                                                            className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                                {summary.unreadCount > 9 ? '9+' : summary.unreadCount}
+                                            </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <p className="font-medium text-gray-900 truncate">
+                                                            {room.friend?.nickname || '알 수 없음'}
+                                                        </p>
+                                                        {summary.lastMessageTime && (
+                                                            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                                                    {formatDateTime(summary.lastMessageTime)}
+                                                </span>
                                                         )}
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <p className="font-medium text-gray-900 truncate">
-                                                                {room.friend?.nickname || '알 수 없음'}
-                                                            </p>
-                                                            {summary.lastMessageTime && (
-                                                                <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
-                                                                    {formatDateTime(summary.lastMessageTime)}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-sm text-gray-500 truncate">
-                                                            {summary.lastMessage || '채팅을 시작해보세요'}
-                                                        </p>
-                                                    </div>
-                                                    <ChatBubbleLeftEllipsisIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                                    <p className="text-sm text-gray-500 truncate">
+                                                        {summary.lastMessage || '채팅을 시작해보세요'}
+                                                    </p>
                                                 </div>
-                                            );
-                                        })
-                                    )}
+                                                <ChatBubbleLeftEllipsisIcon
+                                                    className="w-5 h-5 text-gray-400 flex-shrink-0"/>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 오른쪽: 채팅창 영역 */}
+                        {selectedRoom && (
+                            <div className="w-3/5 flex flex-col">
+                                <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => setSelectedRoom(null)}
+                                            className="p-2 text-gray-600 hover:text-gray-900 transition-colors hover:bg-gray-100 rounded-lg md:hidden"
+                                        >
+                                            <ArrowLeftIcon className="w-5 h-5"/>
+                                        </button>
+                                        <ProfileButton profile={selectedRoom.friend} size="sm"/>
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                            {selectedRoom.friend?.nickname || '채팅'}
+                                        </h3>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedRoom(null);
+                                        }}
+                                        className="p-2 text-gray-600 hover:text-gray-900 transition-colors hover:bg-gray-100 rounded-lg"
+                                        title="채팅창 닫기"
+                                    >
+                                        <XMarkIcon className="w-5 h-5"/>
+                                    </button>
                                 </div>
-                            ) : (
-                                selectedRoom && (
+
+                                <div className="flex-1 overflow-hidden">
                                     <ChatOverlay
                                         roomId={selectedRoom.roomId}
                                         friend={selectedRoom.friend}
                                         isSidePanel={true}
-                                        onClose={handleBackToChatList}
                                         onMessageSent={handleMessageSent}
                                     />
-                                )
-                            )}
-                        </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
