@@ -5,7 +5,8 @@ import useAuthStore from "../../stores/authStore.js";
 import ProfileButton from "../MyPageComponent/ProfileButton.jsx";
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
 
-function ChatOverlay({ roomId, friend, isSidePanel = false, onMessageSent }) {
+// eslint-disable-next-line react/prop-types
+function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
     const socket = useSocket();
@@ -223,7 +224,7 @@ function ChatOverlay({ roomId, friend, isSidePanel = false, onMessageSent }) {
 
                                             <div className={`flex ${isMyMessage ? 'flex-row-reverse' : 'flex-row'} items-end gap-1`}>
                                                 <div
-                                                    className={`px-4 py-2 rounded-2xl ${
+                                                    className={`px-4 py-2 rounded-2xl whitespace-pre-wrap ${
                                                         isMyMessage
                                                             ? 'bg-blue-500 text-white'
                                                             : 'bg-gray-100 text-gray-800'
