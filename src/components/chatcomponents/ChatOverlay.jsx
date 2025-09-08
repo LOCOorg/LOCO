@@ -221,19 +221,21 @@ function ChatOverlay({ roomId, friend, isSidePanel = false, onMessageSent }) {
                                                 </span>
                                             )}
 
-                                            <div
-                                                className={`px-4 py-2 rounded-2xl ${
-                                                    isMyMessage
-                                                        ? 'bg-blue-500 text-white'
-                                                        : 'bg-gray-100 text-gray-800'
-                                                } max-w-full break-words`}
-                                            >
-                                                {message.text}
-                                            </div>
+                                            <div className={`flex ${isMyMessage ? 'flex-row-reverse' : 'flex-row'} items-end gap-1`}>
+                                                <div
+                                                    className={`px-4 py-2 rounded-2xl ${
+                                                        isMyMessage
+                                                            ? 'bg-blue-500 text-white'
+                                                            : 'bg-gray-100 text-gray-800'
+                                                    } max-w-full break-words`}
+                                                >
+                                                    {message.text}
+                                                </div>
 
-                                            <span className="text-xs text-gray-500 mt-1 px-1">
-                                                {formatTime(message.textTime)}
-                                            </span>
+                                                <span className="text-xs text-gray-500 px-1 whitespace-nowrap">
+                        {formatTime(message.textTime)}
+                    </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
