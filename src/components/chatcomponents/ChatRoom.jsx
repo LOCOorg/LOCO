@@ -193,7 +193,7 @@ const ChatRoom = ({roomId, userId}) => {
 
         // const message = {chatRoom: roomId, sender: {_id: userId, nickname: userName}, text};
 // (1) 소켓으로 보낼 실물 데이터 ― sender: 문자열
-        const emitMessage = { chatRoom: roomId, sender: userId, text };
+        const emitMessage = { chatRoom: roomId, sender: userId, text, roomType: "random" };
 
 // (2) 화면에 바로 그려 넣을 로컬 메시지 ― sender: 객체
         const localMessage = {
@@ -294,10 +294,11 @@ const ChatRoom = ({roomId, userId}) => {
         getChatRoomDetails();
 
         if (socket) {
-            socket.emit("joinRoom", roomId);
+            socket.emit("joinRoom", roomId, "random");
             // 참가자 입장 시: ID → { _id, nickname } 형태로 변환
-            socket.on("roomJoined", async ({ activeUsers, capacity }) => {
+            socket.on("roomJoined", async ({ roomId: eventRoomId, activeUsers, capacity }) => {
                 try {
+                    if (eventRoomId !== roomId) return; // ✅ roomId 검증
                     const participantsWithNames = await Promise.all(
                         activeUsers.map(async u => {
                             const id = typeof u === "object" ? u._id : u;

@@ -39,7 +39,7 @@ function ChatOverlay({ roomId, friend, isSidePanel = false, onMessageSent }) {
 // 채팅방 참여 및 메시지 수신
     useEffect(() => {
         if (socket && roomId) {
-            socket.emit("joinRoom", roomId);
+            socket.emit("joinRoom", roomId, "friend");
 
             const handleReceiveMessage = (message) => {
                 if (message.chatRoom !== roomId) return;
@@ -151,6 +151,7 @@ function ChatOverlay({ roomId, friend, isSidePanel = false, onMessageSent }) {
                     chatRoom: roomId,
                     sender: senderId,
                     text: newMessage,
+                    roomType: "friend"
                 };
                 socket.emit("sendMessage", messageData, (response) => {
                     if (response.success) {
