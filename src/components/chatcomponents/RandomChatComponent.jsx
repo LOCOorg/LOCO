@@ -34,6 +34,7 @@ const RandomChatComponent = () => {
     const [waitingRoomId, setWaitingRoomId] = useState(null);
     const [currentParticipants, setCurrentParticipants] = useState([]);
     const [waitingCapacity, setWaitingCapacity] = useState(0);
+    const [showWaitingModal, setShowWaitingModal] = useState(false);
 
     const socket = useSocket(); // 소켓 연결
 
@@ -108,6 +109,7 @@ const RandomChatComponent = () => {
                 // 방이 가득 찼으면 ChatRoom으로 이동
                 if (activeUsers.length >= capacity) {
                     setIsWaiting(false);
+                    setShowWaitingModal(false);
                     navigate(`/chat/${roomId}/${userId}`);
                 }
             }
@@ -312,6 +314,7 @@ const RandomChatComponent = () => {
                                     // 대기 상태로 전환 (바로 navigate 하지 않음)
                                     setIsWaiting(true);
                                     setWaitingRoomId(target._id);
+                                    setShowWaitingModal(true);
 
                                     // 소켓 방 참가
                                     socket.emit("joinRoom", target._id, "random");
@@ -346,6 +349,7 @@ const RandomChatComponent = () => {
                                 // 대기 상태로 전환
                                 setIsWaiting(true);
                                 setWaitingRoomId(room._id);
+                                setShowWaitingModal(true);
 
                                 // 소켓 방 참가
                                 socket.emit("joinRoom", room._id, "random");
@@ -389,36 +393,8 @@ const RandomChatComponent = () => {
         setWaitingRoomId(null);
         setCurrentParticipants([]);
         setWaitingCapacity(0);
+        setShowWaitingModal(false);
     };
-
-    // 대기 중 UI 렌더링
-    if (isWaiting) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-                <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6">매칭 대기 중...</h2>
-
-                    <div className="mb-6">
-                        <p className="text-lg font-semibold text-gray-700 mb-4">
-                            {currentParticipants.length} / {waitingCapacity}명
-                        </p>
-                    </div>
-
-                    <div className="mb-6 flex justify-center">
-                        {/* 로딩 애니메이션 */}
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                    </div>
-
-                    <button
-                        onClick={cancelWaiting}
-                        className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-                    >
-                        대기 취소
-                    </button>
-                </div>
-            </div>
-        );
-    }
 
 
     if (error) return <div>{error}</div>;
@@ -578,6 +554,38 @@ const RandomChatComponent = () => {
                     <p className="text-gray-600 text-center">차단된 사용자가 없습니다.</p>
                 )}
             </CommonModal>
+            {/* 대기 모달 - TailwindCSS 버전 */}
+            {showWaitingModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                    <div className="bg-white p-8 rounded-2xl text-center min-w-80 shadow-xl max-w-md mx-4">
+
+                        <div className="mb-6">
+                            <div className="text-3xl font-bold text-blue-600 mb-3">
+                                {currentParticipants.length} / {waitingCapacity}명
+                            </div>
+                            <div className="text-sm text-gray-600 mb-4">
+                                다른 사용자를 기다리고 있습니다...
+                            </div>
+
+                            {/* 로딩 애니메이션 */}
+                            <div className="flex justify-center space-x-1 mb-4">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                cancelWaiting();
+                            }}
+                            className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 w-full sm:w-auto"
+                        >
+                            대기 취소
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* 프로필 모달 */}
             {showProfileModal && selectedProfile && (
