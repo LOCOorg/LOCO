@@ -402,16 +402,6 @@ const RandomChatComponent = () => {
                         <p className="text-lg font-semibold text-gray-700 mb-4">
                             {currentParticipants.length} / {waitingCapacity}명
                         </p>
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
-                            {currentParticipants.map((participant, index) => (
-                                <div
-                                    key={index}
-                                    className="bg-blue-100 text-blue-800 px-3 py-2 rounded-lg font-medium"
-                                >
-                                    {participant.nickname || '참가자'}
-                                </div>
-                            ))}
-                        </div>
                     </div>
 
                     <div className="mb-6 flex justify-center">
