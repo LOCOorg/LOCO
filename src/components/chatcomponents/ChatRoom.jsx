@@ -18,7 +18,6 @@ const ChatRoom = ({roomId, userId}) => {
     const socket = useSocket();
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
     const [ratings, setRatings] = useState({});
     const [participants, setParticipants] = useState([]);
     const [capacity, setCapacity] = useState(0);
@@ -169,7 +168,7 @@ const ChatRoom = ({roomId, userId}) => {
                 /* 4) 소켓 정리 */
                 if (socket) socket.emit("leaveRoom", { roomId, userId });
 
-                navigate("/", { replace: true });
+                navigate("/chat", { replace: true });
             } else {
                 console.error("채팅방 나가기 실패:", response.message);
             }
@@ -193,7 +192,7 @@ const ChatRoom = ({roomId, userId}) => {
 
         // const message = {chatRoom: roomId, sender: {_id: userId, nickname: userName}, text};
 // (1) 소켓으로 보낼 실물 데이터 ― sender: 문자열
-        const emitMessage = { chatRoom: roomId, sender: userId, text };
+        const emitMessage = { chatRoom: roomId, sender: userId, text, roomType: "random" };
 
 // (2) 화면에 바로 그려 넣을 로컬 메시지 ― sender: 객체
         const localMessage = {
@@ -257,21 +256,12 @@ const ChatRoom = ({roomId, userId}) => {
                 // ① participants 상태에 저장
                 setParticipants(roomInfo.activeUsers);
                 setCapacity(roomInfo.capacity);
-                // ② capacity 충족 여부에 따라 로딩 해제
-                if (roomInfo.chatUsers.length >= roomInfo.capacity) {
-                    setIsLoading(false);
-                }
             }
         } catch (error) {
             console.error("채팅방 정보 가져오기 오류:", error);
         }
     };
 
-    const handleUserJoined = (roomInfo) => {
-        if (roomInfo.chatUsers.length >= roomInfo.capacity) {
-            setIsLoading(false);
-        }
-    };
 
     const handleUserLeft = ({ userId: leftId }) => {
         setParticipants(prev =>
@@ -294,10 +284,11 @@ const ChatRoom = ({roomId, userId}) => {
         getChatRoomDetails();
 
         if (socket) {
-            socket.emit("joinRoom", roomId);
+            socket.emit("joinRoom", roomId, "random");
             // 참가자 입장 시: ID → { _id, nickname } 형태로 변환
-            socket.on("roomJoined", async ({ activeUsers, capacity }) => {
+            socket.on("roomJoined", async ({ roomId: eventRoomId, activeUsers, capacity }) => {
                 try {
+                    if (eventRoomId !== roomId) return; // ✅ roomId 검증
                     const participantsWithNames = await Promise.all(
                         activeUsers.map(async u => {
                             const id = typeof u === "object" ? u._id : u;
@@ -312,7 +303,6 @@ const ChatRoom = ({roomId, userId}) => {
                 }
             });
             socket.on("receiveMessage", handleReceiveMessage);
-            socket.on("roomJoined", handleUserJoined);
             socket.on("userLeft", handleUserLeft);
             socket.on("systemMessage", handleSystemMessage);
             socket.on("messageDeleted", ({messageId}) => {
@@ -413,33 +403,6 @@ const ChatRoom = ({roomId, userId}) => {
 
                 </header>
 
-                {isLoading ? (
-                    <div className="flex-grow flex flex-col justify-center items-center text-gray-400">
-                        {/* 애니메이션 스피너 */}
-                        <svg
-                            className="animate-spin h-10 w-10 mb-4 text-blue-500"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                        >
-                            <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                            ></circle>
-                            <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                            ></path>
-                        </svg>
-                        <span className="text-xl">다른 사용자를 기다리는 중… <br/>다른 채팅을 원하시면 대기 중에 채팅 종료(횟수 차감X) </span>
-                    </div>
-                ) : (
-                    <>
                         <div
                             ref={messagesContainerRef}
                             className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"
@@ -482,16 +445,15 @@ const ChatRoom = ({roomId, userId}) => {
                                             }`}
                                         >
                                             <div className="flex items-center mb-1">
-                    <span
-                        className={`text-sm font-semibold ${
-                            isMe ? 'text-blue-200' : 'text-blue-700'
-                        }`}
-                    >
-                      {msg.sender.nickname}
-                    </span>
-                                                <span className="ml-2 text-xs text-gray-300">
-                      {formatTime(msg.textTime)}
-                    </span>
+                                                <span
+                                                    className={`text-sm font-semibold ${
+                                                        isMe ? 'text-blue-200' : 'text-blue-700'
+                                                    }`}>
+                                                  {msg.sender.nickname}
+                                                </span>
+                                                                            <span className="ml-2 text-xs text-gray-300">
+                                                  {formatTime(msg.textTime)}
+                                                </span>
                                             </div>
                                             <p className="whitespace-pre-wrap break-all">
                                                 {msg.isDeleted ? '삭제된 메시지입니다.' : msg.text}
@@ -552,8 +514,7 @@ const ChatRoom = ({roomId, userId}) => {
                             </button>
                         </form>
                             )}
-                    </>
-                )}
+
             </section>
 
             {/* 채팅 종료 버튼 */}
