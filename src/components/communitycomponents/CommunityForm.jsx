@@ -216,8 +216,11 @@ const CommunityForm = () => {
                             >
                                 <option value="자유">자유</option>
                                 <option value="질문">질문</option>
-                                <option value="정보">정보</option>
-                                <option value="기타">기타</option>
+                                <option value="유머">유머</option>
+                                <option value="질문">질뮨</option>
+                                <option value="사건사고">사건사고</option>
+                                <option value="전적인증">전적인증</option>
+                                <option value="개발요청">개발요청</option>
                             </select>
                         </div>
 
