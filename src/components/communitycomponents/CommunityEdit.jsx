@@ -197,7 +197,7 @@ const CommunityEdit = () => {
     /* ───────── 렌더 ───────── */
     return (
         <CommunityLayout
-            leftSidebar={<LeftSidebar onCategorySelect={handleCategoryNav} />}
+            leftSidebar={<LeftSidebar handleCategoryClick={handleCategoryNav} />}
             rightSidebar={
                 <RightSidebar
                     tab={sideTab}
@@ -236,11 +236,13 @@ const CommunityEdit = () => {
                             onChange={(e) => setCategory(e.target.value)}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         >
-                            <option value="전체">전체</option>
                             <option value="자유">자유</option>
                             <option value="질문">질문</option>
-                            <option value="정보">정보</option>
-                            <option value="공지">공지</option>
+                            <option value="유머">유머</option>
+                            <option value="질문">질뮨</option>
+                            <option value="사건사고">사건사고</option>
+                            <option value="전적인증">전적인증</option>
+                            <option value="개발요청">개발요청</option>
                         </select>
                     </div>
 
