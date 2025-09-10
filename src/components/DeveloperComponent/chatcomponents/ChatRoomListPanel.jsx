@@ -106,16 +106,26 @@ const ChatRoomListPanel = ({
                                         const historyGender = historyData[room._id]?.[u._id.toString()];
                                         const userGender = historyGender || u.selectedGender || room.matchedGender || 'any';
 
+                                        // 1-1. 플랫폼 성별
+                                        const platformGender = u.gender === 'male' ? '남' : u.gender === 'female' ? '여' : '-';
+
+                                        // 1-2. 카카오 성별
+                                        const kakaoGender = u.social?.kakao?.gender === 'male' ? '남' : u.social?.kakao?.gender === 'female' ? '여' : '-';
+
+                                        // 1-3. 네이버 성별
+                                        const naverGender = u.social?.naver?.gender === 'M' ? '남' : u.social?.naver?.gender === 'F' ? '여' : '-';
+
+                                        // 1-5. 조합된 실제 성별 문자열
+                                        const realGenderString = `${platformGender}/${kakaoGender}/${naverGender}`;
+
                                         const genderText = userGender === 'opposite' ? '이성'
                                             : userGender === 'same' ? '동성'
                                                 : userGender === 'any' ? '상관없음'
                                                     : '알 수 없음';
 
-                                        const displayName = u.nickname && u.name
-                                            ? `${u.nickname}(${u.name})`
-                                            : u.nickname || u.name || u._id;
+                                        const displayName = u.nickname || u._id;
 
-                                        return `${displayName}(${genderText})`;
+                                        return `${displayName}(${realGenderString})(${genderText})`;
                                     })
                                     .join(", ")}
                             </div>
