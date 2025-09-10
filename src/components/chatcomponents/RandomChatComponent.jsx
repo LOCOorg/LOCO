@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSocket } from "../../hooks/useSocket.js";
 import {
     getUserInfo,
     getBlockedUsers,
@@ -9,7 +10,7 @@ import {
     createChatRoom,
     joinChatRoom,
     fetchChatRooms,
-    fetchUserLeftRooms
+    fetchUserLeftRooms, leaveChatRoom
 } from "../../api/chatAPI";
 import CommonModal from "../../common/CommonModal";
 import SimpleProfileModal from "../MyPageComponent/SimpleProfileModal.jsx";
@@ -29,6 +30,13 @@ const RandomChatComponent = () => {
     const [timeLeft, setTimeLeft]   = useState(null);   // ☆ 추가
     const [selectedProfile, setSelectedProfile] = useState(null);
     const [showProfileModal, setShowProfileModal] = useState(false);
+    const [isWaiting, setIsWaiting] = useState(false);
+    const [waitingRoomId, setWaitingRoomId] = useState(null);
+    const [currentParticipants, setCurrentParticipants] = useState([]);
+    const [waitingCapacity, setWaitingCapacity] = useState(0);
+    const [showWaitingModal, setShowWaitingModal] = useState(false);
+
+    const socket = useSocket(); // 소켓 연결
 
     const blockedUsers          = useBlockedStore((s) => s.blockedUsers);
     const setBlockedUsersStore  = useBlockedStore((s) => s.setBlockedUsers);
@@ -88,6 +96,41 @@ const RandomChatComponent = () => {
         return () => clearInterval(id);       // 클린업
     }, [userInfo?.nextRefillAt]);
 
+    // 소켓 이벤트 리스너 설정
+    useEffect(() => {
+        if (!socket || !isWaiting) return;
+
+        // 사용자가 방에 참가했을 때
+        const handleRoomJoined = ({ roomId, activeUsers, capacity }) => {
+            if (roomId === waitingRoomId) {
+                setCurrentParticipants(activeUsers);
+                setWaitingCapacity(capacity);
+
+                // 방이 가득 찼으면 ChatRoom으로 이동
+                if (activeUsers.length >= capacity) {
+                    setIsWaiting(false);
+                    setShowWaitingModal(false);
+                    navigate(`/chat/${roomId}/${userId}`);
+                }
+            }
+        };
+
+        // 사용자가 방을 떠났을 때
+        const handleUserLeft = ({ roomId, activeUsers }) => {
+            if (roomId === waitingRoomId) {
+                setCurrentParticipants(activeUsers);
+            }
+        };
+
+        socket.on("roomJoined", handleRoomJoined);
+        socket.on("userLeft", handleUserLeft);
+
+        return () => {
+            socket.off("roomJoined", handleRoomJoined);
+            socket.off("userLeft", handleUserLeft);
+        };
+    }, [socket, isWaiting, waitingRoomId, userId, navigate]);
+
     // 유저 정보 호출 함수
     const fetchUserInfoAsync = async (userId) => {
         try {
@@ -134,9 +177,6 @@ const RandomChatComponent = () => {
     };
 
     // 랜덤 채팅방 찾기 및 생성 함수
-// ────────────────────────────────────────────────────────────────
-//  RandomChatComponent.jsx  –  findOrCreateRandomRoom 교체본
-// ────────────────────────────────────────────────────────────────
     const findOrCreateRandomRoom = async (capacity, matchedGender) => {
         if (!userId) return;
 
@@ -259,8 +299,7 @@ const RandomChatComponent = () => {
 
                 // (3-A) 참여 가능한 대기방이 존재할 때
                 if (availableRooms.length) {
-                    const target =
-                        availableRooms[Math.floor(Math.random() * availableRooms.length)];
+                    const target = availableRooms[Math.floor(Math.random() * availableRooms.length)];
                     setModalTitle("알림");
                     setModalMessage(
                         `랜덤 채팅방(${capacity}명, ${genderLabels[matchedGender]})에 참가합니다.`
@@ -270,21 +309,27 @@ const RandomChatComponent = () => {
                             text: "확인",
                             action: async () => {
                                 try {
-                                    await joinChatRoom(target._id, userId, matchedGender);  // 🔧 selectedGender 전달
-                                    navigate(`/chat/${target._id}/${userId}`);
+                                    await joinChatRoom(target._id, userId, matchedGender);
+
+                                    // 대기 상태로 전환 (바로 navigate 하지 않음)
+                                    setIsWaiting(true);
+                                    setWaitingRoomId(target._id);
+                                    setShowWaitingModal(true);
+
+                                    // 소켓 방 참가
+                                    socket.emit("joinRoom", target._id, "random");
+
                                 } catch (err) {
                                     if (err.response?.status === 403) {
-                                        // 차단 관계 – 모달 닫고 다시 탐색
                                         setModalOpen(false);
-                                        await tryMatch();
+                                        await tryMatch(); // 차단 관계시 재시도
                                     } else {
                                         throw err;
                                     }
                                 }
                             }
-                        }
-                    ]);
-                    setModalOpen(true);
+                        }]);
+                                setModalOpen(true);
                     return;
                 }
 
@@ -298,17 +343,19 @@ const RandomChatComponent = () => {
                         text: "생성",
                         action: async () => {
                             try {
-                                const room = await createChatRoom(
-                                    "random",
-                                    capacity,
-                                    matchedGender,
-                                    ageGroup
-                                );
-                                await joinChatRoom(room._id, userId, matchedGender);  // 🔧 selectedGender 전달
-                                navigate(`/chat/${room._id}/${userId}`);
+                                const room = await createChatRoom("random", capacity, matchedGender, ageGroup);
+                                await joinChatRoom(room._id, userId, matchedGender);
+
+                                // 대기 상태로 전환
+                                setIsWaiting(true);
+                                setWaitingRoomId(room._id);
+                                setShowWaitingModal(true);
+
+                                // 소켓 방 참가
+                                socket.emit("joinRoom", room._id, "random");
+
                             } catch (err) {
                                 if (err.response?.status === 403) {
-                                    // 생성-직후에도 차단 충돌 – 모달 닫고 다시 탐색
                                     setModalOpen(false);
                                     await tryMatch();
                                 } else {
@@ -321,7 +368,6 @@ const RandomChatComponent = () => {
                 setModalOpen(true);
             };
 
-            /* ─── 3. 최초 호출 ─── */
             await tryMatch();
         } catch (e) {
             console.error(e);
@@ -330,6 +376,24 @@ const RandomChatComponent = () => {
             setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
             setModalOpen(true);
         }
+    };
+
+    // 대기 취소 함수
+    const cancelWaiting = async () => {
+        if (waitingRoomId && socket) {
+            try {
+                await leaveChatRoom(waitingRoomId, userId);
+                socket.emit("leaveRoom", { roomId: waitingRoomId, userId });
+            } catch (error) {
+                console.error("방 나가기 실패:", error);
+            }
+        }
+
+        setIsWaiting(false);
+        setWaitingRoomId(null);
+        setCurrentParticipants([]);
+        setWaitingCapacity(0);
+        setShowWaitingModal(false);
     };
 
 
@@ -490,6 +554,38 @@ const RandomChatComponent = () => {
                     <p className="text-gray-600 text-center">차단된 사용자가 없습니다.</p>
                 )}
             </CommonModal>
+            {/* 대기 모달 - TailwindCSS 버전 */}
+            {showWaitingModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                    <div className="bg-white p-8 rounded-2xl text-center min-w-80 shadow-xl max-w-md mx-4">
+
+                        <div className="mb-6">
+                            <div className="text-3xl font-bold text-blue-600 mb-3">
+                                {currentParticipants.length} / {waitingCapacity}명
+                            </div>
+                            <div className="text-sm text-gray-600 mb-4">
+                                다른 사용자를 기다리고 있습니다...
+                            </div>
+
+                            {/* 로딩 애니메이션 */}
+                            <div className="flex justify-center space-x-1 mb-4">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                cancelWaiting();
+                            }}
+                            className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 w-full sm:w-auto"
+                        >
+                            대기 취소
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* 프로필 모달 */}
             {showProfileModal && selectedProfile && (

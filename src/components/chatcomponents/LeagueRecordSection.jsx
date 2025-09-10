@@ -45,9 +45,18 @@ export default function LeagueRecordSection({ partnerRecords, loading, error }) 
                 return (
                     <div key={index} className="bg-white rounded-lg p-4 mb-4 shadow-sm">
                         <div className="mb-4 pb-3 border-b border-gray-200">
-                            <h3 className="text-base font-bold mb-2 text-gray-800">
-                                {hasUserInfo ? record.userInfo.nickname : `파트너 ${index + 1}`}
-                            </h3>
+                            {/* 닉네임과 라이엇 ID를 한 줄에 정렬 */}
+                            <div className="flex items-center gap-3 mb-2">
+                                <h3 className="text-base font-bold text-gray-800">
+                                    {hasUserInfo ? record.userInfo.nickname : `파트너 ${index + 1}`}
+                                </h3>
+
+                                {hasUserInfo && record.userInfo.riotGameName && (
+                                    <span className="text-sm text-gray-500">
+                {record.userInfo.riotGameName}#{record.userInfo.riotTagLine}
+            </span>
+                                )}
+                            </div>
 
                             {/* 에러가 있는 경우 에러 메시지 표시 */}
                             {record.error && (
@@ -56,24 +65,17 @@ export default function LeagueRecordSection({ partnerRecords, loading, error }) 
                                 </div>
                             )}
 
-                            {/* Riot ID 정보 표시 */}
-                            {hasUserInfo && record.userInfo.riotGameName && (
-                                <div className="text-sm text-gray-500 mb-2">
-                                    {record.userInfo.riotGameName}#{record.userInfo.riotTagLine}
-                                </div>
-                            )}
-
                             {hasLeagueRecord ? (
                                 <div className="flex gap-3 flex-wrap text-sm">
-                                    <span className="font-bold text-blue-600">
-                                        {record.leagueRecord.tier || 'Unranked'} {record.leagueRecord.rank || ''}
-                                    </span>
+            <span className="font-bold text-blue-600">
+                {record.leagueRecord.tier || 'Unranked'} {record.leagueRecord.rank || ''}
+            </span>
                                     <span className="text-gray-600">
-                                        {record.leagueRecord.leaguePoints || 0} LP
-                                    </span>
+                {record.leagueRecord.leaguePoints || 0} LP
+            </span>
                                     <span className="text-green-600 font-medium">
-                                        {record.leagueRecord.overallWinRate || 0}%
-                                    </span>
+                {record.leagueRecord.overallWinRate || 0}%
+            </span>
                                 </div>
                             ) : (
                                 <div className="text-gray-500 text-sm">
@@ -81,6 +83,7 @@ export default function LeagueRecordSection({ partnerRecords, loading, error }) 
                                 </div>
                             )}
                         </div>
+
 
                         {/* 최근 랭크전 - 데이터가 있을 때만 표시 */}
                         {hasLeagueRecord && record.leagueRecord.recentRanked && record.leagueRecord.recentRanked.length > 0 && (
@@ -94,11 +97,7 @@ export default function LeagueRecordSection({ partnerRecords, loading, error }) 
                                     {record.leagueRecord.recentRanked.map((match, matchIndex) => (
                                         <div
                                             key={match.matchId || matchIndex}
-                                            className={`flex flex-col items-center p-2.5 rounded border-2 transition-transform duration-200 hover:-translate-y-0.5 flex-shrink-0 ${
-                                                match.win
-                                                    ? 'bg-blue-50 border-green-400'
-                                                    : 'bg-red-50 border-red-400'
-                                            }`}
+                                            className={`flex flex-col items-center p-2.5 ransition-transform duration-200 hover:-translate-y-0.5 flex-shrink-0`}
                                             style={{
                                                 width: `calc((100% - ${(record.leagueRecord.recentRanked.length - 1) * 8}px) / ${record.leagueRecord.recentRanked.length})`,
                                                 minWidth: '65px',
@@ -111,7 +110,11 @@ export default function LeagueRecordSection({ partnerRecords, loading, error }) 
                                                     <img
                                                         src={match.championImage}
                                                         alt={match.champion}
-                                                        className="w-8 h-8 rounded-full border border-gray-300 object-cover"
+                                                        className={`w-10 h-10 rounded-full border-4 ${
+                                                            match.win
+                                                                ? 'border-green-500 shadow-lg shadow-green-200'
+                                                                : 'border-red-500 shadow-lg shadow-red-200'
+                                                        }`}
                                                         onError={(e) => {
                                                             e.target.style.display = 'none';
                                                             e.target.nextSibling.style.display = 'flex';
@@ -125,17 +128,17 @@ export default function LeagueRecordSection({ partnerRecords, loading, error }) 
                                                 </span>
                                             </div>
 
-                                            {/* 승패 결과 */}
-                                            <div className={`text-sm font-bold mb-1 ${
-                                                match.win ? 'text-green-600' : 'text-red-600'
-                                            }`}>
-                                                {match.win ? '승' : '패'}
-                                            </div>
-
                                             {/* 게임 통계 */}
-                                            <div className="text-center space-y-0.5">
+                                            <div className="text-center space-y-1">
+                                                <div className="text-xs text-gray-600">{match.lane || 'N/A'}</div>
                                                 <div className="text-xs text-gray-600">KDA {match.kda || 'N/A'}</div>
-                                                <div className="text-xs text-gray-500">{match.cs || 'N/A'} CS</div>
+                                                <div className="flex items-center justify-center text-xs font-medium">
+                                                    <span className="text-gray-600">{match.kills || 0}</span>
+                                                    <span className="text-gray-400 mx-1">/</span>
+                                                    <span className="text-gray-600">{match.deaths || 0}</span>
+                                                    <span className="text-gray-400 mx-1">/</span>
+                                                    <span className="text-gray-600">{match.assists || 0}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}

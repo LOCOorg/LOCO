@@ -5,40 +5,30 @@ import useAuthStore from '../../stores/authStore';
 import useFriendChatStore from '../../stores/useFriendChatStore';
 import useNotificationStore from '../../stores/notificationStore.js';
 import DropdownTransition from '../../layout/css/DropdownTransition.jsx';
-
-/* === 아이콘 === */
-import {
-    BellIcon,
-    ChatBubbleLeftEllipsisIcon,
-} from '@heroicons/react/24/outline';
+import { BellIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
 
 const GlobalChatNotification = () => {
-    /* ----------------- 상태 & 스토어 ----------------- */
-    const socket  = useSocket();
+    const socket = useSocket();
     const { pathname } = useLocation();
     const navigate = useNavigate();
-
     const { user } = useAuthStore();
-    const userId   = user?._id;
+    const userId = user?._id;
+    const { isSidePanelChatVisible, openSidePanelWithChat } = useFriendChatStore();
 
-    const { openFriendChat, friendChats, hiddenRoomIds, isChatOpenAndVisible  } = useFriendChatStore();
+    const {
+        notifications,
+        addNotification,
+        removeNotificationsByRoom,
+        chatPreviewEnabled,
+        clearNotifications,
+        cleanupOldNotifications
+    } = useNotificationStore();
 
-    const notifications          = useNotificationStore((s) => s.notifications);
-    const addNotification        = useNotificationStore((s) => s.addNotification);
-    const removeNotificationsByRoom = useNotificationStore(
-        (s) => s.removeNotificationsByRoom
-    );
-    const chatPreviewEnabled = useNotificationStore((s) => s.chatPreviewEnabled);
-    const clearNotifications = useNotificationStore((s) => s.clearNotifications);
-    const cleanupOldNotifications = useNotificationStore((s) => s.cleanupOldNotifications);
-
-    /* ----------------- 컴포넌트 상태 ----------------- */
     const [dropdownOpen, setDropdownOpen] = useState(false);
-    const [toasts, setToasts]             = useState([]);
-
+    const [toasts, setToasts] = useState([]);
     const dropdownRef = useRef(null);
 
-    /* ----------------- 외부 클릭 시 드롭다운 닫기 ----------------- */
+    // 외부 클릭 시 드롭다운 닫기
     useEffect(() => {
         if (!dropdownOpen) return;
         const handleClickOutside = (e) => {
@@ -50,182 +40,158 @@ const GlobalChatNotification = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [dropdownOpen]);
 
-    /* ----------------- 소켓 등록 ----------------- */
+    // 소켓 등록
     useEffect(() => {
         if (socket && userId) socket.emit('register', userId);
     }, [socket, userId]);
 
-    /* ----------------- 알림 수신 ----------------- */
+    // 알림 수신
     useEffect(() => {
         if (!socket) return;
 
         const handler = (data) => {
-            /* 내가 이미 보고 있는 채팅방이면 무시 */
             if (pathname.startsWith(`/chat/${data.chatRoom}`)) return;
 
-            /* 친구 채팅방이 열려있고 보이는 상태라면 알림 차단 */
-            if (data.roomType === 'friend' && isChatOpenAndVisible(data.chatRoom)) {
+            if (data.roomType === 'friend' && isSidePanelChatVisible(data.chatRoom)) {
+                console.log(`사이드패널 친구 채팅방 ${data.chatRoom}이 열려있어 알림을 차단합니다.`);
                 return;
             }
 
-            // ✅ 친구 채팅이 열려있고 숨겨지지 않은 상태라면 알림 차단
-            if (data.roomType === 'friend') {
-                const isOpenAndVisible = friendChats.some(chat =>
-                    chat.roomId === data.chatRoom &&
-                    !hiddenRoomIds.includes(data.chatRoom)
-                );
-
-                if (isOpenAndVisible) {
-                    console.log(`친구 채팅방 ${data.chatRoom}이 열려있어 알림을 차단합니다.`);
-                    return;
-                }
-            }
-
-            /* 토스트가 꺼져 있으면 드롭다운 목록만 추가 */
             if (!chatPreviewEnabled) {
                 addNotification({ id: Date.now(), ...data });
                 return;
             }
 
-            const id        = Date.now();
-            const newNotif  = { id, ...data };
+            const id = Date.now();
+            const newNotif = { id, ...data };
 
-            /* ─ 드롭다운 목록에 추가 ─ */
             addNotification(newNotif);
-
-            /* ─ 토스트에 추가 ─ */
             setToasts((prev) => [...prev, newNotif]);
 
-            /* 5초 후 토스트만 제거 */
             setTimeout(() => {
                 setToasts((prev) => prev.filter((t) => t.id !== id));
             }, 5000);
+
             cleanupOldNotifications();
         };
 
         socket.on('chatNotification', handler);
         return () => socket.off('chatNotification', handler);
-    }, [socket, pathname, chatPreviewEnabled, addNotification, cleanupOldNotifications, friendChats, hiddenRoomIds]);
-
-    /* ----------------- UI 핸들러 ----------------- */
-    const toggleDropdown = () => setDropdownOpen((p) => !p);
+    }, [socket, pathname, chatPreviewEnabled, addNotification, cleanupOldNotifications, isSidePanelChatVisible]);
 
     const handleNotificationClick = (notif) => {
         if (notif.roomType === 'random') {
             navigate(`/chat/${notif.chatRoom}/${userId}`);
-        } else {
+        } else if (notif.roomType === 'friend') {
             const friendInfo = notif.friend ?? {
-                _id:       notif.message.sender.id,
-                nickname:  notif.message.sender.nickname,
+                _id: notif.message?.sender?.id,
+                nickname: notif.message?.sender?.nickname,
             };
-            openFriendChat({ roomId: notif.chatRoom, friend: friendInfo });
+            openSidePanelWithChat(notif.chatRoom, friendInfo);
         }
 
         removeNotificationsByRoom(notif.chatRoom);
         setToasts((prev) => prev.filter((t) => t.chatRoom !== notif.chatRoom));
-        // setDropdownOpen(false);  // 필요 시 닫기
+        setDropdownOpen(false);
     };
 
     const renderRoomTag = (roomType) =>
-        roomType === 'random' ? '[랜덤] ' : roomType === 'friend' ? '[친구] ' : '';
+        roomType === 'random' ? '[랜덤] ' :
+            roomType === 'friend' ? '[친구] ' : '';
 
-    /* ============================================================ */
-    /*                           UI                                 */
-    /* ============================================================ */
     return (
-        <div className="relative" ref={dropdownRef}>
-            {/* ────────── 토스트 ────────── */}
-            {chatPreviewEnabled && (
-            <div className="fixed top-20 right-4 z-[1100] space-y-3">
+        <>
+            {/* 알림 버튼 */}
+            <div className="relative">
+                <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                    <BellIcon className="w-6 h-6" />
+                    {notifications.length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                            {notifications.length > 9 ? '9+' : notifications.length}
+                        </span>
+                    )}
+                </button>
+
+                {/* 드롭다운 */}
+                <DropdownTransition show={dropdownOpen}>
+                    <div
+                        ref={dropdownRef}
+                        className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto"
+                    >
+                        <div className="px-4 py-2 text-sm font-medium text-gray-900 border-b">
+                            알림 ({notifications.length})
+                            {notifications.length > 0 && (
+                                <button
+                                    onClick={clearNotifications}
+                                    className="float-right text-xs text-blue-600 hover:text-blue-800"
+                                >
+                                    모두 지우기
+                                </button>
+                            )}
+                        </div>
+
+                        {notifications.length === 0 ? (
+                            <div className="px-4 py-8 text-center text-gray-500">
+                                새로운 알림이 없습니다
+                            </div>
+                        ) : (
+                            notifications.map((notif) => (
+                                <div
+                                    key={notif.id}
+                                    onClick={() => handleNotificationClick(notif)}
+                                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                            <ChatBubbleLeftEllipsisIcon className="w-4 h-4 text-blue-600" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-gray-900">
+                                                <span className="font-medium text-blue-600">
+                                                    {renderRoomTag(notif.roomType)}
+                                                </span>
+                                                {notif.notification}
+                                            </p>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {new Date(notif.timestamp).toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </DropdownTransition>
+            </div>
+
+            {/* 토스트 알림 */}
+            <div className="fixed top-4 right-4 space-y-2 z-50">
                 {toasts.map((toast) => (
                     <div
                         key={toast.id}
-                        className="flex items-start gap-2 w-[280px] rounded-lg bg-white shadow-lg ring-1 ring-black/10 px-4 py-3
-                       animate-[slide-in_.25s_ease-out]"
+                        className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm animate-slide-in cursor-pointer"
+                        onClick={() => handleNotificationClick(toast)}
                     >
-                        <ChatBubbleLeftEllipsisIcon className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-                        <p className="text-sm text-gray-800 truncate">
-              <span className="font-semibold text-gray-500">
-                {renderRoomTag(toast.roomType)}
-              </span>
-                            {toast.notification}
-                        </p>
+                        <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <ChatBubbleLeftEllipsisIcon className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-900">
+                                    <span className="font-medium text-blue-600">
+                                        {renderRoomTag(toast.roomType)}
+                                    </span>
+                                    {toast.notification}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 ))}
             </div>
-            )}
-
-            {/* ────────── 벨 버튼 ────────── */}
-            <button
-                onClick={toggleDropdown}
-                className="relative flex h-10 w-10 items-center justify-center
-             rounded-full bg-blue/70 backdrop-blur-md
-             text-white-700 hover:text-gray-400"
-            >
-                {/* 아이콘도 한 단계 키움 */}
-                <BellIcon className="h-7 w-7" />
-
-                {notifications.length > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center
-                     rounded-full bg-red-500 text-xs font-bold text-white
-                     ring-2 ring-white">
-      {notifications.length}
-    </span>
-                )}
-            </button>
-
-
-            {/* ────────── 드롭다운 ────────── */}
-            <DropdownTransition
-                show={dropdownOpen}
-                as="div"
-                className="absolute top-full right-0 mt-2 w-72 max-h-80 overflow-hidden rounded-xl
-                   bg-white shadow-xl ring-1 ring-black/5 z-[1050]"
-            >
-                <section className="max-h-80 overflow-y-auto custom-scroll">
-                    <div className="sticky top-0 z-10 flex items-center justify-between
-                   bg-white px-4 py-2 border-b">
-                        <h3 className="text-xs font-semibold text-gray-700">채팅 알림</h3>
-                        {notifications.length > 0 && (
-                            <button
-                                onClick={() => {
-                                    clearNotifications();      // 드롭다운 목록 비우기
-                                    setToasts([]);             // 열린 토스트도 같이 닫기
-                                }}
-                                className="text-[11px] font-medium text-blue-600 hover:text-blue-700"
-                            >
-                                전체 삭제
-                            </button>
-                        )}
-                    </div>
-
-                    {notifications.length === 0 ? (
-                        <p className="flex flex-col items-center justify-center gap-1 py-8 text-xs text-gray-400">
-                            <BellIcon className="h-6 w-6 opacity-40" />
-                            알림이 없습니다
-                        </p>
-                    ) : (
-                        notifications.map((notif) => (
-                            <button
-                                key={notif.id}
-                                onClick={() => handleNotificationClick(notif)}
-                                className="flex w-full items-start gap-2 px-4 py-3 text-left hover:bg-gray-50"
-                            >
-                                <ChatBubbleLeftEllipsisIcon className="h-5 w-5 text-blue-500 shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                  <span className="text-xs font-medium text-gray-500">
-                                    {renderRoomTag(notif.roomType)}
-                                  </span>
-                                    <p className="truncate text-sm text-gray-800">
-                                        {notif.notification}
-                                    </p>
-                                </div>
-                            </button>
-                        ))
-                    )}
-                </section>
-            </DropdownTransition>
-        </div>
+        </>
     );
 };
 
