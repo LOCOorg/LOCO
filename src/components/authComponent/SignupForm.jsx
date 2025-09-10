@@ -1,7 +1,7 @@
 // src/components/auth/SignupForm.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import { checkNickname } from "../../api/userAPI";
 
 const SignupForm = () => {
@@ -25,7 +25,7 @@ const SignupForm = () => {
     const [nicknameCheckTimeout, setNicknameCheckTimeout] = useState(null);
 
     useEffect(() => {
-        axios
+        axiosInstance
             .get("/api/auth/kakao-data", { withCredentials: true })
             .then((response) => {
                 const data = response.data;
@@ -42,7 +42,7 @@ const SignupForm = () => {
                 console.error("카카오 데이터 불러오기 오류:", error.response?.data || error.message);
             });
 
-        axios
+        axiosInstance
             .get("/api/auth/naver-data", { withCredentials: true })
             .then((response) => {
                 const data = response.data;
@@ -108,7 +108,6 @@ const SignupForm = () => {
 
 
     const handleSubmit = async (e) => {
-
         e.preventDefault();
 
         // 닉네임 중복 체크 확인
@@ -117,38 +116,57 @@ const SignupForm = () => {
             return;
         }
 
+        // 🔧 디버깅: 전송할 데이터 확인
+        const requestData = {
+            kakaoId: kakaoData.kakaoId,
+            naverId: naverData.naverId,
+            name: kakaoData.name || naverData.name || "",
+            phoneNumber: kakaoData.phoneNumber || naverData.phoneNumber || "",
+            birthdate: kakaoData.birthdate || naverData.birthdate || "",
+            kakaoGender: (kakaoData.gender === "male" || kakaoData.gender === "female") ? kakaoData.gender : "",
+            naverGender: (naverData.gender === "M" || naverData.gender === "F") ? naverData.gender : "",
+            formGender,
+            birthday: kakaoData.birthday || naverData.birthday || "",
+            birthyear: kakaoData.birthyear || naverData.birthyear || "",
+            info,
+            nickname,
+            email,
+            pass,
+        };
+        
+        console.log("🔍 전송할 데이터:", requestData);
+        console.log("🔍 nickname 값:", {
+            value: nickname,
+            type: typeof nickname,
+            length: nickname.length,
+            trim: nickname.trim(),
+            isEmpty: nickname === "",
+            isNull: nickname === null,
+            isUndefined: nickname === undefined
+        });
+
         try {
-            // 폼에서 입력한 성별(formGender)와 카카오 데이터의 성별(kakaoData.gender)를 함께 전송
-            const response = await axios.post(
+            console.log("📤 서버에 요청 전송 중...");
+            const response = await axiosInstance.post(
                 "/api/user/register",
-                {
-                    kakaoId: kakaoData.kakaoId,              // 카카오 데이터가 있으면 전송
-                    naverId: naverData.naverId,              // 네이버 데이터가 있으면 전송
-                    name: kakaoData.name || naverData.name || "",
-                    // 전화번호: 카카오의 phoneNumber 우선, 없으면 네이버의 mobile (또는 phoneNumber) 사용
-                    phoneNumber: kakaoData.phoneNumber || naverData.phoneNumber || "",
-                    // 생년월일: 카카오에서 생성된 birthdate 또는 네이버에서 생성된 birthdate 사용
-                    birthdate: kakaoData.birthdate || naverData.birthdate || "",
-                    // 소셜 로그인 성별:
-                    // 카카오의 경우 "male"/"female", 네이버의 경우 "M"/"F"이므로 그대로 전달하거나 변환할 수 있음
-                    kakaoGender: (kakaoData.gender === "male" || kakaoData.gender === "female") ? kakaoData.gender : "",
-                    naverGender: (naverData.gender === "M" || naverData.gender === "F") ? naverData.gender : "",
-                    // 폼에서 직접 입력한 성별 (최종 사용자 선택)
-                    formGender,
-                    // 기타 생년월일 관련 정보 (원본 데이터)
-                    birthday: kakaoData.birthday || naverData.birthday || "",
-                    birthyear: kakaoData.birthyear || naverData.birthyear || "",
-                    info,
-                    nickname,
-                    email,
-                    pass,
-                },
+                requestData,
                 { withCredentials: true }
             );
-            console.log("회원가입 성공:", response.data);
+            console.log("✅ 회원가입 성공:", response.data);
             navigate("/");
         } catch (error) {
-            console.error("회원가입 에러:", error.response?.data || error.message);
+            console.error("❌ 회원가입 에러 상세:", {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                config: {
+                    url: error.config?.url,
+                    method: error.config?.method,
+                    baseURL: error.config?.baseURL,
+                    data: error.config?.data ? JSON.parse(error.config.data) : null
+                },
+                requestData: requestData
+            });
             setErrorMessage(
                 error.response?.data?.message || "회원가입 중 오류가 발생했습니다."
             );
