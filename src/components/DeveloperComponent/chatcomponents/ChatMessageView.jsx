@@ -36,11 +36,11 @@ const ChatMessageView = ({ messages, selectedRoom, currentUser }) => (
 
                 // 닉네임과 실제 이름을 함께 표시
                 const nick = msg.sender?.nickname;
-                const real = msg.sender?.name;
-                const displayName =
-                    nick && real
-                        ? `${nick}(${real})`
-                        : nick || real || '알 수 없음';
+                // const real = msg.sender?.name;
+                const displayName = nick
+                    // nick && real
+                    //     ? `${nick}(${real})`
+                    //     : nick || real || '알 수 없음';
 
                 // System 메시지 체크
                 const isSystemMessage = msg.isSystem || msg.sender?.nickname === 'system';
