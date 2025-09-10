@@ -283,10 +283,10 @@ const DetailPanel = ({ user, view, setView }) => {
                             <div className="bg-yellow-50 p-3 rounded border">
                                 <h4 className="font-semibold text-yellow-800 mb-2">카카오:</h4>
                                 <div className="text-sm space-y-1">
-                                    <div><strong>이름:</strong> {formData.social.kakao.decrypted_name || '복호화실패'}</div>
-                                    <div><strong>전화번호:</strong> {formData.social.kakao.decrypted_phoneNumber || '복호화실패'}</div>
-                                    <div><strong>생일:</strong> {formData.social.kakao.decrypted_birthday || '복호화실패'}</div>
-                                    <div><strong>출생년도:</strong> {formData.social.kakao.decrypted_birthyear || '복호화실패'}</div>
+                                    <div><strong>이름:</strong> {formData.social.kakao.name || '복호화실패'}</div>
+                                    <div><strong>전화번호:</strong> {formData.social.kakao.phoneNumber || '복호화실패'}</div>
+                                    <div><strong>생일:</strong> {formData.social.kakao.birthday || '복호화실패'}</div>
+                                    <div><strong>출생년도:</strong> {formData.social.kakao.birthyear || '복호화실패'}</div>
                                     <div><strong>성별:</strong> {formData.social.kakao.gender || '없음'}</div>
                                 </div>
                             </div>
@@ -297,10 +297,10 @@ const DetailPanel = ({ user, view, setView }) => {
                             <div className="bg-green-50 p-3 rounded border">
                                 <h4 className="font-semibold text-green-800 mb-2">네이버:</h4>
                                 <div className="text-sm space-y-1">
-                                    <div><strong>이름:</strong> {formData.social.naver.decrypted_name || '복호화실패'}</div>
-                                    <div><strong>전화번호:</strong> {formData.social.naver.decrypted_phoneNumber || '복호화실패'}</div>
-                                    <div><strong>생일:</strong> {formData.social.naver.decrypted_birthday || '복호화실패'}</div>
-                                    <div><strong>출생년도:</strong> {formData.social.naver.decrypted_birthyear || '복호화실패'}</div>
+                                    <div><strong>이름:</strong> {formData.social.naver.name || '복호화실패'}</div>
+                                    <div><strong>전화번호:</strong> {formData.social.naver.phoneNumber || '복호화실패'}</div>
+                                    <div><strong>생일:</strong> {formData.social.naver.birthday || '복호화실패'}</div>
+                                    <div><strong>출생년도:</strong> {formData.social.naver.birthyear || '복호화실패'}</div>
                                     <div><strong>성별:</strong> {formData.social.naver.gender || '없음'}</div>
                                 </div>
                             </div>

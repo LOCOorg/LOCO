@@ -66,15 +66,15 @@ const RandomChatComponent = () => {
     };
 
 
-    // 생년월일을 이용한 나이 계산 함수
-    const calculateAge = (birthdate) => {
-        const today = new Date();
-        const birth = new Date(birthdate);
-        let age = today.getFullYear() - birth.getFullYear();
-        const m = today.getMonth() - birth.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-        return age;
-    };
+    // // 생년월일을 이용한 나이 계산 함수
+    // const calculateAge = (birthdate) => {
+    //     const today = new Date();
+    //     const birth = new Date(birthdate);
+    //     let age = today.getFullYear() - birth.getFullYear();
+    //     const m = today.getMonth() - birth.getMonth();
+    //     if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    //     return age;
+    // };
 
     // ① 주기적 카운트다운
     useEffect(() => {
@@ -235,7 +235,8 @@ const RandomChatComponent = () => {
 
             /* ─── 2. 실제 방 탐색/참가를 담당할 내부 재귀 함수 ─── */
             const tryMatch = async () => {
-                const age         = calculateAge(userInfo.birthdate);
+                // const age         = calculateAge(userInfo.birthdate);
+                const age = userInfo.calculatedAge;
                 const ageGroup    = age >= 19 ? "adult" : "minor";
                 const blockedIds  = (blockedUsers || []).map((u) => u._id);
 
