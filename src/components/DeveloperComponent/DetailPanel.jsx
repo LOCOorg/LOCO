@@ -97,16 +97,29 @@ const DetailPanel = ({ user, view, setView }) => {
                         : <span>No photo available</span>
                     }
                 </div>
-                {/* 이름 (수정 불가능) */}
+                {/* 이름 (수정 불가능 - 복호화된 정보 표시) */}
                 <div>
                     <label className="block font-bold mb-1">Name:</label>
-                    <input
-                        type="text"
-                        name="name"
-                        value={formData.name || ""}
-                        readOnly
-                        className="bg-gray-100 cursor-not-allowed w-full p-3 border border-gray-300 rounded-md"
-                    />
+                    <div className="flex flex-col gap-2">
+                        <input
+                            type="text"
+                            value={formData.displayName || formData.name || "없음"}
+                            readOnly
+                            placeholder="이름 (복호화되어 표시)"
+                            className="bg-green-50 cursor-not-allowed w-full p-3 border border-green-300 rounded-md"
+                        />
+                        {formData.calculatedAge && (
+                            <span className="text-sm text-green-600">
+                                만 {formData.calculatedAge}세 ({formData.ageGroup || '연령대 알수없음'})
+                                {formData.isMinor ? ' [미성년자]' : ' [성인]'}
+                            </span>
+                        )}
+                        {process.env.NODE_ENV === 'development' && (
+                            <div className="text-xs text-gray-500">
+                                원본(암호화): {formData.name || '없음'}
+                            </div>
+                        )}
+                    </div>
                 </div>
                 {/* 닉네임 (수정 가능) */}
                 <div>
@@ -119,27 +132,41 @@ const DetailPanel = ({ user, view, setView }) => {
                         className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                 </div>
-                {/* 전화번호 (수정 불가능) */}
+                {/* 전화번호 (수정 불가능 - 복호화된 정보 표시) */}
                 <div>
                     <label className="block font-bold mb-1">Phone:</label>
-                    <input
-                        type="text"
-                        name="phone"
-                        value={formData.phone || ""}
-                        readOnly
-                        className="bg-gray-100 cursor-not-allowed w-full p-3 border border-gray-300 rounded-md"
-                    />
+                    <div className="flex flex-col gap-2">
+                        <input
+                            type="text"
+                            value={formData.displayPhone || formData.phone || "없음"}
+                            readOnly
+                            placeholder="전화번호 (복호화되어 표시)"
+                            className="bg-green-50 cursor-not-allowed w-full p-3 border border-green-300 rounded-md"
+                        />
+                        {process.env.NODE_ENV === 'development' && (
+                            <div className="text-xs text-gray-500">
+                                원본(암호화): {formData.phone || '없음'}
+                            </div>
+                        )}
+                    </div>
                 </div>
-                {/* 생년월일 (수정 불가능) */}
+                {/* 생년월일 (수정 불가능 - 복호화된 정보 표시) */}
                 <div>
                     <label className="block font-bold mb-1">Birthdate:</label>
-                    <input
-                        type="text"
-                        name="birthdate"
-                        value={formData.birthdate || ""}
-                        readOnly
-                        className="bg-gray-100 cursor-not-allowed w-full p-3 border border-gray-300 rounded-md"
-                    />
+                    <div className="flex flex-col gap-2">
+                        <input
+                            type="text"
+                            value={formData.displayBirthdate || formData.birthdate || "없음"}
+                            readOnly
+                            placeholder="생년월일 (복호화되어 표시)"
+                            className="bg-green-50 cursor-not-allowed w-full p-3 border border-green-300 rounded-md"
+                        />
+                        {process.env.NODE_ENV === 'development' && (
+                            <div className="text-xs text-gray-500">
+                                원본(암호화): {formData.birthdate || '없음'}
+                            </div>
+                        )}
+                    </div>
                 </div>
                 {/* 성별 */}
                 <div>
@@ -247,15 +274,50 @@ const DetailPanel = ({ user, view, setView }) => {
                         className="bg-gray-100 cursor-not-allowed w-full p-3 border border-gray-300 rounded-md"
                     />
                 </div>
-                {/* 소셜 로그인 정보 */}
+                {/* 소셜 로그인 정보 (복호화된 정보 포함) */}
                 <div>
-                    <label className="block font-bold mb-1">Social Info:</label>
-                    <textarea
-                        name="social"
-                        value={formData.social ? JSON.stringify(formData.social, null, 2) : ""}
-                        readOnly
-                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 h-48"
-                    />
+                    <label className="block font-bold mb-1">Social Info (복호화 적용):</label>
+                    <div className="space-y-3">
+                        {/* 카카오 정보 */}
+                        {formData.social?.kakao && (
+                            <div className="bg-yellow-50 p-3 rounded border">
+                                <h4 className="font-semibold text-yellow-800 mb-2">카카오:</h4>
+                                <div className="text-sm space-y-1">
+                                    <div><strong>이름:</strong> {formData.social.kakao.decrypted_name || '복호화실패'}</div>
+                                    <div><strong>전화번호:</strong> {formData.social.kakao.decrypted_phoneNumber || '복호화실패'}</div>
+                                    <div><strong>생일:</strong> {formData.social.kakao.decrypted_birthday || '복호화실패'}</div>
+                                    <div><strong>출생년도:</strong> {formData.social.kakao.decrypted_birthyear || '복호화실패'}</div>
+                                    <div><strong>성별:</strong> {formData.social.kakao.gender || '없음'}</div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* 네이버 정보 */}
+                        {formData.social?.naver && (
+                            <div className="bg-green-50 p-3 rounded border">
+                                <h4 className="font-semibold text-green-800 mb-2">네이버:</h4>
+                                <div className="text-sm space-y-1">
+                                    <div><strong>이름:</strong> {formData.social.naver.decrypted_name || '복호화실패'}</div>
+                                    <div><strong>전화번호:</strong> {formData.social.naver.decrypted_phoneNumber || '복호화실패'}</div>
+                                    <div><strong>생일:</strong> {formData.social.naver.decrypted_birthday || '복호화실패'}</div>
+                                    <div><strong>출생년도:</strong> {formData.social.naver.decrypted_birthyear || '복호화실패'}</div>
+                                    <div><strong>성별:</strong> {formData.social.naver.gender || '없음'}</div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* 개발 모드에서만 원본 데이터 표시 */}
+                        {process.env.NODE_ENV === 'development' && (
+                            <details className="text-xs">
+                                <summary className="cursor-pointer text-gray-600">원본 데이터 (암호화된 상태)</summary>
+                                <textarea
+                                    value={formData.social ? JSON.stringify(formData.social, null, 2) : ""}
+                                    readOnly
+                                    className="w-full mt-2 p-2 border border-gray-300 rounded text-xs h-32"
+                                />
+                            </details>
+                        )}
+                    </div>
                 </div>
                 {/* 별점 */}
                 <div>

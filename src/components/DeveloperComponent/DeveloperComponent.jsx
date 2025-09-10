@@ -1,6 +1,6 @@
 // File: src/components/DeveloperComponent/DeveloperComponent.jsx
 import React, {useState, useEffect} from "react";
-import {useSearch} from "../../hooks/search.js";  // 기존 사용자 검색 훅
+import {useDeveloperSearch} from "../../hooks/useDeveloperSearch.js";  // 🔥 변경: 개발자 전용 검색 훅
 import SearchPanel from "./SearchPanel.jsx";
 import DetailPanel from "./DetailPanel.jsx";
 import ModeToggle from "./chatcomponents/ModeToggle.jsx";
@@ -19,18 +19,17 @@ const PAGE_SIZE = 30;
 const DeveloperComponent = () => {
 
 
-    // 1) 사용자 검색 훅 (유저 모드)
+    // 1) 개발자 전용 사용자 검색 훅 (복호화 지원)
     const {
         data: users,
         pagination: userPagination,
         loading: userLoading,
         error: userError,
         keyword: userKeyword,
+        setKeyword: setUserKeyword,
         setPage: setUserPage,
-        setKeyword: setUserKeyword
-    } = useSearch({
-        endpoint: "/api/search/users",
-        initialParams: {searchType: "both"},
+        loadMore
+    } = useDeveloperSearch({
         pageSize: PAGE_SIZE,
         minKeywordLength: 1
     });
@@ -151,15 +150,14 @@ const DeveloperComponent = () => {
                 // ==== 사용자 모드 ====
                 <div className="flex flex-1 overflow-hidden">
                     <SearchPanel
-                        query={userKeyword}
-                        setQuery={setUserKeyword}
-                        page={userPagination?.current || 1}
-                        setPage={setUserPage}
+                        keyword={userKeyword}
+                        setKeyword={setUserKeyword}
+                        pagination={userPagination}
                         users={users}
-                        total={userPagination?.totalCount || 0}
                         loading={userLoading}
                         error={userError}
                         onUserClick={setSelectedUser}
+                        loadMore={loadMore}
                     />
                     <DetailPanel user={selectedUser}
                                  view={userView}
