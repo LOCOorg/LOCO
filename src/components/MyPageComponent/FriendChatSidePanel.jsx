@@ -522,33 +522,38 @@ const FriendChatSidePanel = () => {
                                             return (
                                                 <div
                                                     key={req._id}
-                                                    className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border"
+                                                    className="bg-gray-50 rounded-lg border p-4"
                                                 >
-                                                    <ProfileButton
-                                                        profile={req.sender}
-                                                        size="sm"
-                                                        area='친구요청'
-                                                        requestId={req._id}
-                                                        onAccept={() => handleAccept(req._id, req._notiIdx)}
-                                                        onDecline={() => handleDecline(req._id, req._notiIdx)}
-                                                    />
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-gray-900 truncate">
-                                                            {req.sender?.nickname || '알 수 없음'}
-                                                        </p>
-                                                        <p className="text-sm text-gray-500">친구 요청을 보냈습니다</p>
+                                                    {/* 상단: 프로필 정보 */}
+                                                    <div className="flex items-center gap-3 mb-3">
+                                                        <ProfileButton
+                                                            profile={req.sender}
+                                                            size="sm"
+                                                            area='친구요청'
+                                                            requestId={req._id}
+                                                            onAccept={() => handleAccept(req._id, req._notiIdx)}
+                                                            onDecline={() => handleDecline(req._id, req._notiIdx)}
+                                                        />
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-medium text-gray-900 truncate">
+                                                                {req.sender?.nickname || '알 수 없음'}
+                                                            </p>
+                                                            <p className="text-sm text-gray-500">친구 요청을 보냈습니다</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex gap-2">
+
+                                                    {/* 하단: 버튼 영역 */}
+                                                    <div className="flex gap-2 justify-end">
                                                         <button
                                                             onClick={() => handleAccept(req._id, req._notiIdx)}
-                                                            className="px-3 py-2 text-sm bg-green-500 text-white hover:bg-green-600 rounded-md transition-colors flex items-center gap-1"
+                                                            className="px-4 py-2 text-sm bg-green-500 text-white hover:bg-green-600 rounded-md transition-colors flex items-center gap-1 font-medium"
                                                         >
                                                             <CheckIcon className="w-4 h-4" />
                                                             수락
                                                         </button>
                                                         <button
                                                             onClick={() => handleDecline(req._id, req._notiIdx)}
-                                                            className="px-3 py-2 text-sm bg-red-500 text-white hover:bg-red-600 rounded-md transition-colors flex items-center gap-1"
+                                                            className="px-4 py-2 text-sm bg-red-500 text-white hover:bg-red-600 rounded-md transition-colors flex items-center gap-1 font-medium"
                                                         >
                                                             <XMarkIcon className="w-4 h-4" />
                                                             거절
