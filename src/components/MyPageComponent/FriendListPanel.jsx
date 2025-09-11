@@ -101,8 +101,7 @@ const FriendListPanel = () => {
                 newRoom = { ...room, chatUsers: [user._id, friendId] };
             }
 
-            openSidePanelWithChat({ roomId: newRoom._id, friend });
-            addFriendRoom({ roomId: newRoom._id, friend });
+            openSidePanelWithChat(newRoom._id, friend);
             // 드롭다운에 보여야 하므로 isActive true 로 전환
             try { await toggleFriendRoomActive(newRoom._id, true); } catch (e) { console.error(e); }
         } catch (error) {
