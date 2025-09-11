@@ -155,6 +155,8 @@ const useFriendChatStore = create((set, get) => ({
 
     // 외부에서 사이드패널 열기
     openSidePanelWithChat: (roomId, friendInfo) => {
+        const { addFriendRoom } = get();
+        addFriendRoom({ roomId, friend: friendInfo });
         set({
             shouldOpenPanel: true,
             targetRoomId: roomId,

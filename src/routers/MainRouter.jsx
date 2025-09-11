@@ -25,6 +25,7 @@ import PRRouter from "./PRRouter.jsx";
 import DeveloperRouter from "./DeveloperRouter.jsx";
 import NewsRouter from "./NewsRouter.jsx";
 import BannerRouter from "./BannerRouter.jsx";
+import UserLeaveRouter from "./UserLeaveRouter.jsx";
 
 const MainRouter = createBrowserRouter([
     {
@@ -52,6 +53,7 @@ const MainRouter = createBrowserRouter([
             },
             PRRouter,
             DeveloperRouter,
+            UserLeaveRouter
         ],
     },
 ]);
