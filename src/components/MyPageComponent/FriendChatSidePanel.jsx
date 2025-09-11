@@ -223,6 +223,38 @@ const FriendChatSidePanel = () => {
         }, 100);
     }, [updateRoomSummary]);
 
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleFriendDeleted = ({ friendId, roomId }) => {
+            const { user, setUser } = useAuthStore.getState();
+            const { removeFriend } = useFriendListStore.getState();
+            const { removeFriendRoom } = useFriendChatStore.getState();
+
+            // 1. Remove from global friend list
+            removeFriend(friendId);
+
+            // 2. Remove from user object in auth store
+            if (user && user.friends) {
+                setUser({
+                    ...user,
+                    friends: user.friends.filter(id => id !== friendId)
+                });
+            }
+
+            // 3. If a chat room was associated, remove it from the chat store
+            if (roomId) {
+                removeFriendRoom(roomId);
+            }
+        };
+
+        socket.on('friendDeleted', handleFriendDeleted);
+
+        return () => {
+            socket.off('friendDeleted', handleFriendDeleted);
+        };
+    }, [socket]);
+
     // 실시간 메시지 수신 처리
     useEffect(() => {
         if (!socket || !user?._id || !friendRooms) return;
@@ -277,6 +309,45 @@ const FriendChatSidePanel = () => {
             socket.off("receiveMessage", handleReceiveMessage);
         };
     }, [socket, user?._id, friendRooms, updateRoomMessage, selectedRoom, activeRightTab, markRoomAsRead, markRoomAsReadStore, updateRoomSummary]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleFriendDeleted = ({ friendId, roomId }) => {
+            const { user, setUser } = useAuthStore.getState();
+            const { removeFriend } = useFriendListStore.getState();
+            const { removeFriendRoom, selectedRoomId, setSelectedRoomId } = useFriendChatStore.getState();
+
+            removeFriend(friendId);
+
+            if (user && user.friends) {
+                setUser({
+                    ...user,
+                    friends: user.friends.filter(id => id !== friendId)
+                });
+            }
+
+            if (roomId) {
+                removeFriendRoom(roomId);
+                if (selectedRoomId === roomId) {
+                    setSelectedRoomId(null);
+                }
+            }
+        };
+
+        socket.on('friendDeleted', handleFriendDeleted);
+
+        return () => {
+            socket.off('friendDeleted', handleFriendDeleted);
+        };
+    }, [socket]);
+
+    const { selectedRoomId: storeSelectedRoomId } = useFriendChatStore();
+    useEffect(() => {
+        if (storeSelectedRoomId === null) {
+            setSelectedRoom(null);
+        }
+    }, [storeSelectedRoomId]);
 
 
     // 외부 신호로 패널 열기
@@ -409,6 +480,7 @@ const FriendChatSidePanel = () => {
         if (!room || !room.roomId || !user?._id) return;
 
         setSelectedRoom(room);
+        setActiveRightTabLocal('chat');
 
         try {
             await recordRoomEntry(room.roomId, user._id);
