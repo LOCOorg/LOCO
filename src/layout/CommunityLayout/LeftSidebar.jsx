@@ -41,8 +41,8 @@ const LeftSidebar = ({ selectedCategory, handleCategoryClick }) => {
                 <h2 className="text-lg font-semibold text-gray-700 mb-3">내 활동</h2>
                 <ul className="space-y-2">
                     {[
-                        { label: '내가 쓴 글', key: '내 글' },
-                        { label: '내가 댓글 쓴 글', key: '내 댓글' },
+                        { label: '내 글', key: '내 글' },
+                        { label: '내 댓글', key: '내 댓글' },
                     ].map((item) => (
                         <li key={item.key}>
                             <button
