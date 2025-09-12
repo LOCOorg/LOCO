@@ -19,6 +19,10 @@ const RightSidebar = ({ sideTab, setSideTab, topViewed, topCommented }) => {
 
     // ✅ 제목 길이 제한 함수
     const truncateTitle = (title, maxLength = 25) => {
+
+        if (!title || typeof title !== 'string') {
+            return '제목 없음';
+        }
         return title.length > maxLength ? title.substring(0, maxLength) + '...' : title;
     };
 
