@@ -89,7 +89,7 @@ export default function LeagueRecordSection({ partnerRecords, loading, error }) 
                         {hasLeagueRecord && record.leagueRecord.recentRanked && record.leagueRecord.recentRanked.length > 0 && (
                             <div className="recent-matches">
                                 <h4 className="mb-3 text-gray-800 font-semibold text-sm">
-                                    최근 랭크전 {record.leagueRecord.recentRanked.length}판
+                                    최근 솔로 랭크전 {record.leagueRecord.recentRanked.length}판
                                 </h4>
 
                                 {/* Flex 레이아웃으로 변경하여 전체 너비 활용 */}
