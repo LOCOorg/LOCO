@@ -9,6 +9,7 @@ import ReportForm from "../../components/reportcomponents/ReportForm.jsx";
 // 프로필 모달을 위한 ProfileButton 컴포넌트를 import합니다.
 import ProfileButton from "../../components/MyPageComponent/ProfileButton.jsx";
 import LeagueRecordSection from "./LeagueRecordSection.jsx";
+import useNotificationStore from '../../stores/notificationStore.js';
 
 const ChatRoom = ({roomId, userId}) => {
     const [messages, setMessages] = useState([]);
@@ -40,6 +41,13 @@ const ChatRoom = ({roomId, userId}) => {
     const [deleteTargetId, setDeleteTargetId] = useState(null);
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const { removeNotificationsByRoom } = useNotificationStore();
+
+    useEffect(() => {
+        if (roomId) {
+            removeNotificationsByRoom(roomId);
+        }
+    }, [roomId, removeNotificationsByRoom]);
 
     // 메시지 전송 시간을 포맷하는 헬퍼 함수 (시간:분 형식)
     const formatTime = (textTime) => {

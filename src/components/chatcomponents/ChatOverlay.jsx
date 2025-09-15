@@ -4,6 +4,7 @@ import { fetchMessages, recordRoomEntry } from "../../api/chatAPI.js";
 import useAuthStore from "../../stores/authStore.js";
 import ProfileButton from "../MyPageComponent/ProfileButton.jsx";
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
+import useNotificationStore from '../../stores/notificationStore.js';
 
 // eslint-disable-next-line react/prop-types
 function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
@@ -16,6 +17,13 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
     const senderId = authUser?._id;
     const messagesContainerRef = useRef(null);
     const scrollPositionRef = useRef(null);
+    const { removeNotificationsByRoom } = useNotificationStore();
+
+    useEffect(() => {
+        if (roomId) {
+            removeNotificationsByRoom(roomId);
+        }
+    }, [roomId, removeNotificationsByRoom]);
 
     const formatTime = (textTime) => {
         if (!textTime) return "";
