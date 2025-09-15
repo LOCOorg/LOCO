@@ -277,8 +277,10 @@ const ChatRoom = ({roomId, userId}) => {
 
 
     useEffect(() => {
-        fetchMessages(roomId).then((fetchedMessages) => {
-            setMessages(fetchedMessages);
+        fetchMessages(roomId).then((data) => {
+            if (data && data.messages) {
+                setMessages(data.messages);
+            }
         });
 
         getChatRoomDetails();
@@ -420,13 +422,12 @@ const ChatRoom = ({roomId, userId}) => {
                                 return (
                                     <div
                                         key={`${msg._id}-${msg.textTime}`}
-                                        className={`flex items-end ${isMe ? 'justify-end' : 'justify-start'}`}
+                                        className={`flex items-start gap-3 ${isMe ? 'justify-end' : 'justify-start'}`}
                                     >
                                         {/* 프로필 */}
                                         {!isMe && (
                                             <ProfileButton
                                                 profile={msg.sender}
-                                                className="w-10 h-10 rounded-full overflow-hidden mr-3"
                                                 area="랜덤채팅"
                                                 onModalToggle={setIsProfileOpen}
                                                 anchor={{
@@ -438,41 +439,37 @@ const ChatRoom = ({roomId, userId}) => {
                                             />
                                         )}
 
-                                        {/* 메시지 박스 */}
-                                        <div
-                                            className={`max-w-[70%] p-4 rounded-2xl shadow ${
-                                                isMe ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'
-                                            }`}
-                                        >
-                                            <div className="flex items-center mb-1">
-                                                <span
-                                                    className={`text-sm font-semibold ${
-                                                        isMe ? 'text-blue-200' : 'text-blue-700'
-                                                    }`}>
-                                                  {msg.sender.nickname}
+                                        {/* 닉네임과 메시지 컨테이너 */}
+                                        <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                            {/* 닉네임 */}
+                                            {!isMe && (
+                                                <span className="text-sm font-semibold text-gray-800 mb-1">
+                                                    {msg.sender.nickname}
                                                 </span>
-                                                                            <span className="ml-2 text-xs text-gray-300">
-                                                  {formatTime(msg.textTime)}
+                                            )}
+
+                                            {/* 말풍선과 시간 */}
+                                            <div className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                                                <div
+                                                    className={`max-w-full p-3 rounded-lg shadow ${
+                                                        isMe ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'
+                                                    }`}
+                                                >
+                                                    <p className="whitespace-pre-wrap break-all">
+                                                        {msg.isDeleted ? '삭제된 메시지입니다.' : msg.text}
+                                                    </p>
+                                                </div>
+                                                <span className="text-xs text-gray-400 pb-1">
+                                                    {formatTime(msg.textTime)}
                                                 </span>
                                             </div>
-                                            <p className="whitespace-pre-wrap break-all">
-                                                {msg.isDeleted ? '삭제된 메시지입니다.' : msg.text}
-                                            </p>
                                         </div>
 
                                         {/* 내 메시지일 때 프로필 & 삭제 버튼 */}
-                                        {isMe && (
-                                            <ProfileButton
-                                                profile={msg.sender}
-                                                className="w-10 h-10 rounded-full overflow-hidden ml-3"
-                                                area="랜덤채팅"
-                                                onModalToggle={setIsProfileOpen}
-                                            />
-                                        )}
                                         {isMe && !msg.isDeleted && (
                                             <button
                                                 onClick={() => onDeleteButtonClick(msg._id)}
-                                                className="ml-2 text-red-600 hover:text-red-800 focus:outline-none"
+                                                className="ml-2 text-red-600 hover:text-red-800 focus:outline-none self-end"
                                                 title="메시지 삭제"
                                             >
                                                 🗑️
@@ -499,13 +496,23 @@ const ChatRoom = ({roomId, userId}) => {
                             onSubmit={handleSendMessage}
                             className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex items-center space-x-3"
                         >
-                            <input
-                                type="text"
-                                value={text}
-                                onChange={e => setText(e.target.value)}
-                                placeholder="메시지를 입력하세요…"
-                                className="flex-1 border border-gray-300 rounded-full px-5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
-                            />
+                            <div className="relative flex-1">
+                                <input
+                                    type="text"
+                                    value={text}
+                                    onChange={e => {
+                                        if (e.target.value.length <= 100) {
+                                            setText(e.target.value);
+                                        }
+                                    }}
+                                    placeholder="메시지를 입력하세요…"
+                                    maxLength={100}
+                                    className="w-full border border-gray-300 rounded-full px-5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition pr-20"
+                                />
+                                <span className="absolute right-5 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                                    {text.length}/100
+                                </span>
+                            </div>
                             <button
                                 type="submit"
                                 className="inline-flex items-center px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full shadow-lg hover:from-indigo-600 hover:to-purple-600 focus:outline-none transition"
