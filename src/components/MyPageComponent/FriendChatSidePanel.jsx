@@ -103,11 +103,12 @@ const FriendChatSidePanel = () => {
         if (!user?._id || !roomId) return;
 
         try {
-            const messages = await fetchMessages(roomId);
+            const data = await fetchMessages(roomId, 1, 1);
+            const messages = data.messages;
             const { unreadCount } = await getUnreadCount(roomId, user._id);
 
             if (messages && messages.length > 0) {
-                const lastMessage = messages[messages.length - 1];
+                const lastMessage = messages[0];
 
                 const summary = {
                     lastMessage: lastMessage?.text || '',
@@ -132,11 +133,12 @@ const FriendChatSidePanel = () => {
             if (!room || !room.roomId) continue;
 
             try {
-                const messages = await fetchMessages(room.roomId);
+                const data = await fetchMessages(room.roomId, 1, 1);
+                const messages = data.messages;
                 const { unreadCount } = await getUnreadCount(room.roomId, user._id);
 
                 if (messages && messages.length > 0) {
-                    const lastMessage = messages[messages.length - 1];
+                    const lastMessage = messages[0];
 
                     summaries[room.roomId] = {
                         lastMessage: lastMessage?.text || '',
@@ -144,7 +146,8 @@ const FriendChatSidePanel = () => {
                         unreadCount: unreadCount || 0
                     };
                 } else {
-                    summaries[room.roomId] = {
+                    const existingSummary = roomSummaries[room.roomId];
+                    summaries[room.roomId] = existingSummary || {
                         lastMessage: '',
                         lastMessageTime: null,
                         unreadCount: 0
@@ -161,7 +164,7 @@ const FriendChatSidePanel = () => {
         }
 
         setRoomSummaries(summaries);
-    }, [friendRooms, user?._id, setRoomSummaries]);
+    }, [friendRooms, user?._id, setRoomSummaries, roomSummaries]);
 
     // 채팅방 로드
     const loadRooms = useCallback(async () => {

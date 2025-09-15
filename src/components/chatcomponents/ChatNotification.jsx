@@ -168,7 +168,7 @@ const GlobalChatNotification = () => {
             </div>
 
             {/* 토스트 알림 */}
-            <div className="fixed top-4 right-4 space-y-2 z-50">
+            <div className="fixed bottom-4 right-4 space-y-2 z-[1100]">
                 {toasts.map((toast) => (
                     <div
                         key={toast.id}
