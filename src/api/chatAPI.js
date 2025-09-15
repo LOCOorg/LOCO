@@ -47,13 +47,16 @@ export const getChatRoomInfo = async (roomId) => {
 };
 
 // 채팅 메세지 불러오기
-export const fetchMessages = async (roomId) => {
+export const fetchMessages = async (roomId, page = 1, limit = 20) => {
     try {
-        const response = await axios.get(`${host}/messages/${roomId}`);
+        const response = await axios.get(`${host}/messages/${roomId}`, {
+            params: { page, limit }
+        });
         return response.data;
     } catch (error) {
         console.error("메시지를 불러오는 중 오류 발생:", error);
-        return [];
+        // Return an object with empty messages and default pagination on error
+        return { messages: [], pagination: { hasNextPage: false } };
     }
 };
 
