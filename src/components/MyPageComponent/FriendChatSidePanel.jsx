@@ -146,17 +146,16 @@ const FriendChatSidePanel = () => {
                         unreadCount: unreadCount || 0
                     };
                 } else {
-                    const existingSummary = roomSummaries[room.roomId];
-                    summaries[room.roomId] = existingSummary || {
-                        lastMessage: '',
+                    summaries[room.roomId] = {
+                        lastMessage: '메시지가 없습니다.',
                         lastMessageTime: null,
-                        unreadCount: 0
+                        unreadCount: unreadCount || 0
                     };
                 }
             } catch (error) {
                 console.error(`채팅방 ${room.roomId} 요약 정보 로드 실패:`, error);
                 summaries[room.roomId] = {
-                    lastMessage: '',
+                    lastMessage: '정보 로드 실패',
                     lastMessageTime: null,
                     unreadCount: 0
                 };
@@ -164,7 +163,7 @@ const FriendChatSidePanel = () => {
         }
 
         setRoomSummaries(summaries);
-    }, [friendRooms, user?._id, setRoomSummaries, roomSummaries]);
+    }, [friendRooms, user?._id, setRoomSummaries]);
 
     // 채팅방 로드
     const loadRooms = useCallback(async () => {
