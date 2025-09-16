@@ -80,7 +80,7 @@ export function useChatConversation(chatUser, mode) {
 
             axios
                 .get(`/api/chat/messages/${selectedRoom._id}`, { params })
-                .then(res => setMessages(res.data || []))
+                .then(res => setMessages(res.data.messages || []))
                 .catch(console.error);
         } else {
             setMessages([]);
