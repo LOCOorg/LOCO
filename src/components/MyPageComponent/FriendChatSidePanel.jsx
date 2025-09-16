@@ -686,7 +686,7 @@ const FriendChatSidePanel = () => {
                                                 }`}
                                             >
                                                 <div className="relative">
-                                                    <ProfileButton profile={room.friend} size="md"/>
+                                                    <ProfileButton profile={room.friend} size="md" modalDisabled={true}/>
                                                     {(summary.unreadCount || 0) > 0 && (
                                                         <span
                                                             className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -729,7 +729,7 @@ const FriendChatSidePanel = () => {
                                         >
                                             <ArrowLeftIcon className="w-5 h-5"/>
                                         </button>
-                                        <ProfileButton profile={selectedRoom.friend} size="sm"/>
+                                        <ProfileButton profile={selectedRoom.friend} size="sm" modalDisabled={true}/>
                                         <h3 className="text-lg font-semibold text-gray-900">
                                             {selectedRoom.friend?.nickname || '채팅'}
                                         </h3>

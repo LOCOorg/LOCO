@@ -4,7 +4,7 @@ import useAuthStore from '../../stores/authStore.js';
 import SimpleProfileModal from './SimpleProfileModal.jsx';
 import { FiUser } from 'react-icons/fi';
 
-const ProfileButton = ({ profile: externalProfile, area = '프로필', onModalToggle, anchor, requestId, onAccept, onDecline }) => {
+const ProfileButton = ({ profile: externalProfile, area = '프로필', onModalToggle, anchor, requestId, onAccept, onDecline, modalDisabled = false }) => {
     const authUser = useAuthStore((state) => state.user);
     const [profile, setProfile] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,6 +40,7 @@ const ProfileButton = ({ profile: externalProfile, area = '프로필', onModalTo
 
     /* 모달 열기 */
     const handleOpenModal = () => {
+        if (modalDisabled) return; // modalDisabled가 true이면 모달을 열지 않음
         setIsModalOpen(true);
         onModalToggle?.(true);
     }
@@ -53,7 +54,7 @@ const ProfileButton = ({ profile: externalProfile, area = '프로필', onModalTo
         <div>
             <button
                 onClick={handleOpenModal}
-                className="p-0 bg-transparent border-none cursor-pointer"
+                className={`p-0 bg-transparent border-none ${modalDisabled ? 'cursor-default' : 'cursor-pointer'}`}
             >
                 {photoUrl && !imgError ? (
                     <img
