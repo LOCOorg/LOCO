@@ -198,6 +198,14 @@ const RandomChatComponent = () => {
                 return;
             }
 
+            if (!userInfo.birthdate || !userInfo.ageGroup) {
+                setModalTitle("정보 부족");
+                setModalMessage("생년월일 정보가 없어 랜덤채팅을 이용할 수 없습니다. 마이페이지에서 정보를 입력해주세요.");
+                setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
+                setModalOpen(true);
+                return;
+            }
+
             if (userInfo.numOfChat === 0) {
                 setModalTitle("경고");
                 setModalMessage("채팅횟수가 부족하여 듀오 찾기을 이용할 수 없습니다.");
@@ -235,9 +243,7 @@ const RandomChatComponent = () => {
 
             /* ─── 2. 실제 방 탐색/참가를 담당할 내부 재귀 함수 ─── */
             const tryMatch = async () => {
-                // const age         = calculateAge(userInfo.birthdate);
-                const age = userInfo.calculatedAge;
-                const ageGroup    = age >= 19 ? "adult" : "minor";
+                const ageGroup = userInfo.ageGroup;
                 const blockedIds  = (blockedUsers || []).map((u) => u._id);
 
                 // (1) 방 목록 조회
@@ -329,7 +335,8 @@ const RandomChatComponent = () => {
                                     }
                                 }
                             }
-                        }]);
+                        }
+                    ]);
                                 setModalOpen(true);
                     return;
                 }
