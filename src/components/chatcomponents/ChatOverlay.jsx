@@ -194,7 +194,12 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
                                     <div className={`flex ${isMyMessage ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 max-w-[80%]`}>
                                         {!isMyMessage && (
                                             <div className="flex-shrink-0">
-                                                <ProfileButton profile={message.sender} size="xs" />
+                                                <ProfileButton profile={message.sender} size="xs" area="친구채팅" anchor={{
+                                                    type: 'chat',
+                                                    roomId: roomId,
+                                                    parentId: roomId,
+                                                    targetId: message._id
+                                                }}/>
                                             </div>
                                         )}
                                         <div className={`flex flex-col ${isMyMessage ? 'items-end' : 'items-start'}`}>
