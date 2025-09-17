@@ -5,6 +5,36 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
+// 연령대 계산 함수
+const getDetailedAgeGroup = (age) => {
+    if (!age || age < 0 || age > 120) return '정보없음';
+    
+    // 미성년자 구분
+    if (age < 10) return '유아';
+    if (age >= 10 && age <= 13) return '10대 초반';
+    if (age >= 14 && age <= 16) return '10대 중반';
+    if (age >= 17 && age <= 19) return '10대 후반';
+    
+    // 성인 연령대 세분화
+    const decade = Math.floor(age / 10) * 10;
+    const ageInDecade = age - decade;
+    
+    let subGroup;
+    if (ageInDecade <= 3) {
+        subGroup = '초반';
+    } else if (ageInDecade <= 6) {
+        subGroup = '중반';
+    } else {
+        subGroup = '후반';
+    }
+    
+    // 60세 이상은 단순화
+    if (age >= 60) {
+        return age >= 70 ? '70세 이상' : '60대';
+    }
+    
+    return `${decade}대 ${subGroup}`;
+};
 
 const modes = [
     { key: "friends", label: "친구내역" },
@@ -97,28 +127,47 @@ const DetailPanel = ({ user, view, setView }) => {
                         : <span>No photo available</span>
                     }
                 </div>
-                {/* 이름 (수정 불가능 - 복호화된 정보 표시) */}
+                {/* 가명처리된 이름 (readOnly) */}
                 <div>
-                    <label className="block font-bold mb-1">Name:</label>
+                    <label className="block font-bold mb-1">Name (가명처리):</label>
                     <div className="flex flex-col gap-2">
                         <input
                             type="text"
-                            value={formData.displayName || formData.name || "없음"}
+                            value={formData.displayName || '정보없음'}
                             readOnly
-                            placeholder="이름 (복호화되어 표시)"
-                            className="bg-green-50 cursor-not-allowed w-full p-3 border border-green-300 rounded-md"
+                            placeholder="가명처리된 이름 (성 제거 + 모음변경 + 배치섞기)"
+                            className="bg-purple-50 cursor-not-allowed w-full p-3 border border-purple-300 rounded-md"
                         />
+                        <span className="text-sm text-purple-600">
+                            🎭 성 제거 + 2단계 가명처리 (법적 안전)
+                        </span>
                         {formData.calculatedAge && (
                             <span className="text-sm text-green-600">
-                                만 {formData.calculatedAge}세 ({formData.ageGroup || '연령대 알수없음'})
-                                {formData.isMinor ? ' [미성년자]' : ' [성인]'}
+                                만 {formData.calculatedAge}세
                             </span>
                         )}
-                        {process.env.NODE_ENV === 'development' && (
+                        {process.env.NODE_ENV === 'development' && formData._debug && (
                             <div className="text-xs text-gray-500">
-                                원본(암호화): {formData.name || '없음'}
+                                디버깅: {formData._debug.decryptedOriginal} → {formData._debug.pseudonymized}
                             </div>
                         )}
+                    </div>
+                </div>
+                
+                {/* 마스킹된 전화번호 (readOnly) */}
+                <div>
+                    <label className="block font-bold mb-1">Phone (마스킹처리):</label>
+                    <div className="flex flex-col gap-2">
+                        <input
+                            type="text"
+                            value={formData.phone || '정보없음'}
+                            readOnly
+                            placeholder="마스킹된 전화번호 (예: ***-****-5678)"
+                            className="bg-blue-50 cursor-not-allowed w-full p-3 border border-blue-300 rounded-md"
+                        />
+                        <span className="text-sm text-blue-600">
+                            📱 개인정보 최소화 - 마지막 4자리만 표시
+                        </span>
                     </div>
                 </div>
                 {/* 닉네임 (수정 가능) */}
@@ -132,55 +181,54 @@ const DetailPanel = ({ user, view, setView }) => {
                         className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                 </div>
-                {/* 전화번호 (수정 불가능 - 복호화된 정보 표시) */}
+                {/* 연령대 표시 (readOnly) */}
                 <div>
-                    <label className="block font-bold mb-1">Phone:</label>
+                    <label className="block font-bold mb-1">Age Group:</label>
                     <div className="flex flex-col gap-2">
                         <input
                             type="text"
-                            value={formData.displayPhone || formData.phone || "없음"}
+                            value={formData.displayAgeGroup || '정보없음'}
                             readOnly
-                            placeholder="전화번호 (복호화되어 표시)"
+                            placeholder="연령대 표시 (예: 20대 초반, 30대 중반)"
                             className="bg-green-50 cursor-not-allowed w-full p-3 border border-green-300 rounded-md"
                         />
-                        {process.env.NODE_ENV === 'development' && (
+                        <span className="text-sm text-green-600">
+                            🎨 세분화된 연령대 (최소화 원칙 준수 + 재식별 위험 감소)
+                        </span>
+                        {/* 미성년자 여부 표시 */}
+                        {formData.isMinor !== null && (
+                            <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border">
+                                <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                    formData.isMinor ? 'bg-orange-200 text-orange-800' : 'bg-green-200 text-green-800'
+                                }`}>
+                                    {formData.isMinor ? '미성년자' : '성인'}
+                                </span>
+                                <span className="text-xs text-gray-600">
+                                    ({formData.isMinor ? '성인 콘텐츠 제한' : '성인 콘텐츠 접근 가능'})
+                                </span>
+                            </div>
+                        )}
+                        {process.env.NODE_ENV === 'development' && formData._debug && (
                             <div className="text-xs text-gray-500">
-                                원본(암호화): {formData.phone || '없음'}
+                                디버깅: 나이 {formData._debug.calculatedAge}세 → {formData._debug.ageGroup}
                             </div>
                         )}
                     </div>
                 </div>
-                {/* 생년월일 (수정 불가능 - 복호화된 정보 표시) */}
-                <div>
-                    <label className="block font-bold mb-1">Birthdate:</label>
-                    <div className="flex flex-col gap-2">
-                        <input
-                            type="text"
-                            value={formData.displayBirthdate || formData.birthdate || "없음"}
-                            readOnly
-                            placeholder="생년월일 (복호화되어 표시)"
-                            className="bg-green-50 cursor-not-allowed w-full p-3 border border-green-300 rounded-md"
-                        />
-                        {process.env.NODE_ENV === 'development' && (
-                            <div className="text-xs text-gray-500">
-                                원본(암호화): {formData.birthdate || '없음'}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                {/* 성별 */}
+                {/* 성별 (readOnly) */}
                 <div>
                     <label className="block font-bold mb-1">Gender:</label>
-                    <select
-                        name="gender"
-                        value={formData.gender || ""}
-                        onChange={handleChange}
-                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="select">Prefer not to say</option>
-                    </select>
+                    <input
+                        type="text"
+                        value={formData.displayGender === 'male' ? '남성' : 
+                               formData.displayGender === 'female' ? '여성' : 
+                               formData.displayGender === 'select' ? '선택안함' : '정보없음'}
+                        readOnly
+                        className="bg-blue-50 cursor-not-allowed w-full p-3 border border-blue-300 rounded-md"
+                    />
+                    <span className="text-sm text-blue-600">
+                        👤 성별 정보 (서비스 운영용)
+                    </span>
                 </div>
                 {/* 남은 재화 */}
                 <div>
@@ -274,49 +322,48 @@ const DetailPanel = ({ user, view, setView }) => {
                         className="bg-gray-100 cursor-not-allowed w-full p-3 border border-gray-300 rounded-md"
                     />
                 </div>
-                {/* 소셜 로그인 정보 (복호화된 정보 포함) */}
+                {/* 소셜 로그인 연동 상태 (간단한 표시) */}
                 <div>
-                    <label className="block font-bold mb-1">Social Info (복호화 적용):</label>
-                    <div className="space-y-3">
-                        {/* 카카오 정보 */}
-                        {formData.social?.kakao && (
-                            <div className="bg-yellow-50 p-3 rounded border">
-                                <h4 className="font-semibold text-yellow-800 mb-2">카카오:</h4>
-                                <div className="text-sm space-y-1">
-                                    <div><strong>이름:</strong> {formData.social.kakao.name || '복호화실패'}</div>
-                                    <div><strong>전화번호:</strong> {formData.social.kakao.phoneNumber || '복호화실패'}</div>
-                                    <div><strong>생일:</strong> {formData.social.kakao.birthday || '복호화실패'}</div>
-                                    <div><strong>출생년도:</strong> {formData.social.kakao.birthyear || '복호화실패'}</div>
-                                    <div><strong>성별:</strong> {formData.social.kakao.gender || '없음'}</div>
-                                </div>
+                    <label className="block font-bold mb-1">Social Login (연동상태):</label>
+                    <div className="space-y-2">
+                        {/* 카카오 연동 상태 */}
+                        <div className="flex items-center justify-between p-3 bg-yellow-50 rounded border">
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold text-yellow-800">카카오:</span>
+                                <span className={`px-2 py-1 rounded text-sm font-medium ${
+                                    formData.social?.kakao?.providerId_hash ? 
+                                    'bg-green-100 text-green-800' : 
+                                    'bg-gray-100 text-gray-600'
+                                }`}>
+                                    {formData.social?.kakao?.providerId_hash ? '연동됨' : '연동안됨'}
+                                </span>
                             </div>
-                        )}
+                        </div>
                         
-                        {/* 네이버 정보 */}
-                        {formData.social?.naver && (
-                            <div className="bg-green-50 p-3 rounded border">
-                                <h4 className="font-semibold text-green-800 mb-2">네이버:</h4>
-                                <div className="text-sm space-y-1">
-                                    <div><strong>이름:</strong> {formData.social.naver.name || '복호화실패'}</div>
-                                    <div><strong>전화번호:</strong> {formData.social.naver.phoneNumber || '복호화실패'}</div>
-                                    <div><strong>생일:</strong> {formData.social.naver.birthday || '복호화실패'}</div>
-                                    <div><strong>출생년도:</strong> {formData.social.naver.birthyear || '복호화실패'}</div>
-                                    <div><strong>성별:</strong> {formData.social.naver.gender || '없음'}</div>
-                                </div>
+                        {/* 네이버 연동 상태 */}
+                        <div className="flex items-center justify-between p-3 bg-green-50 rounded border">
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold text-green-800">네이버:</span>
+                                <span className={`px-2 py-1 rounded text-sm font-medium ${
+                                    formData.social?.naver?.providerId_hash ? 
+                                    'bg-green-100 text-green-800' : 
+                                    'bg-gray-100 text-gray-600'
+                                }`}>
+                                    {formData.social?.naver?.providerId_hash ? '연동됨' : '연동안됨'}
+                                </span>
                             </div>
-                        )}
+                        </div>
                         
-                        {/* 개발 모드에서만 원본 데이터 표시 */}
-                        {process.env.NODE_ENV === 'development' && (
-                            <details className="text-xs">
-                                <summary className="cursor-pointer text-gray-600">원본 데이터 (암호화된 상태)</summary>
-                                <textarea
-                                    value={formData.social ? JSON.stringify(formData.social, null, 2) : ""}
-                                    readOnly
-                                    className="w-full mt-2 p-2 border border-gray-300 rounded text-xs h-32"
-                                />
-                            </details>
-                        )}
+                        {/* 연돐 계정 요약 */}
+                        <div className="mt-3 p-2 bg-blue-50 rounded">
+                            <div className="text-sm text-blue-700">
+                                <span className="font-medium">연동 계정 수:</span> 
+                                {(
+                                    (formData.social?.kakao?.providerId_hash ? 1 : 0) + 
+                                    (formData.social?.naver?.providerId_hash ? 1 : 0)
+                                )}개
+                            </div>
+                        </div>
                     </div>
                 </div>
                 {/* 별점 */}
