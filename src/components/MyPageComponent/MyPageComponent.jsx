@@ -9,6 +9,7 @@ import useAuthStore from '../../stores/authStore';
 import ProfilePhotoSection from './ProfilePhotoSection';
 import ProfileDetailSection from './ProfileDetailSection';
 import {toast, ToastContainer, Zoom} from "react-toastify";
+import QnaHistoryComponent from "./QnaHistoryComponent.jsx";
 
 const MyPageContent = ({overrideProfile}) => {
     const authUser = useAuthStore((state) => state.user);
@@ -239,18 +240,8 @@ const MyPageContent = ({overrideProfile}) => {
             <div className="mb-6">
 
                 {/* QnA 내역 */}
-                <div className="mt-6">
-                    <h3 className="text-xl font-semibold mb-2">본인 QnA 내역</h3>
-                    {profile.qnaHistory && profile.qnaHistory.length > 0 ? (
-                        <ul className="list-disc list-inside space-y-1">
-                            {profile.qnaHistory.map((qna, idx) => (
-                                <li key={idx}>{qna}</li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p>등록된 QnA 내역이 없습니다.</p>
-                    )}
-                </div>
+                <QnaHistoryComponent profile={profile} />
+                
                 {/* 수정완료, 실패 알림임 옵션들은 gpt한테 물어보기*/}
                 <ToastContainer
                     position="top-center"

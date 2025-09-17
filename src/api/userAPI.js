@@ -212,14 +212,18 @@ export const getLeagueRecord = async (gameName, tagLine) => {
     }
 };
 
-export const getFriendsPage = async (userId, offset = 0, limit = 20) => {
+export const getFriendsPage = async (userId, offset = 0, limit = 20, online) => {
     try {
-        const url = `${host}/${userId}/friends?offset=${offset}&limit=${limit}`;
-        const res = await axios.get(url);
-        // 백엔드에서 { total, friends } 형태로 내려준다고 가정
+        const params = { offset, limit };
+        if (online !== undefined) {
+            params.online = online;
+        }
+        const url = `${host}/${userId}/friends`;
+        const res = await instance.get(url, { params });
         return res.data;
     } catch (err) {
-        throw new Error("친구 목록을 불러오는 데 실패했습니다.");
+        console.error("친구 목록을 불러오는 데 실패했습니다.", err); 
+        throw err; 
     }
 };
 

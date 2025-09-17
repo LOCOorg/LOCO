@@ -3,9 +3,9 @@ import RandomChatComponent from "../../components/chatcomponents/RandomChatCompo
 
 function RandomChatPage() {
     return (
-        <>
+        <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <RandomChatComponent/>
-        </>
+        </div>
     );
 }
 

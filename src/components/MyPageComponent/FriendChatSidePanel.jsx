@@ -103,11 +103,12 @@ const FriendChatSidePanel = () => {
         if (!user?._id || !roomId) return;
 
         try {
-            const messages = await fetchMessages(roomId);
+            const data = await fetchMessages(roomId, 1, 1);
+            const messages = data.messages;
             const { unreadCount } = await getUnreadCount(roomId, user._id);
 
             if (messages && messages.length > 0) {
-                const lastMessage = messages[messages.length - 1];
+                const lastMessage = messages[0];
 
                 const summary = {
                     lastMessage: lastMessage?.text || '',
@@ -132,11 +133,12 @@ const FriendChatSidePanel = () => {
             if (!room || !room.roomId) continue;
 
             try {
-                const messages = await fetchMessages(room.roomId);
+                const data = await fetchMessages(room.roomId, 1, 1);
+                const messages = data.messages;
                 const { unreadCount } = await getUnreadCount(room.roomId, user._id);
 
                 if (messages && messages.length > 0) {
-                    const lastMessage = messages[messages.length - 1];
+                    const lastMessage = messages[0];
 
                     summaries[room.roomId] = {
                         lastMessage: lastMessage?.text || '',
@@ -145,15 +147,15 @@ const FriendChatSidePanel = () => {
                     };
                 } else {
                     summaries[room.roomId] = {
-                        lastMessage: '',
+                        lastMessage: '메시지가 없습니다.',
                         lastMessageTime: null,
-                        unreadCount: 0
+                        unreadCount: unreadCount || 0
                     };
                 }
             } catch (error) {
                 console.error(`채팅방 ${room.roomId} 요약 정보 로드 실패:`, error);
                 summaries[room.roomId] = {
-                    lastMessage: '',
+                    lastMessage: '정보 로드 실패',
                     lastMessageTime: null,
                     unreadCount: 0
                 };
@@ -223,6 +225,38 @@ const FriendChatSidePanel = () => {
         }, 100);
     }, [updateRoomSummary]);
 
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleFriendDeleted = ({ friendId, roomId }) => {
+            const { user, setUser } = useAuthStore.getState();
+            const { removeFriend } = useFriendListStore.getState();
+            const { removeFriendRoom } = useFriendChatStore.getState();
+
+            // 1. Remove from global friend list
+            removeFriend(friendId);
+
+            // 2. Remove from user object in auth store
+            if (user && user.friends) {
+                setUser({
+                    ...user,
+                    friends: user.friends.filter(id => id !== friendId)
+                });
+            }
+
+            // 3. If a chat room was associated, remove it from the chat store
+            if (roomId) {
+                removeFriendRoom(roomId);
+            }
+        };
+
+        socket.on('friendDeleted', handleFriendDeleted);
+
+        return () => {
+            socket.off('friendDeleted', handleFriendDeleted);
+        };
+    }, [socket]);
+
     // 실시간 메시지 수신 처리
     useEffect(() => {
         if (!socket || !user?._id || !friendRooms) return;
@@ -277,6 +311,45 @@ const FriendChatSidePanel = () => {
             socket.off("receiveMessage", handleReceiveMessage);
         };
     }, [socket, user?._id, friendRooms, updateRoomMessage, selectedRoom, activeRightTab, markRoomAsRead, markRoomAsReadStore, updateRoomSummary]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleFriendDeleted = ({ friendId, roomId }) => {
+            const { user, setUser } = useAuthStore.getState();
+            const { removeFriend } = useFriendListStore.getState();
+            const { removeFriendRoom, selectedRoomId, setSelectedRoomId } = useFriendChatStore.getState();
+
+            removeFriend(friendId);
+
+            if (user && user.friends) {
+                setUser({
+                    ...user,
+                    friends: user.friends.filter(id => id !== friendId)
+                });
+            }
+
+            if (roomId) {
+                removeFriendRoom(roomId);
+                if (selectedRoomId === roomId) {
+                    setSelectedRoomId(null);
+                }
+            }
+        };
+
+        socket.on('friendDeleted', handleFriendDeleted);
+
+        return () => {
+            socket.off('friendDeleted', handleFriendDeleted);
+        };
+    }, [socket]);
+
+    const { selectedRoomId: storeSelectedRoomId } = useFriendChatStore();
+    useEffect(() => {
+        if (storeSelectedRoomId === null) {
+            setSelectedRoom(null);
+        }
+    }, [storeSelectedRoomId]);
 
 
     // 외부 신호로 패널 열기
@@ -409,6 +482,7 @@ const FriendChatSidePanel = () => {
         if (!room || !room.roomId || !user?._id) return;
 
         setSelectedRoom(room);
+        setActiveRightTabLocal('chat');
 
         try {
             await recordRoomEntry(room.roomId, user._id);
@@ -522,33 +596,38 @@ const FriendChatSidePanel = () => {
                                             return (
                                                 <div
                                                     key={req._id}
-                                                    className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border"
+                                                    className="bg-gray-50 rounded-lg border p-4"
                                                 >
-                                                    <ProfileButton
-                                                        profile={req.sender}
-                                                        size="sm"
-                                                        area='친구요청'
-                                                        requestId={req._id}
-                                                        onAccept={() => handleAccept(req._id, req._notiIdx)}
-                                                        onDecline={() => handleDecline(req._id, req._notiIdx)}
-                                                    />
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-gray-900 truncate">
-                                                            {req.sender?.nickname || '알 수 없음'}
-                                                        </p>
-                                                        <p className="text-sm text-gray-500">친구 요청을 보냈습니다</p>
+                                                    {/* 상단: 프로필 정보 */}
+                                                    <div className="flex items-center gap-3 mb-3">
+                                                        <ProfileButton
+                                                            profile={req.sender}
+                                                            size="sm"
+                                                            area='친구요청'
+                                                            requestId={req._id}
+                                                            onAccept={() => handleAccept(req._id, req._notiIdx)}
+                                                            onDecline={() => handleDecline(req._id, req._notiIdx)}
+                                                        />
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-medium text-gray-900 truncate">
+                                                                {req.sender?.nickname || '알 수 없음'}
+                                                            </p>
+                                                            <p className="text-sm text-gray-500">친구 요청을 보냈습니다</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex gap-2">
+
+                                                    {/* 하단: 버튼 영역 */}
+                                                    <div className="flex gap-2 justify-end">
                                                         <button
                                                             onClick={() => handleAccept(req._id, req._notiIdx)}
-                                                            className="px-3 py-2 text-sm bg-green-500 text-white hover:bg-green-600 rounded-md transition-colors flex items-center gap-1"
+                                                            className="px-4 py-2 text-sm bg-green-500 text-white hover:bg-green-600 rounded-md transition-colors flex items-center gap-1 font-medium"
                                                         >
                                                             <CheckIcon className="w-4 h-4" />
                                                             수락
                                                         </button>
                                                         <button
                                                             onClick={() => handleDecline(req._id, req._notiIdx)}
-                                                            className="px-3 py-2 text-sm bg-red-500 text-white hover:bg-red-600 rounded-md transition-colors flex items-center gap-1"
+                                                            className="px-4 py-2 text-sm bg-red-500 text-white hover:bg-red-600 rounded-md transition-colors flex items-center gap-1 font-medium"
                                                         >
                                                             <XMarkIcon className="w-4 h-4" />
                                                             거절
@@ -607,7 +686,7 @@ const FriendChatSidePanel = () => {
                                                 }`}
                                             >
                                                 <div className="relative">
-                                                    <ProfileButton profile={room.friend} size="md"/>
+                                                    <ProfileButton profile={room.friend} size="md" modalDisabled={true}/>
                                                     {(summary.unreadCount || 0) > 0 && (
                                                         <span
                                                             className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -650,7 +729,7 @@ const FriendChatSidePanel = () => {
                                         >
                                             <ArrowLeftIcon className="w-5 h-5"/>
                                         </button>
-                                        <ProfileButton profile={selectedRoom.friend} size="sm"/>
+                                        <ProfileButton profile={selectedRoom.friend} size="sm" modalDisabled={true}/>
                                         <h3 className="text-lg font-semibold text-gray-900">
                                             {selectedRoom.friend?.nickname || '채팅'}
                                         </h3>

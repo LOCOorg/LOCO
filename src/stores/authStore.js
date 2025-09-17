@@ -7,7 +7,7 @@ const useAuthStore = create((set) => ({
     // 메모리에 저장할 Access Token
     accessToken: null,
 
-    setUser: (user) => set({ user, isLoading: false }),
+    setUser: (updater) => set((state) => ({ user: typeof updater === 'function' ? updater(state.user) : updater, isLoading: false })),
     setAccessToken: (token) => set({ accessToken: token }),
     logout: () => set({ user: null, accessToken: null}),
 }));

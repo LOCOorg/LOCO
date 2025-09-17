@@ -125,8 +125,8 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
                         onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-black-700"
                     >
-                        <option value="친구채팅">친구 채팅</option>
-                        <option value="랜덤채팅">랜덤 채팅</option>
+                        <option value="친구채팅">친구채팅</option>
+                        <option value="랜덤채팅">듀오찾기</option>
                         <option value="커뮤니티">커뮤니티</option>
                     </select>
                 </div>

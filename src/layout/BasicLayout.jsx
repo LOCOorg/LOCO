@@ -52,7 +52,7 @@ const BasicLayout = ({ children }) => {
                 <nav className="relative overflow-hidden">
                     <ul className="flex space-x-4 whitespace-nowrap">
                         <li><Link to="/news" className="hover:text-gray-300">새소식</Link></li>
-                        <li><Link to="/chat" className="hover:text-gray-300">랜덤채팅</Link></li>
+                        <li><Link to="/chat" className="hover:text-gray-300">듀오찾기</Link></li>
                         <li><Link to="/products" className="hover:text-gray-300">플랜보기</Link></li>
                         <li><Link to="/PR" className="hover:text-gray-300">명예의 전당</Link></li>
 
@@ -103,7 +103,7 @@ const BasicLayout = ({ children }) => {
 
                             <ul onClick={() => setOverflowOpen(false)}>
                                 <li><Link to="/news" className="block px-4 py-2 hover:bg-gray-100">새소식</Link></li>
-                                <li><Link to="/chat" className="block px-4 py-2 hover:bg-gray-100">랜덤채팅</Link></li>
+                                <li><Link to="/chat" className="block px-4 py-2 hover:bg-gray-100">듀오찾기</Link></li>
                                 <li><Link to="/products" className="block px-4 py-2 hover:bg-gray-100">플랜보기</Link></li>
                                 <li><Link to="/PR" className="block px-4 py-2 hover:bg-gray-100">명예의 전당</Link></li>
                                 <li><Link to="/community" className="block px-4 py-2 hover:bg-gray-100">커뮤니티</Link></li>

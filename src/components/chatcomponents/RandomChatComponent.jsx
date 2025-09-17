@@ -176,7 +176,7 @@ const RandomChatComponent = () => {
         setSelectedProfile(null);
     };
 
-    // 랜덤 채팅방 찾기 및 생성 함수
+    // 듀오 찾기 찾기 및 생성 함수
     const findOrCreateRandomRoom = async (capacity, matchedGender) => {
         if (!userId) return;
 
@@ -198,9 +198,17 @@ const RandomChatComponent = () => {
                 return;
             }
 
+            if (!userInfo.birthdate || !userInfo.ageGroup) {
+                setModalTitle("정보 부족");
+                setModalMessage("생년월일 정보가 없어 랜덤채팅을 이용할 수 없습니다. 마이페이지에서 정보를 입력해주세요.");
+                setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
+                setModalOpen(true);
+                return;
+            }
+
             if (userInfo.numOfChat === 0) {
                 setModalTitle("경고");
-                setModalMessage("채팅횟수가 부족하여 랜덤 채팅을 이용할 수 없습니다.");
+                setModalMessage("채팅횟수가 부족하여 듀오 찾기을 이용할 수 없습니다.");
                 setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
                 setModalOpen(true);
                 return;
@@ -224,7 +232,7 @@ const RandomChatComponent = () => {
 
                 setModalTitle("채팅 제한");
                 setModalMessage(
-                    `신고로 인해 현재 랜덤 채팅 이용 제한\n` +
+                    `신고로 인해 현재 듀오 찾기 이용 제한\n` +
                     `남은 시간: ${remain.trim()}\n` +
                     `해제 시각: ${banEnd}`
                 );
@@ -235,9 +243,7 @@ const RandomChatComponent = () => {
 
             /* ─── 2. 실제 방 탐색/참가를 담당할 내부 재귀 함수 ─── */
             const tryMatch = async () => {
-                // const age         = calculateAge(userInfo.birthdate);
-                const age = userInfo.calculatedAge;
-                const ageGroup    = age >= 19 ? "adult" : "minor";
+                const ageGroup = userInfo.ageGroup;
                 const blockedIds  = (blockedUsers || []).map((u) => u._id);
 
                 // (1) 방 목록 조회
@@ -303,7 +309,7 @@ const RandomChatComponent = () => {
                     const target = availableRooms[Math.floor(Math.random() * availableRooms.length)];
                     setModalTitle("알림");
                     setModalMessage(
-                        `랜덤 채팅방(${capacity}명, ${genderLabels[matchedGender]})에 참가합니다.`
+                        `듀오 찾기(${capacity}명, ${genderLabels[matchedGender]})에 참가합니다.`
                     );
                     setModalButtons([
                         {
@@ -329,15 +335,16 @@ const RandomChatComponent = () => {
                                     }
                                 }
                             }
-                        }]);
+                        }
+                    ]);
                                 setModalOpen(true);
                     return;
                 }
 
                 // (3-B) 대기방이 없으면 새 방 생성 안내
-                setModalTitle("랜덤 채팅 시작");
+                setModalTitle("듀오 찾기 시작");
                 setModalMessage(
-                    `랜덤 채팅방(${capacity}명, ${genderLabels[matchedGender]})을 참가하시겠습니까?`
+                    `듀오 찾기(${capacity}명, ${genderLabels[matchedGender]})을 참가하시겠습니까?`
                 );
                 setModalButtons([
                     {
@@ -373,7 +380,7 @@ const RandomChatComponent = () => {
         } catch (e) {
             console.error(e);
             setModalTitle("에러");
-            setModalMessage("랜덤 채팅방 참가에 실패했습니다.");
+            setModalMessage("듀오 찾기 참가에 실패했습니다.");
             setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
             setModalOpen(true);
         }
@@ -404,7 +411,7 @@ const RandomChatComponent = () => {
         <div className="max-w-2xl mx-auto p-8 bg-gradient-to-br from-white to-purple-50 rounded-3xl shadow-2xl">
             {/* 헤더 */}
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-3xl font-bold text-gray-800">랜덤 채팅</h2>
+                <h2 className="text-3xl font-bold text-gray-800">듀오 찾기</h2>
                 <button
                     onClick={() => setShowBlockedModal(true)}
                     className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition"
@@ -486,7 +493,7 @@ const RandomChatComponent = () => {
                  rounded-2xl shadow-lg hover:from-purple-600 hover:to-purple-700 transform hover:scale-[1.02]
                  transition-all focus:outline-none"
             >
-                랜덤 채팅 시작
+                듀오 찾기 시작
             </button>
 
             {/* 공통 모달 (알림 / 확인) */}
