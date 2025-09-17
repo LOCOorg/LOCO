@@ -1,11 +1,12 @@
-// src/components/DeveloperComponent/UserListItem.jsx - 최적화된 버전
+// src/components/DeveloperComponent/UserListItem.jsx - 법적 안전성 향상 버전
+// 출생년도 대신 연령대 표시, 가명처리된 이름 사용
 import React from "react";
 
 const UserListItem = ({ user, onClick }) => {
     // 🔥 이제 백엔드에서 깔끔하게 정리된 데이터가 오므로 직접 사용
-    const displayName = user.name || "-";
+    const displayName = user.displayName || user.name || "-";
     const displayPhone = user.phone || "-";
-    const displayBirthdate = user.birthdate || "-";
+    const displayAgeGroup = user.displayAgeGroup || "-"; // 출생년도 대신 연령대 표시
     
     // 소셜 성별 정보
     const kakaoGender = user.social?.kakao?.gender || "-";
@@ -41,13 +42,6 @@ const UserListItem = ({ user, onClick }) => {
                         </span>
                     )}
                 </div>
-                
-                {user.calculatedAge && (
-                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                        {user.calculatedAge}세 {user.isMinor ? '(미성년자)' : ''}
-                        {user.ageGroup && ` - ${user.ageGroup}`}
-                    </span>
-                )}
             </div>
 
             {/* 기본 사용자 정보 */}
@@ -67,15 +61,18 @@ const UserListItem = ({ user, onClick }) => {
                     <span className="ml-1 text-blue-600">{user.nickname || "-"}</span>
                 </p>
                 
+                {/* 연령대 표시 (닉네임처럼 깔끔하게) */}
+                {displayAgeGroup && displayAgeGroup !== '-' && displayAgeGroup !== '정보없음' && (
+                    <p><strong>연령대:</strong>
+                        <span className="ml-1 text-purple-600">
+                            {displayAgeGroup} {user.isMinor !== null && (user.isMinor ? '(미성년자)' : '(성인)')}
+                        </span>
+                    </p>
+                )}
+                
                 <p><strong>전화번호:</strong> 
                     <span className={`ml-1 ${displayPhone === '정보없음' ? 'text-red-500' : 'text-green-600'}`}>
                         {displayPhone}
-                    </span>
-                </p>
-                
-                <p><strong>생년월일:</strong> 
-                    <span className={`ml-1 ${displayBirthdate === '정보없음' ? 'text-red-500' : 'text-green-600'}`}>
-                        {displayBirthdate}
                     </span>
                 </p>
                 
@@ -111,7 +108,11 @@ const UserListItem = ({ user, onClick }) => {
                     <div>암호화: {user._debug.encryptionEnabled ? '✅' : '❌'}</div>
                     <div>복호화 실패: {user._debug.decryptionFailed ? '❌' : '✅'}</div>
                     <div>원본명: {user._debug.hasOriginalName ? '있음' : '없음'}</div>
-                    <div>복호화명: {user._debug.hasDecryptedName ? '있음' : '없음'}</div>
+                    <div>가명처리: {user._debug.pseudonymized || '없음'}</div>
+                    <div>연령대: {user._debug.ageGroup || '정보없음'}</div>
+                    {user._debug.calculatedAge && (
+                        <div>만나이: {user._debug.calculatedAge}세 ({user._debug.isMinor ? '미성년자' : '성인'})</div>
+                    )}
                 </div>
             )}
         </div>
