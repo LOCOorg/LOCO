@@ -1,5 +1,6 @@
 import React, {useMemo, useState} from 'react';
-import useAuthStore from '../../stores/authStore.js';
+import ReportForm from '../reportcomponents/ReportForm.jsx';
+import useAuthStore from '../../stores/authStore';
 import {sendFriendRequest, blockUser, deleteFriend, unblockUser} from "../../api/userAPI.js";
 import CommonModal from '../../common/CommonModal.jsx';
 import PhotoGallery from './PhotoGallery.jsx';
@@ -11,11 +12,12 @@ import useFriendChatStore from "../../stores/useFriendChatStore.js";
 import {CheckIcon, XMarkIcon} from "@heroicons/react/24/solid";
 
 
-const SimpleProfileModal = ({ profile, onClose, area = '프로필', requestId, onAccept, onDecline }) => {
+const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requestId, onAccept, onDecline }) => {
     const authUser = useAuthStore(state => state.user);
     const blockedUsers = useBlockedStore(state => state.blockedUsers);
     const isOwnProfile = authUser && profile._id === authUser._id; // 내 프로필인지 확인
     const isBlocked = blockedUsers.some(blocked => blocked._id === profile._id); // 차단된 사용자인지 확인
+    const [isReportModalVisible, setIsReportModalVisible] = useState(false);
     const [alertModalOpen, setAlertModalOpen] = useState(false);
     const [alertModalMessage, setAlertModalMessage] = useState("");
     const [confirmBlockOpen, setConfirmBlockOpen] = useState(false);
@@ -41,6 +43,9 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', requestId, o
     const { closeFriendChat } = useFriendChatStore();
 
     if (!profile) return null;
+
+    /* FriendChatSidePanel(=친구요청·친구채팅목록) 에서 열린 경우 신고 숨김 */
+    const hideReport = area === '친구요청';
 
     const photos = profile.profilePhoto
         ? [ profile.profilePhoto, ...(profile.photo || []) ]
@@ -234,13 +239,56 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', requestId, o
                                 </button>
                             )}
 
-                            </>
+                            {/* 신고 : 빨강 500 */}
+                            {!hideReport && (
+                                <button
+                                    onClick={() => setIsReportModalVisible(true)}
+                                    className="inline-flex items-center justify-center gap-1 rounded-md
+                     bg-red-500 px-4 py-2 text-sm font-medium text-white
+                     shadow-sm transition hover:bg-rose-600 active:scale-95">
+                                    신고
+                                </button>
+                            )}
+                        </>
                     )}
                 </div>
 
 
 
             </div>
+
+            {/* 신고 모달 */}
+            {isReportModalVisible && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-60"
+                    // overlay 클릭으로도 신고 모달만 닫히도록, 이벤트 버블링 차단 후 setIsReportModalVisible
+                    onClick={e => {
+                        e.stopPropagation();
+                        setIsReportModalVisible(false);
+                    }}
+                >
+                    <div
+                        className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-md relative"
+                        // content 영역 클릭은 overlay close도 막기
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={() => setIsReportModalVisible(false)}
+                            className="absolute top-3 left-3 text-gray-500 hover:text-gray-700"
+                        >
+                            ← 뒤로
+                        </button>
+                        <ReportForm
+                            onClose={() => setIsReportModalVisible(false)}
+                            reportedUser={profile}
+                            onReportCreated={() => setIsReportModalVisible(false)}
+                            defaultArea={area}
+                            anchor={anchor}
+                        />
+                    </div>
+                </div>
+            )}
+
 
             {/* 확인 모달: 차단 */}
             {confirmBlockOpen && (
