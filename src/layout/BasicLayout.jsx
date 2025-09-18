@@ -12,6 +12,7 @@ import React, {useEffect, useRef, useState} from "react";
 import MyMenuDrop from "./layoutMyMenus/MyMenuDrop.jsx";
 import DropdownTransition from './css/DropdownTransition.jsx';
 import NotificationToggleButton from "./NotificationToggleButton.jsx";
+import ReactivationModal from '../components/authComponent/ReactivationModal.jsx';
 
 
 const BasicLayout = ({ children }) => {
@@ -153,6 +154,7 @@ const BasicLayout = ({ children }) => {
                 isOpen={loginModalOpen} 
                 onClose={() => setLoginModalOpen(false)} 
             />
+            <ReactivationModal />
         </div>
     );
 };
