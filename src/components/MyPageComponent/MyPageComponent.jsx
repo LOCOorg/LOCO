@@ -1,5 +1,6 @@
 // src/components/MyPageComponent.jsx
 import {useEffect, useRef, useState} from 'react';
+import { Link } from 'react-router-dom';
 import {
     getUserInfo,
     updateUserProfile,
@@ -254,6 +255,11 @@ const MyPageContent = ({overrideProfile}) => {
                     pauseOnFocusLoss    //브라우저 창 또는 탭이 포커스를 잃었을 때(다른 탭으로 전환 등) autoClose 카운트다운을 일시정지할지 여부를 결정
                     transition={Zoom}   //Slide, Zoom, Flip, Bounce
                 />
+                <div className="mt-8 text-center">
+                    <Link to="/userLeave" className="text-sm text-gray-500 hover:text-red-500 hover:underline">
+                        회원 탈퇴
+                    </Link>
+                </div>
             </div>
         </div>
     );

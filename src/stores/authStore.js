@@ -9,7 +9,11 @@ const useAuthStore = create((set) => ({
 
     setUser: (updater) => set((state) => ({ user: typeof updater === 'function' ? updater(state.user) : updater, isLoading: false })),
     setAccessToken: (token) => set({ accessToken: token }),
-    logout: () => set({ user: null, accessToken: null}),
+    logout: () => {
+        localStorage.clear();
+        sessionStorage.clear();
+        set({ user: null, accessToken: null, isLoading: false });
+    },
 }));
 
 export default useAuthStore;

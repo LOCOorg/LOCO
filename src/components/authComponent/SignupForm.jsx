@@ -1,4 +1,3 @@
-// src/components/auth/SignupForm.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../api/axiosInstance";
@@ -11,12 +10,11 @@ const SignupForm = () => {
     const [info, setInfo] = useState("");
     const [nickname, setNickname] = useState("");
     const [email, setEmail] = useState("");
-    // 회원가입 폼에서 입력한 성별
     const [formGender, setFormGender] = useState("");
     const [pass, setPass] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
+    const [deactivationCount, setDeactivationCount] = useState(0);
 
-    // 닉네임 중복 체크 관련 상태
     const [nicknameStatus, setNicknameStatus] = useState({
         available: null,
         message: "",
@@ -28,15 +26,16 @@ const SignupForm = () => {
         axiosInstance
             .get("/api/auth/kakao-data", { withCredentials: true })
             .then((response) => {
-                const data = response.data;
-                // 생년월일 데이터가 있으면 YYYY-MM-DD 형식으로 변환
+                const data = response.data.socialData;
+                const count = response.data.deactivationCount;
                 if (data.birthyear && data.birthday) {
                     const computedBirthdate = `${data.birthyear}-${data.birthday.slice(0, 2)}-${data.birthday.slice(2)}`;
                     data.birthdate = computedBirthdate;
                 }
 
                 setKakaoData(data);
-                console.log("세션에서 카카오 데이터 불러옴:", data);
+                if (count > 0) setDeactivationCount(count);
+                console.log("세션에서 카카오 데이터 불러옴:", data, "탈퇴횟수:", count);
             })
             .catch((error) => {
                 console.error("카카오 데이터 불러오기 오류:", error.response?.data || error.message);
@@ -45,21 +44,20 @@ const SignupForm = () => {
         axiosInstance
             .get("/api/auth/naver-data", { withCredentials: true })
             .then((response) => {
-                const data = response.data;
+                const data = response.data.socialData;
+                const count = response.data.deactivationCount;
                 if (data.birthyear && data.birthday) {
                     data.birthdate = `${data.birthyear}-${data.birthday}`;
                 }
                 setNaverData(data);
-                console.log("세션에서 네이버 데이터 불러옴:", data);
+                if (count > 0) setDeactivationCount(count);
+                console.log("세션에서 네이버 데이터 불러옴:", data, "탈퇴횟수:", count);
             })
             .catch((error) => {
                 console.error("네이버 데이터 불러오기 오류:", error.response?.data || error.message);
             });
     }, []);
 
-
-
-    // 닉네임 중복 체크 함수
     const handleNicknameCheck = async (nicknameValue) => {
         if (!nicknameValue || nicknameValue.trim() === '') {
             setNicknameStatus({
@@ -88,17 +86,14 @@ const SignupForm = () => {
         }
     };
 
-    // 닉네임 입력 핸들러 (디바운싱 적용)
     const handleNicknameChange = (e) => {
         const value = e.target.value;
         setNickname(value);
 
-        // 기존 타이머 제거
         if (nicknameCheckTimeout) {
             clearTimeout(nicknameCheckTimeout);
         }
 
-        // 0.5초 후 중복 체크 실행
         const newTimeout = setTimeout(() => {
             handleNicknameCheck(value);
         }, 500);
@@ -106,17 +101,14 @@ const SignupForm = () => {
         setNicknameCheckTimeout(newTimeout);
     };
 
-
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // 닉네임 중복 체크 확인
         if (nicknameStatus.available !== true) {
             setErrorMessage("닉네임을 확인해주세요.");
             return;
         }
 
-        // 🔧 디버깅: 전송할 데이터 확인
         const requestData = {
             kakaoId: kakaoData.kakaoId,
             naverId: naverData.naverId,
@@ -132,80 +124,46 @@ const SignupForm = () => {
             nickname,
             email,
             pass,
+            deactivationCount,
         };
         
-        console.log("🔍 전송할 데이터:", requestData);
-        console.log("🔍 nickname 값:", {
-            value: nickname,
-            type: typeof nickname,
-            length: nickname.length,
-            trim: nickname.trim(),
-            isEmpty: nickname === "",
-            isNull: nickname === null,
-            isUndefined: nickname === undefined
-        });
-
         try {
-            console.log("📤 서버에 요청 전송 중...");
             const response = await axiosInstance.post(
                 "/api/user/register",
                 requestData,
                 { withCredentials: true }
             );
-            console.log("✅ 회원가입 성공:", response.data);
             navigate("/");
         } catch (error) {
-            console.error("❌ 회원가입 에러 상세:", {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status,
-                config: {
-                    url: error.config?.url,
-                    method: error.config?.method,
-                    baseURL: error.config?.baseURL,
-                    data: error.config?.data ? JSON.parse(error.config.data) : null
-                },
-                requestData: requestData
-            });
             setErrorMessage(
                 error.response?.data?.message || "회원가입 중 오류가 발생했습니다."
             );
         }
     };
 
-
-    // 닉네임 상태에 따른 스타일링 (기존 함수 교체)
     const getNicknameInputStyle = () => {
         let baseStyle = "w-full px-4 py-2 border rounded-lg ";
-
         if (nicknameStatus.loading) {
             return baseStyle + "border-gray-300";
         }
-
         if (nicknameStatus.available === true) {
             return baseStyle + "border-green-500 focus:border-green-600";
         }
-
         if (nicknameStatus.available === false) {
             return baseStyle + "border-red-500 focus:border-red-600";
         }
-
         return baseStyle + "border-gray-300";
     };
-
 
     const getNicknameMessageStyle = () => {
         if (nicknameStatus.available === true) {
             return "text-green-600 text-sm mt-1";
         }
-
         if (nicknameStatus.available === false) {
             return "text-red-600 text-sm mt-1";
         }
-
         return "text-gray-500 text-sm mt-1";
     };
-
 
     return (
         <div className="max-w-md w-full bg-white p-6 shadow-lg rounded-lg">
@@ -224,7 +182,6 @@ const SignupForm = () => {
                         required
                         placeholder="2-12자로 입력해주세요"
                     />
-                    {/* 닉네임 상태 메시지 */}
                     <div className={getNicknameMessageStyle()}>
                         {nicknameStatus.loading && "닉네임 확인 중..."}
                         {!nicknameStatus.loading && nicknameStatus.message}
@@ -241,7 +198,6 @@ const SignupForm = () => {
                         required
                     />
                 </div>
-                {/* 회원가입 폼에서 입력한 성별 */}
                 <div className="mb-4">
                     <label className="block text-gray-700">회원가입 폼 성별</label>
                     <select
