@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../stores/authStore';
 import CommonModal from '../../common/CommonModal';
 import instance from '../../api/axiosInstance';
@@ -8,7 +7,6 @@ const UserLeaveComponent = () => {
     const [isChecked, setIsChecked] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [error, setError] = useState('');
-    const navigate = useNavigate();
     const { logout } = useAuthStore();
 
     const handleDeactivate = async () => {
@@ -43,7 +41,7 @@ const UserLeaveComponent = () => {
                     <li>탈퇴 후 7일 동안은 동일한 계정으로 재가입하거나 로그인할 수 없습니다.</li>
                     <li>회원님의 개인정보 및 서비스 이용 기록은 관련 법령 및 개인정보처리방침에 따라 처리됩니다.</li>
                     <li>소셜 로그인 정보는 삭제되지 않으며, LOCO 서비스와 관련된 정보만 비활성화됩니다.</li>
-                    <li>탈퇴 후에는 작성하신 게시물이나 댓글 등을 직접 삭제할 수 없습니다.</li>
+                    <li>탈퇴 후에는 작성하신 게시글이나 댓글, QnA, 친구목록 등은 삭제됩니다.</li>
                 </ul>
             </div>
 

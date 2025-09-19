@@ -59,6 +59,11 @@ const UserListItem = ({ user, onClick }) => {
                 
                 <p><strong>닉네임:</strong> 
                     <span className="ml-1 text-blue-600">{user.nickname || "-"}</span>
+                    {user.status === 'deactivated' && (
+                        <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                            탈퇴
+                        </span>
+                    )}
                 </p>
                 
                 {/* 연령대 표시 (닉네임처럼 깔끔하게) */}
@@ -89,6 +94,11 @@ const UserListItem = ({ user, onClick }) => {
                     {user.numOfReport > 0 && (
                         <span className="text-red-600">
                             🚨 신고 {user.numOfReport}회
+                        </span>
+                    )}
+                    {user.deactivationCount > 0 && (
+                        <span className="text-gray-500">
+                            🚪 탈퇴 {user.deactivationCount}회
                         </span>
                     )}
                 </div>
