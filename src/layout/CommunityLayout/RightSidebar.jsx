@@ -1,8 +1,17 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // eslint-disable-next-line react/prop-types
 const RightSidebar = ({ sideTab, setSideTab, topViewed, topCommented }) => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const isCommunityPage = location.pathname.startsWith('/community');
+
+    const listContainerClasses = isCommunityPage
+        ? "space-y-2 max-h-[350px] overflow-y-auto custom-scrollbar"
+        : "grid grid-cols-2 gap-x-2 gap-y-2 max-h-[350px] overflow-y-auto custom-scrollbar";
+
+    const listItemClasses = `flex items-start justify-between w-full hover:bg-gray-50 rounded-lg cursor-pointer border border-gray-100 transition-colors ${isCommunityPage ? 'p-3' : 'p-2'}`;
+
 
     // ✅ 카테고리별 색상 지정
     const getCategoryColor = (category) => {
@@ -17,24 +26,16 @@ const RightSidebar = ({ sideTab, setSideTab, topViewed, topCommented }) => {
         return colors[category] || 'bg-gray-100 text-gray-800';
     };
 
-    // ✅ 제목 길이 제한 함수
-    const truncateTitle = (title, maxLength = 25) => {
-
-        if (!title || typeof title !== 'string') {
-            return '제목 없음';
-        }
-        return title.length > maxLength ? title.substring(0, maxLength) + '...' : title;
-    };
 
     return (
-        <div className="w-64 bg-white shadow-lg rounded-lg p-4">
+        <div className="w-auto bg-white shadow-lg rounded-lg p-4">
             {/* 헤더 */}
             <div className="mb-4">
-                <div className="flex items-baseline gap-3">
+                <div className="flex items-baseline gap-3 justify-between">
                     <p className="text-xl text-black font-semibold">커뮤니티</p>
-                    <p className="text-xs text-gray-400">최근 7일</p>
+                    <p className="text-xs text-gray-400 ">최근 7일 기준</p>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">24시간마다 업데이트</p>
+                <p className="text-xs text-gray-500 mt-1 text-end">24시간마다 업데이트</p>
             </div>
             {/* 탭 버튼 */}
             <div className="flex mb-4 bg-gray-100 rounded-lg p-1">
@@ -62,28 +63,26 @@ const RightSidebar = ({ sideTab, setSideTab, topViewed, topCommented }) => {
 
             {/* 최다 조회 탭 */}
             {sideTab === 'viewed' && (
-                <div className="space-y-2">
+                <div className={listContainerClasses}>
                     {topViewed && topViewed.length > 0 ? (
                         topViewed.map((item, index) => (
                             <div
                                 key={item._id || index}
-                                className="flex items-start justify-between p-3 hover:bg-gray-50 rounded-lg cursor-pointer border border-gray-100 transition-colors"
+                                className={listItemClasses}
                                 onClick={() => navigate(`/community/${item._id}`)}
                             >
-                                <div className="flex-1 min-w-0">
-                                    {/* 카테고리와 조회수 */}
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(item.communityCategory)}`}>
+                                <div className="flex items-center justify-between w-full">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(item.communityCategory)} flex-shrink-0`}>
                                             {item.communityCategory}
                                         </span>
-                                        <span className="text-xs text-gray-500 flex items-center">
-                                            👁️ {item.communityViews?.toLocaleString() || 0}
-                                        </span>
+                                        <p className="text-sm text-gray-900 hover:text-blue-600 font-medium leading-tight truncate">
+                                            {item.communityTitle}
+                                        </p>
                                     </div>
-                                    {/* 제목 */}
-                                    <p className="text-sm text-gray-900 hover:text-blue-600 font-medium leading-tight">
-                                        {truncateTitle(item.communityTitle)}
-                                    </p>
+                                    <span className="text-xs text-gray-500 flex items-center flex-shrink-0 ml-2">
+                                        👁️ {item.communityViews?.toLocaleString() || 0}
+                                    </span>
                                 </div>
                             </div>
                         ))
@@ -98,28 +97,26 @@ const RightSidebar = ({ sideTab, setSideTab, topViewed, topCommented }) => {
 
             {/* 최다 댓글 탭 */}
             {sideTab === 'commented' && (
-                <div className="space-y-2">
+                <div className={listContainerClasses}>
                     {topCommented && topCommented.length > 0 ? (
                         topCommented.map((item, index) => (
                             <div
                                 key={item._id || index}
-                                className="flex items-start justify-between p-3 hover:bg-gray-50 rounded-lg cursor-pointer border border-gray-100 transition-colors"
+                                className={listItemClasses}
                                 onClick={() => navigate(`/community/${item._id}`)}
                             >
-                                <div className="flex-1 min-w-0">
-                                    {/* 카테고리와 댓글수 */}
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(item.communityCategory)}`}>
+                                <div className="flex items-center justify-between w-full">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(item.communityCategory)} flex-shrink-0`}>
                                             {item.communityCategory}
                                         </span>
-                                        <span className="text-xs text-gray-500 flex items-center">
-                                            💬 {item.totalComments?.toLocaleString() || 0}
-                                        </span>
+                                        <p className="text-sm text-gray-900 hover:text-blue-600 font-medium leading-tight truncate">
+                                            {item.communityTitle}
+                                        </p>
                                     </div>
-                                    {/* 제목 */}
-                                    <p className="text-sm text-gray-900 hover:text-blue-600 font-medium leading-tight">
-                                        {truncateTitle(item.communityTitle)}
-                                    </p>
+                                    <span className="text-xs text-gray-500 flex items-center flex-shrink-0 ml-2">
+                                        💬 {item.totalComments?.toLocaleString() || 0}
+                                    </span>
                                 </div>
                             </div>
                         ))
