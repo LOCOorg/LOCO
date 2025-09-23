@@ -309,6 +309,14 @@ const RandomChatComponent = () => {
                     )
                         return false;
 
+                    // 동성방에 참가할 때, 동성이 아닌 경우 참가 안되게 필터 추가
+                    if (room.matchedGender === 'same' && room.chatUsers.length > 0) {
+                        const roomGender = room.chatUsers[0].gender;
+                        if (userInfo.gender !== roomGender) {
+                            return false;
+                        }
+                    }
+
                     if (room.ageGroup !== ageGroup) return false;
                     if (room.chatUsers.some((u) => blockedIds.includes(u._id))) return false;  // 내가 차단
                     /* 👇 추가: 상대가 나를 차단한 방도 제외 */
