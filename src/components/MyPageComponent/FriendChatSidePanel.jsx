@@ -511,7 +511,7 @@ const FriendChatSidePanel = () => {
             <div className="relative">
                 <button
                     onClick={() => setShowPanel(!showPanel)}
-                    className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="relative p-2 text-white hover:text-gray-400 rounded-lg transition-colors"
                 >
                     <UserGroupIcon className="w-6 h-6" />
                     {/* ✅ 전체 배지 개수 표시 (친구 요청 + 안읽은 메시지) */}

@@ -85,6 +85,10 @@ const RandomChatComponent = () => {
             const diff = new Date(userInfo.nextRefillAt) - Date.now();
             if (diff <= 0) {
                 setTimeLeft(null);
+                // 타이머가 만료되면 사용자 정보를 다시 불러와 횟수를 갱신합니다.
+                if (userId) {
+                    fetchUserInfoAsync(userId);
+                }
                 return;
             }
             const h = String(Math.floor(diff / 3_600_000)).padStart(2, "0");
@@ -95,7 +99,7 @@ const RandomChatComponent = () => {
         tick();                               // 최초 계산
         const id = setInterval(tick, 1_000);  // 1 초마다 갱신
         return () => clearInterval(id);       // 클린업
-    }, [userInfo?.nextRefillAt]);
+    }, [userInfo?.nextRefillAt, userId]);
 
     useEffect(() => {
         const checkForActiveRandomChat = async () => {
@@ -308,6 +312,14 @@ const RandomChatComponent = () => {
                             room.chatUsers.every((u) => u.gender === userInfo.gender))
                     )
                         return false;
+
+                    // 동성방에 참가할 때, 동성이 아닌 경우 참가 안되게 필터 추가
+                    if (room.matchedGender === 'same' && room.chatUsers.length > 0) {
+                        const roomGender = room.chatUsers[0].gender;
+                        if (userInfo.gender !== roomGender) {
+                            return false;
+                        }
+                    }
 
                     if (room.ageGroup !== ageGroup) return false;
                     if (room.chatUsers.some((u) => blockedIds.includes(u._id))) return false;  // 내가 차단
