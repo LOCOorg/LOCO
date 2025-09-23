@@ -46,12 +46,21 @@ export const getChatRoomInfo = async (roomId) => {
     }
 };
 
-// 채팅 메세지 불러오기
-export const fetchMessages = async (roomId, page = 1, limit = 20) => {
+// 채팅 메세지 불러오기 (사용자 인증 포함)
+export const fetchMessages = async (roomId, page = 1, limit = 20, userId = null) => {
     try {
+        const params = { page, limit };
+        
+        // 사용자 ID가 있으면 권한 확인을 위해 포함
+        if (userId) {
+            params.userId = userId;
+        }
+        
         const response = await axios.get(`${host}/messages/${roomId}`, {
-            params: { page, limit }
+            params: params
         });
+        
+        console.log(`📨 [메시지조회] ${roomId}방 메시지 ${response.data.messages?.length || 0}개 로드`);
         return response.data;
     } catch (error) {
         console.error("메시지를 불러오는 중 오류 발생:", error);
