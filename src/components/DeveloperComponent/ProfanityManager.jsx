@@ -99,8 +99,6 @@ const ProfanityManager = () => {
 
     // 더 보기 (컨테이너 스크롤 위치 기준)
     const loadMoreWords = async () => {
-        // 현재 컨테이너의 스크롤 위치 저장
-        const currentScrollTop = scrollContainerRef.current?.scrollTop || 0;
 
         const nextPage = currentPage + 1;
         setCurrentPage(nextPage);
