@@ -19,11 +19,12 @@ export const getUserInfo = async (userId) => {
 // 유저 프로필 업데이트 API 함수 (PATCH 요청)
 // 전체 저장 방식으로, 수정된 모든 필드를 한 번에 전송합니다.
 export const updateUserProfile = async (userId, updatedData) => {
+    // eslint-disable-next-line no-useless-catch
     try {
         const response = await axios.patch(`${host}/${userId}`, updatedData);
         return response.data.data || response.data.user;
     } catch (error) {
-        throw new Error(error.response?.data.message || error.message);
+        throw error;
     }
 };
 
