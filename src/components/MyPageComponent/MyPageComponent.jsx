@@ -178,7 +178,7 @@ const MyPageContent = ({overrideProfile}) => {
             toast.success('수정이 완료되었습니다.');
         } catch (error) {
             console.error('프로필 업데이트 실패:', error);
-            toast.error('수정 중 오류가 발생했습니다.');
+            toast.error(error.response?.data?.message || '수정 중 오류가 발생했습니다.');
         }
     };
 

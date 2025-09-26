@@ -13,6 +13,7 @@ import {Navigate} from "react-router-dom";
 import HistoryPanel from "./HistoryPanel.jsx";
 import {useSocket} from "../../hooks/useSocket.js";
 import axios from "axios";
+import ProfanityManager from './ProfanityManager.jsx'; // 비속어 관리 컴포넌트 import
 
 const PAGE_SIZE = 30;
 
@@ -48,7 +49,7 @@ const DeveloperComponent = () => {
     const socket = useSocket();
 
     // 2) 모드 & 선택된 채팅 유저
-    const [mode, setMode] = useState("user");     // "user" 또는 "chat"
+    const [mode, setMode] = useState("user");     // "user", "chat", "profanity"
     const [chatUser, setChatUser] = useState(null);
     const [userView, setUserView] = useState("friends"); // "friends" 또는 "photos"
 
@@ -146,7 +147,7 @@ const DeveloperComponent = () => {
 
             <ModeToggle mode={mode} setMode={setMode}/>
 
-            {mode === "user" ? (
+            {mode === "user" && (
                 // ==== 사용자 모드 ====
                 <div className="flex flex-1 overflow-hidden">
                     <SearchPanel
@@ -167,9 +168,9 @@ const DeveloperComponent = () => {
                         view={userView}
                         className="w-1/3"
                     />
-
                 </div>
-            ) : (
+            )}
+            {mode === "chat" && (
                 // ==== 채팅 모드 ====
                 <div className="flex flex-1 overflow-hidden">
                     {/* 1) 유저 선택 */}
@@ -194,6 +195,12 @@ const DeveloperComponent = () => {
                         currentUser={chatUser}
                         selectedRoom={selectedRoom}
                     />
+                </div>
+            )}
+            {mode === "profanity" && (
+                // ==== 비속어 관리 모드 ====
+                <div className="flex-1 p-6">
+                    <ProfanityManager />
                 </div>
             )}
         </div>

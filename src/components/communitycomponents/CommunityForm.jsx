@@ -115,8 +115,8 @@ const CommunityForm = () => {
         try {
             await createCommunity(fd);
             navigate('/community');
-        } catch {
-            setError('게시글 생성에 실패했습니다.');
+        } catch (err) {
+            setError(err.response?.data?.message || '게시글 생성에 실패했습니다.');
         }
     };
 
@@ -175,15 +175,6 @@ const CommunityForm = () => {
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">게시글 작성</h2>
                     <div className="h-1 w-20 bg-blue-500 rounded"></div>
                 </div>
-
-                {/* 에러 메시지 */}
-                {error && (
-                    <div
-                        className="flex items-center gap-3 p-4 mb-6 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                        <span className="text-lg">⚠️</span>
-                        <span>{error}</span>
-                    </div>
-                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* 제목 입력 */}
@@ -400,6 +391,14 @@ const CommunityForm = () => {
                                     URL 추가
                                 </button>
                             )}
+                        </div>
+                    )}
+                    {/* 에러 메시지 */}
+                    {error && (
+                        <div
+                            className="flex items-center gap-3 p-4 mb-6 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                            <span className="text-lg">⚠️</span>
+                            <span>{error}</span>
                         </div>
                     )}
 
