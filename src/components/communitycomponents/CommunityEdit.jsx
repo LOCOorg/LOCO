@@ -154,7 +154,7 @@ const CommunityEdit = () => {
             navigate(`/community/${id}`);
         } catch (err) {
             console.error('Update error:', err);
-            setError('게시글 수정에 실패했습니다.');
+            setError(err.response?.data?.message || '게시글 수정에 실패했습니다.');
         }
     };
 
@@ -212,17 +212,6 @@ const CommunityEdit = () => {
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">게시글 수정</h2>
                     <div className="h-1 w-20 bg-blue-500 rounded"></div>
                 </div>
-
-                {error && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                        <div className="flex items-center">
-                            <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"></path>
-                            </svg>
-                            <span className="text-red-700 font-medium">{error}</span>
-                        </div>
-                    </div>
-                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* 카테고리 선택 */}
@@ -437,6 +426,17 @@ const CommunityEdit = () => {
                                         URL 추가
                                     </button>
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="flex items-center">
+                                <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"></path>
+                                </svg>
+                                <span className="text-red-700 font-medium">{error}</span>
                             </div>
                         </div>
                     )}

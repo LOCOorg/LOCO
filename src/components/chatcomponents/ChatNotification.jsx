@@ -105,7 +105,7 @@ const GlobalChatNotification = () => {
             <div className="relative">
                 <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="relative p-2 text-white hover:text-gray-400 rounded-lg transition-colors"
                 >
                     <BellIcon className="w-6 h-6" />
                     {notifications.length > 0 && (
