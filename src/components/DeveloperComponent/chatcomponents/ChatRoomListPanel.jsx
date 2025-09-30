@@ -10,11 +10,15 @@ const ChatRoomListPanel = ({
                                page,
                                setPage,
                                selectedRoom,
-                               setSelectedRoom
+                               setSelectedRoom,
+                               reportedRooms = []  // 신고된 채팅방 목록 추가
                            }) => {
 
     // 1) 현재 선택된 필터 타입 상태
     const [filterType, setFilterType] = useState('all');
+    
+    // 신고된 채팅방 ID 집합 생성
+    const reportedRoomIds = new Set(reportedRooms.map(r => r.anchor?.roomId || r.roomId));
 
     // 🔧 히스토리 데이터만 추가
     const [historyData, setHistoryData] = useState({});
@@ -82,18 +86,37 @@ const ChatRoomListPanel = ({
 
         {/* 필터 적용된 목록 렌더링 */}
         {filteredRooms.length > 0 ? (
-            filteredRooms.map(room => (
+            filteredRooms.map(room => {
+                // 신고된 채팅방 체크
+                const hasReportedMessages = reportedRoomIds.has(room._id);
+                
+                return (
                 <div
                     key={room._id}
                     onClick={() => setSelectedRoom(room)}
-                    className={`p-2 mb-2 rounded cursor-pointer ${
+                    className={`p-2 mb-2 rounded cursor-pointer relative ${
                         selectedRoom?._id === room._id
                             ? 'bg-blue-100'
                             : 'hover:bg-gray-100'
+                    } ${
+                        hasReportedMessages ? 'border-l-4 border-red-400' : ''
                     }`}
                 >
-                    <p className="text-sm text-gray-600">방 ID: {room._id}</p>
-                    <p className="text-sm text-gray-600">타입: {room.roomType}</p>
+                    <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                            <p className="text-sm text-gray-600">방 ID: {room._id}</p>
+                            <p className="text-sm text-gray-600">타입: {room.roomType}</p>
+                        </div>
+                        
+                        {/* 신고됨 표시 */}
+                        {hasReportedMessages && (
+                            <div className="flex-shrink-0 ml-2">
+                                <span className="inline-block px-2 py-1 text-[10px] text-red-600 bg-red-100 rounded-full font-medium">
+                                    신고됨 ⚠️
+                                </span>
+                            </div>
+                        )}
+                    </div>
                     {/* 참여자 닉네임 목록 (성별 선택 정보 포함) */}
                     {/* 🔧 성별 선택 정보만 수정된 부분 */}
                     {Array.isArray(room.chatUsersWithGender || room.chatUsers) &&
@@ -142,7 +165,8 @@ const ChatRoomListPanel = ({
                         </p>
                     )}
                 </div>
-            ))
+                );
+            })
         ) : (
             <p className="text-gray-500">회원 선택 후 방 목록이 표시됩니다</p>
         )}

@@ -5,6 +5,7 @@ import useAuthStore from "../../stores/authStore.js";
 import ProfileButton from "../MyPageComponent/ProfileButton.jsx";
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
 import useNotificationStore from '../../stores/notificationStore.js';
+import MessageReportModal from './MessageReportModal.jsx';
 
 // eslint-disable-next-line react/prop-types
 function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
@@ -18,6 +19,10 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
     const messagesContainerRef = useRef(null);
     const scrollPositionRef = useRef(null);
     const { removeNotificationsByRoom } = useNotificationStore();
+
+    // 메시지 신고 모달 관련 상태
+    const [showMessageReportModal, setShowMessageReportModal] = useState(false);
+    const [reportTargetMessage, setReportTargetMessage] = useState(null);
 
     useEffect(() => {
         if (roomId) {
@@ -176,6 +181,17 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
         }
     };
 
+    // 메시지 신고 모달 열기/닫기 함수
+    const openMessageReportModal = (message) => {
+        setReportTargetMessage(message);
+        setShowMessageReportModal(true);
+    };
+
+    const closeMessageReportModal = () => {
+        setShowMessageReportModal(false);
+        setReportTargetMessage(null);
+    };
+
     const groupedMessages = groupMessagesByDate(messages);
 
     return (
@@ -207,8 +223,21 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
                                                 <span className="text-sm text-gray-600 mb-1 px-1">{message.sender?.nickname || message.sender?.name || '알 수 없음'}</span>
                                             )}
                                             <div className={`flex ${isMyMessage ? 'flex-row-reverse' : 'flex-row'} items-end gap-1`}>
-                                                <div className={`px-4 py-2 rounded-2xl whitespace-pre-wrap ${isMyMessage ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'} max-w-full break-words`}>
+                                                <div className={`px-4 py-2 rounded-2xl whitespace-pre-wrap ${isMyMessage ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'} max-w-full break-words relative`}>
                                                     {message.text}
+                                                    {/* 신고 버튼 - 내 메시지가 아닐 때만 표시 */}
+                                                    {!isMyMessage && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openMessageReportModal(message);
+                                                            }}
+                                                            className="absolute -top-2 -right-2 bg-white border rounded-full w-6 h-6 flex items-center justify-center text-xs text-gray-500 hover:text-red-500 hover:border-red-300 shadow-sm"
+                                                            title="신고하기"
+                                                        >
+                                                            •••
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 <span className="text-xs text-gray-500 px-1 whitespace-nowrap">{formatTime(message.textTime)}</span>
                                             </div>
@@ -242,6 +271,14 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
                     </button>
                 </form>
             </div>
+            
+            {/* 메시지 신고 모달 */}
+            <MessageReportModal
+                isOpen={showMessageReportModal}
+                onClose={closeMessageReportModal}
+                message={reportTargetMessage}
+                roomType="friend"
+            />
         </div>
     );
 }

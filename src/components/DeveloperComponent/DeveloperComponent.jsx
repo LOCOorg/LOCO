@@ -1,13 +1,13 @@
 // File: src/components/DeveloperComponent/DeveloperComponent.jsx
 import React, {useState, useEffect} from "react";
-import {useDeveloperSearch} from "../../hooks/useDeveloperSearch.js";  // 🔥 변경: 개발자 전용 검색 훅
+import {useDeveloperSearch} from "../../hooks/useDeveloperSearch.js";
 import SearchPanel from "./SearchPanel.jsx";
 import DetailPanel from "./DetailPanel.jsx";
 import ModeToggle from "./chatcomponents/ModeToggle.jsx";
 import ChatUserSearchPanel from "./chatcomponents/ChatUserSearchPanel.jsx";
 import ChatRoomListPanel from "./chatcomponents/ChatRoomListPanel.jsx";
 import ChatMessageView from "./chatcomponents/ChatMessageView.jsx";
-import {useChatConversation} from "../../hooks/useChatConversation";  // 공통 훅
+import {useChatConversation} from "../../hooks/useChatConversation";
 import {useLv} from "../../hooks/useLv";
 import {Navigate} from "react-router-dom";
 import HistoryPanel from "./HistoryPanel.jsx";
@@ -18,8 +18,6 @@ const PAGE_SIZE = 30;
 
 const DeveloperComponent = () => {
 
-
-    // 1) 개발자 전용 사용자 검색 훅 (복호화 지원)
     const {
         data: users,
         pagination: userPagination,
@@ -34,41 +32,66 @@ const DeveloperComponent = () => {
         minKeywordLength: 1
     });
 
-
     const [selectedUser, setSelectedUser] = useState(null);
     const [totalUsers, setTotalUsers] = useState(0);
     const [maleUsers, setMaleUsers] = useState(0);
     const [femaleUsers, setFemaleUsers] = useState(0);
     const [socialMaleUsers, setSocialMaleUsers] = useState(0);
     const [socialFemaleUsers, setSocialFemaleUsers] = useState(0);
-    // 🔧 온라인 통계 상태 추가
     const [onlineStats, setOnlineStats] = useState({ total: 0, online: 0, offline: 0 });
     
-    // 🔧 소켓 인스턴스
     const socket = useSocket();
 
-    // 2) 모드 & 선택된 채팅 유저
-    const [mode, setMode] = useState("user");     // "user" 또는 "chat"
+    const [mode, setMode] = useState("user");
     const [chatUser, setChatUser] = useState(null);
-    const [userView, setUserView] = useState("friends"); // "friends" 또는 "photos"
+    const [userView, setUserView] = useState("friends");
 
-    // 3) 채팅 관련 상태 및 페칭 로직 (훅으로 대체)
+    // 🚨 신고된 메시지 상태 추가
+    const [reportedMessages, setReportedMessages] = useState([]);
+    const [contextMessageIds, setContextMessageIds] = useState(new Set()); // 🆕 추가
+
     const {
         rooms,
         selectedRoom,
         setSelectedRoom,
         messages
     } = useChatConversation(chatUser, mode);
-//lv에따라 접근 차단
-    // const { currentUser } = useLv();
-    // // 아직 로딩 중인 경우 (user === null) 빈 화면 또는 로더 처리 가능
-    // if (currentUser === null) {
-    //     return null;
-    // }
-    // if (currentUser.userLv < 3) {
-    //     window.alert("접근 권한이 없습니다.");
-    //     return <Navigate to="/" replace />;
-    // }
+
+    // 🚨 선택된 방의 신고 메시지 가져오기 - ✅ 수정됨
+    useEffect(() => {
+        if (mode === 'chat' && selectedRoom) {
+            console.log('🔍 [신고조회] API 호출:', `/api/chat/rooms/${selectedRoom._id}/reported-messages`);
+            
+            axios.get(`/api/chat/rooms/${selectedRoom._id}/reported-messages`)
+                .then(res => {
+                    console.log('🚨 [신고조회] 응답 전체:', res.data);
+                    console.log('🚨 [신고조회] reportedMessages:', res.data.reportedMessages);
+                    console.log('🚨 [신고조회] contextMessageIds:', res.data.contextMessageIds);
+                    
+                    if (res.data.success) {
+                        setReportedMessages(res.data.reportedMessages || []);
+                        // 🆕 contextMessageIds를 Set으로 변환하여 저장
+                        setContextMessageIds(new Set(res.data.contextMessageIds || []));
+                        
+                        console.log(`✅ [신고조회] 신고 메시지 ${res.data.totalReported}개, 컨텍스트 ${res.data.totalContext}개 로드됨`);
+                        console.log(`✅ [신고조회] reportedMessages 배열:`, res.data.reportedMessages.map(m => m._id));
+                        console.log(`✅ [신고조회] contextMessageIds Set:`, Array.from(res.data.contextMessageIds || []).slice(0, 10));
+                    } else {
+                        setReportedMessages([]);
+                        setContextMessageIds(new Set());
+                    }
+                })
+                .catch(err => {
+                    console.error('❌ [신고조회] 실패:', err);
+                    console.error('❌ [신고조회] 에러 상세:', err.response?.data || err.message);
+                    setReportedMessages([]);
+                    setContextMessageIds(new Set());
+                });
+        } else {
+            setReportedMessages([]);
+            setContextMessageIds(new Set());
+        }
+    }, [mode, selectedRoom]);
 
     useEffect(() => {
         axios
@@ -78,7 +101,6 @@ const DeveloperComponent = () => {
             })
             .catch(err => console.error(err));
 
-        // 2) 성별별 카운트
         axios.get("/api/user/gender-count")
             .then(res => {
                 if (res.data.success) {
@@ -88,8 +110,6 @@ const DeveloperComponent = () => {
             })
             .catch(console.error);
 
-
-        // 2) 소셜 기반 성별 집계
         axios
             .get("/api/user/social-gender-count")
             .then(res => {
@@ -100,14 +120,12 @@ const DeveloperComponent = () => {
             })
             .catch(console.error);
             
-        // 🔧 3) 온라인 통계 조회 및 실시간 업데이트 리스너 등록
         const fetchOnlineStats = () => {
             axios
                 .get("/api/online-status/stats")
                 .then(res => {
                     if (res.data.success) {
                         setOnlineStats(res.data.data);
-                        console.log('📊 온라인 통계 업데이트:', res.data.data);
                     }
                 })
                 .catch(console.error);
@@ -115,10 +133,8 @@ const DeveloperComponent = () => {
         
         fetchOnlineStats();
         
-        // 🔧 소켓 리스너 등록 (사용자 상태 변경 시 실시간 업데이트)
         if (socket) {
             const handleStatusChange = () => {
-                console.log('🔄 사용자 상태 변경 감지 - 통계 새로고침');
                 fetchOnlineStats();
             };
             
@@ -128,8 +144,7 @@ const DeveloperComponent = () => {
                 socket.off('userStatusChanged', handleStatusChange);
             };
         }
-    }, [socket]);  // 🔧 socket 의존성 추가
-
+    }, [socket]);
 
     return (
         <div className="flex flex-col h-screen bg-gray-100">
@@ -139,7 +154,6 @@ const DeveloperComponent = () => {
                 <span className="text-lg text-gray-600">여자: {femaleUsers}명</span>
                 <span className="text-lg text-gray-600">소셜 (남자 : {socialMaleUsers}명</span>
                 <span className="text-lg text-gray-600">여자 : {socialFemaleUsers}명)</span>
-                {/* 🔧 온라인 통계 추가 */}
                 <span className="text-lg text-green-600">🟢 온라인: {onlineStats.online}명</span>
                 <span className="text-lg text-red-600">🔴 오프라인: {onlineStats.offline}명</span>
             </div>
@@ -147,7 +161,6 @@ const DeveloperComponent = () => {
             <ModeToggle mode={mode} setMode={setMode}/>
 
             {mode === "user" ? (
-                // ==== 사용자 모드 ====
                 <div className="flex flex-1 overflow-hidden">
                     <SearchPanel
                         keyword={userKeyword}
@@ -167,12 +180,9 @@ const DeveloperComponent = () => {
                         view={userView}
                         className="w-1/3"
                     />
-
                 </div>
             ) : (
-                // ==== 채팅 모드 ====
                 <div className="flex flex-1 overflow-hidden">
-                    {/* 1) 유저 선택 */}
                     <ChatUserSearchPanel
                         selectedUser={chatUser}
                         setSelectedUser={u => {
@@ -181,18 +191,19 @@ const DeveloperComponent = () => {
                         }}
                     />
 
-                    {/* 2) 방 목록 */}
                     <ChatRoomListPanel
                         rooms={rooms}
                         selectedRoom={selectedRoom}
                         setSelectedRoom={setSelectedRoom}
                     />
 
-                    {/* 3) 메시지 뷰 */}
+                    {/* 🆕 contextMessageIds 추가 전달 */}
                     <ChatMessageView
                         messages={messages}
                         currentUser={chatUser}
                         selectedRoom={selectedRoom}
+                        reportedMessages={reportedMessages}
+                        contextMessageIds={contextMessageIds}
                     />
                 </div>
             )}
