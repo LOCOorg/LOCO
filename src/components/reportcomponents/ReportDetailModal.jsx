@@ -204,7 +204,7 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
                         </div>
                     )}
 
-                    {localReport.anchor?.type !== 'chat' && (
+                    {localReport.anchor?.type !== 'chat' && localReport.reportArea !== '프로필' && (
                         <button
                             onClick={goTarget}
                             disabled={!localReport?.anchor}
