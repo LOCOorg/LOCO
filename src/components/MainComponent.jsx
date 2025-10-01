@@ -1,5 +1,4 @@
 // src/components/MainComponent.jsx
-import PaymentStatusModal     from './pay/PaymentStatusModal.jsx';
 import ReportNotificationModal from './reportcomponents/ReportNotificationModal.jsx';
 import MainBannerComponent from './bannerComponent/MainBannerComponent.jsx';
 
@@ -32,7 +31,6 @@ function MainComponent() {
 
     return (
         <>
-            <PaymentStatusModal />
             <ReportNotificationModal />
 
             <div className="flex flex-col items-center justify-start min-h-screen bg-gray-50 p-6 space-y-6">
