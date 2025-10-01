@@ -8,6 +8,7 @@ import CommonModal from "../../common/CommonModal.jsx";
 import ProfileButton from "../../components/MyPageComponent/ProfileButton.jsx";
 import LeagueRecordSection from "./LeagueRecordSection.jsx";
 import useNotificationStore from '../../stores/notificationStore.js';
+import { filterProfanity } from "../../utils/profanityFilter.js";
 import MessageReportModal from "./MessageReportModal.jsx";
 
 const ChatRoom = ({roomId, userId}) => {
@@ -40,6 +41,7 @@ const ChatRoom = ({roomId, userId}) => {
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const { removeNotificationsByRoom } = useNotificationStore();
+    const wordFilterEnabled = useNotificationStore(state => state.wordFilterEnabled);
 
     useEffect(() => {
         if (roomId) {
@@ -435,7 +437,7 @@ const ChatRoom = ({roomId, userId}) => {
                                                     className={`relative max-w-full p-3 rounded-lg shadow ${isMe ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'}`}
                                                 >
                                                     <p className="whitespace-pre-wrap break-all">
-                                                        {msg.isDeleted ? '삭제된 메시지입니다.' : msg.text}
+                                                        {msg.isDeleted ? '삭제된 메시지입니다.' : (wordFilterEnabled ? filterProfanity(msg.text) : msg.text)}
                                                     </p>
                                                     
                                                     {/* 상대방 메시지에 신고 버튼 추가 */}
