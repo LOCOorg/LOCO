@@ -5,7 +5,7 @@ import useAuthStore from '../../stores/authStore.js';
 import CommonModal from '../../common/CommonModal.jsx';
 
 // eslint-disable-next-line react/prop-types
-const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기타', anchor }) => {
+const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '프로필', anchor }) => {
     // authStore에서 로그인한 사용자 정보 가져오기
     const { user } = useAuthStore();
 
@@ -77,7 +77,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
             // 폼 초기화 (신고자 ID는 다시 authStore의 값으로 설정하고, reportedUser가 있다면 해당 별칭으로 재설정)
             setNewReport({
                 reportTitle: '',
-                reportArea: '친구채팅',
+                reportArea: '프로필',
                 reportCategory: '욕설, 모욕, 혐오발언',
                 reportContants: '',
                 // eslint-disable-next-line react/prop-types
@@ -125,8 +125,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
                         onChange={handleChange}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-black-700"
                     >
-                        <option value="친구채팅">친구채팅</option>
-                        <option value="랜덤채팅">듀오찾기</option>
+                        <option value="프로필">프로필</option>
                         <option value="커뮤니티">커뮤니티</option>
                     </select>
                 </div>
@@ -142,7 +141,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '기
                         <option value="스팸, 도배, 거짓정보">스팸, 도배, 거짓정보</option>
                         <option value="부적절한 메세지(성인/도박/마약 등)">부적절한 메세지(성인/도박/마약 등)</option>
                         <option value="규칙에 위반되는 프로필/모욕성 닉네임">규칙에 위반되는 프로필/모욕성 닉네임</option>
-                        <option value="음란물 배포(이미지)">음란물 배포(이미지)</option>
+                        <option value="음란물 (이미지)">음란물 (이미지)</option>
                     </select>
                 </div>
                 <div className="mb-4">
