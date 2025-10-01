@@ -341,12 +341,7 @@ const CommunityDetail = () => {
                             {!community.isAnonymous && postProfile && (
                                 <ProfileButton
                                     profile={postProfile}
-                                    area="커뮤니티"
-                                    anchor={{
-                                        type: 'post',
-                                        parentId: community._id,
-                                        targetId: community._id,
-                                    }}
+                                    area="프로필"
                                 />
                             )}
                             작성자: <span className="font-semibold">{getDisplayNickname(community)}</span>

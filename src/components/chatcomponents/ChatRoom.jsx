@@ -5,8 +5,6 @@ import PropTypes from "prop-types";
 import {useNavigate} from "react-router-dom";
 import {decrementChatCount, getUserInfo, rateUser, getLeagueRecord} from "../../api/userAPI.js";
 import CommonModal from "../../common/CommonModal.jsx";
-import ReportForm from "../../components/reportcomponents/ReportForm.jsx";
-// 프로필 모달을 위한 ProfileButton 컴포넌트를 import합니다.
 import ProfileButton from "../../components/MyPageComponent/ProfileButton.jsx";
 import LeagueRecordSection from "./LeagueRecordSection.jsx";
 import useNotificationStore from '../../stores/notificationStore.js';
@@ -24,11 +22,6 @@ const ChatRoom = ({roomId, userId}) => {
     const [participants, setParticipants] = useState([]);
     const [capacity, setCapacity] = useState(0);
     const [evaluationUsers,  setEvaluationUsers]= useState([]);  // 매너평가 대상
-
-    // 신고 모달 관련 상태
-    const [showReportModal, setShowReportModal] = useState(false);
-    const [reportedParticipant, setReportedParticipant] = useState(null);
-    const [reportAnchor, setReportAnchor] = useState(null);
 
     const messagesContainerRef = useRef(null);
 
@@ -127,28 +120,8 @@ const ChatRoom = ({roomId, userId}) => {
         }));
     };
 
-    // 신고 모달 열기/닫기 함수
-    const openReportModal = (participant) => {
-        setReportedParticipant(participant);
-        // roomId를 포함한 anchor 생성
-        setReportAnchor({
-            type: 'chat',
-            roomId,           // 현재 방 ID
-            parentId: roomId,
-            targetId: roomId,
-        });
-        setShowReportModal(true);
-    };
 
-    const closeReportModal = () => {
-        setReportedParticipant(null);
-        setShowReportModal(false);
-    };
 
-    const handleReportCreated = () => {
-        // 신고 작성 후 추가 동작이 필요하면 여기에 작성 (예: 알림 표시)
-        closeReportModal();
-    };
 
     const confirmLeaveRoom = async () => {
         try {
@@ -411,13 +384,7 @@ const ChatRoom = ({roomId, userId}) => {
                     <div className="mt-2 flex flex-wrap gap-2 text-sm">
                         {participants.map(user => (
                             <div key={user._id} className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1 text-black">
-                                <ProfileButton profile={user} className="mr-1" area="랜덤채팅" onModalToggle={setIsProfileOpen}
-                                               anchor={{
-                                                   type: 'chat',
-                                                   roomId,           // 현재 채팅방 ID
-                                                   parentId: roomId, // 스키마상 required ⇒ 동일 값
-                                                   targetId: user._id // 신고 클릭한 메시지 ID
-                                               }}/>
+                                <ProfileButton profile={user} className="mr-1" area="프로필" onModalToggle={setIsProfileOpen}/>
                                 <span className="text-white">{user.nickname}</span>
                             </div>
                         ))}
@@ -448,14 +415,8 @@ const ChatRoom = ({roomId, userId}) => {
                                         {!isMe && (
                                             <ProfileButton
                                                 profile={msg.sender}
-                                                area="랜덤채팅"
+                                                area="프로필"
                                                 onModalToggle={setIsProfileOpen}
-                                                anchor={{
-                                                    type: 'chat',
-                                                    roomId,           // 현재 채팅방 ID
-                                                    parentId: roomId, // 스키마상 required ⇒ 동일 값
-                                                    targetId: msg._id // 신고 클릭한 메시지 ID
-                                                }}
                                             />
                                         )}
 
@@ -581,7 +542,8 @@ const ChatRoom = ({roomId, userId}) => {
                 }).length > 0 ? (
                     <div>
                         <p className="mb-4">
-                            채팅 종료 전, 다른 참가자들의 매너를 평가 및 신고해주세요.
+                            채팅 종료 전,
+                            다른 참가자들의 매너를 평가 해주세요.
                         </p>
                         {evaluationUsers
                             .filter((user) => {
@@ -606,12 +568,6 @@ const ChatRoom = ({roomId, userId}) => {
                                         >
                                             👍
                                         </button>
-                                        <button
-                                            onClick={() => openReportModal(user)}
-                                            className="border rounded px-2 py-1 focus:outline-none bg-red-500 text-white"
-                                        >
-                                            신고
-                                        </button>
                                     </div>
                                 );
                             })}
@@ -622,26 +578,6 @@ const ChatRoom = ({roomId, userId}) => {
                     </div>
                 )}
             </CommonModal>
-
-            {showReportModal && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[1600]">
-                    <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg relative">
-                        <button
-                            onClick={closeReportModal}
-                            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl font-bold"
-                        >
-                            ×
-                        </button>
-                        <ReportForm
-                            onReportCreated={handleReportCreated}
-                            onClose={closeReportModal}
-                            reportedUser={reportedParticipant}
-                            defaultArea="랜덤채팅"
-                            anchor={reportAnchor}
-                        />
-                    </div>
-                </div>
-            )}
             
             {/* 메시지 신고 모달 */}
             <MessageReportModal

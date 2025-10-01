@@ -25,7 +25,7 @@ const FriendSection = ({ title, friends, total, hasMore, loadMore, loading, onFr
                             <div key={f._id} className="p-2 flex items-center justify-between hover:bg-gray-50 rounded-lg transition-colors">
                                 <div className="flex items-center flex-1 min-w-0">
                                     <div className="cursor-pointer relative">
-                                        <ProfileButton profile={f} size="sm" area="친구채팅"/>
+                                        <ProfileButton profile={f} size="sm" area="프로필"/>
                                     </div>
                                     <div className="ml-3 flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
