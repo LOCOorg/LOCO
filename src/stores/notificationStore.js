@@ -31,6 +31,11 @@ const useNotificationStore = create((set, get) => ({
             setEncryptedItem('notifications', newNotifications);
             return { notifications: newNotifications };
         });
+        // ✅ 욕설 필터 설정 동기화 추가
+        if (userPrefs && typeof userPrefs.wordFilterEnabled === 'boolean') {
+            set({ wordFilterEnabled: userPrefs.wordFilterEnabled });
+            setEncryptedItem('wordFilterEnabled', userPrefs.wordFilterEnabled);
+        }
     },
 
     removeNotification: (id) =>
@@ -116,6 +121,38 @@ const useNotificationStore = create((set, get) => ({
         }
     },
 
+    // ✅ 욕설 필터 설정 (만 19세 이상만 변경 가능, 기본값: true)
+    wordFilterEnabled: (() => {
+        const stored = getDecryptedItem('wordFilterEnabled');
+        return stored !== null ? stored : true; // ✅ 기본값: ON
+    })(),
+
+    async toggleWordFilter() {
+        const userId = useAuthStore.getState().user?._id;
+        const userAge = useAuthStore.getState().user?.calculatedAge;
+        
+        // 만 19세 이상만 변경 가능
+        if (!userAge || userAge < 19) {
+            console.warn('만 19세 이상만 설정할 수 있습니다.');
+            return;
+        }
+        
+        const next = !get().wordFilterEnabled;
+        set({ wordFilterEnabled: next });
+        setEncryptedItem('wordFilterEnabled', next);
+
+        if (userId) {
+            try {
+                await updateUserPrefs(userId, { wordFilterEnabled: next });
+            } catch (error) {
+                // 서버 업데이트 실패 시 로컬 상태 롤백
+                set({ wordFilterEnabled: !next });
+                setEncryptedItem('wordFilterEnabled', !next);
+                console.error('욕설 필터 설정 업데이트 실패:', error);
+            }
+        }
+    },
+
 // syncWithUserPrefs 함수에도 추가
     syncWithUserPrefs: async (userPrefs) => {
         if (userPrefs && typeof userPrefs.friendReqEnabled === 'boolean') {
@@ -132,6 +169,11 @@ const useNotificationStore = create((set, get) => ({
         if (userPrefs && typeof userPrefs.chatPreviewEnabled === 'boolean') {
             set({ chatPreviewEnabled: userPrefs.chatPreviewEnabled });
             setEncryptedItem('chatPreviewEnabled', userPrefs.chatPreviewEnabled);
+        }
+        // ✅ 욕설 필터 설정 동기화 추가
+        if (userPrefs && typeof userPrefs.wordFilterEnabled === 'boolean') {
+            set({ wordFilterEnabled: userPrefs.wordFilterEnabled });
+            setEncryptedItem('wordFilterEnabled', userPrefs.wordFilterEnabled);
         }
     },
 
