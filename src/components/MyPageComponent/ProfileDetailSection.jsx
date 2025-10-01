@@ -73,7 +73,7 @@ export default function ProfileDetailSection({
         } catch (error) {
             setNicknameStatus({
                 available: false,
-                message: "닉네임 확인 중 오류가 발생했습니다.",
+                message: error.response?.data?.message || "닉네임 확인 중 오류가 발생했습니다.",
                 loading: false
             });
         }

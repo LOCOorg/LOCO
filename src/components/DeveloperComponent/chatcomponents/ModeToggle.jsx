@@ -1,7 +1,7 @@
 // C:\Users\wjdtj\WebstormProjects\LOCO\src\components\DeveloperComponent\chatcomponents\ModeToggle.jsx
 import React from 'react';
 
-const ModeToggle = ({ mode, setMode }) => (
+const ModeToggle = ({mode, setMode}) => (
     <div className="flex space-x-4 p-4 bg-white border-b">
         <button
             onClick={() => setMode('user')}
@@ -22,6 +22,14 @@ const ModeToggle = ({ mode, setMode }) => (
             }`}
         >
             Chat Search
+        </button>
+        <button
+            onClick={() => setMode('profanity')}
+            className={`px-4 py-2 rounded ${
+                mode === 'profanity' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700'}`}>
+            비속어 관리
         </button>
     </div>
 );
