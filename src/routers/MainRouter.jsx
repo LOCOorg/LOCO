@@ -13,9 +13,7 @@ import LoginHandler from "../components/authComponent/LoginHandler.jsx";
 import NaverLoginHandler from "../components/authComponent/NaverLoginHandler.jsx";
 
 import LoginRouter from "./LoginRouter.jsx";
-import AdminProductRouter from "./ProductRouter.jsx";
 
-import ProductShowcaseRouter from "./ProductShowcaseRouter.jsx";
 import QnaRouter from "./QnaRouter.jsx";
 
 import MyPageRouter from "./MyPageRouter.jsx";
@@ -41,8 +39,6 @@ const MainRouter = createBrowserRouter([
             CommunityRouter,
             ChatRouter,
             LoginRouter,
-            AdminProductRouter,
-            ProductShowcaseRouter,
             QnaRouter,
             ...ReportRouter,
             MyPageRouter,
