@@ -1,13 +1,13 @@
 // File: src/components/DeveloperComponent/DeveloperComponent.jsx
 import React, {useState, useEffect} from "react";
-import {useDeveloperSearch} from "../../hooks/useDeveloperSearch.js";  // 🔥 변경: 개발자 전용 검색 훅
+import {useDeveloperSearch} from "../../hooks/useDeveloperSearch.js";
 import SearchPanel from "./SearchPanel.jsx";
 import DetailPanel from "./DetailPanel.jsx";
 import ModeToggle from "./chatcomponents/ModeToggle.jsx";
 import ChatUserSearchPanel from "./chatcomponents/ChatUserSearchPanel.jsx";
 import ChatRoomListPanel from "./chatcomponents/ChatRoomListPanel.jsx";
 import ChatMessageView from "./chatcomponents/ChatMessageView.jsx";
-import {useChatConversation} from "../../hooks/useChatConversation";  // 공통 훅
+import {useChatConversation} from "../../hooks/useChatConversation";
 import {useLv} from "../../hooks/useLv";
 import {Navigate} from "react-router-dom";
 import HistoryPanel from "./HistoryPanel.jsx";
@@ -53,23 +53,52 @@ const DeveloperComponent = () => {
     const [chatUser, setChatUser] = useState(null);
     const [userView, setUserView] = useState("friends"); // "friends" 또는 "photos"
 
-    // 3) 채팅 관련 상태 및 페칭 로직 (훅으로 대체)
+    // 🚨 신고된 메시지 상태 추가
+    const [reportedMessages, setReportedMessages] = useState([]);
+    const [contextMessageIds, setContextMessageIds] = useState(new Set()); // 🆕 추가
+
     const {
         rooms,
         selectedRoom,
         setSelectedRoom,
         messages
     } = useChatConversation(chatUser, mode);
-//lv에따라 접근 차단
-    // const { currentUser } = useLv();
-    // // 아직 로딩 중인 경우 (user === null) 빈 화면 또는 로더 처리 가능
-    // if (currentUser === null) {
-    //     return null;
-    // }
-    // if (currentUser.userLv < 3) {
-    //     window.alert("접근 권한이 없습니다.");
-    //     return <Navigate to="/" replace />;
-    // }
+
+    // 🚨 선택된 방의 신고 메시지 가져오기 - ✅ 수정됨
+    useEffect(() => {
+        if (mode === 'chat' && selectedRoom) {
+            console.log('🔍 [신고조회] API 호출:', `/api/chat/rooms/${selectedRoom._id}/reported-messages`);
+
+            axios.get(`/api/chat/rooms/${selectedRoom._id}/reported-messages`)
+                .then(res => {
+                    console.log('🚨 [신고조회] 응답 전체:', res.data);
+                    console.log('🚨 [신고조회] reportedMessages:', res.data.reportedMessages);
+                    console.log('🚨 [신고조회] contextMessageIds:', res.data.contextMessageIds);
+
+                    if (res.data.success) {
+                        setReportedMessages(res.data.reportedMessages || []);
+                        // 🆕 contextMessageIds를 Set으로 변환하여 저장
+                        setContextMessageIds(new Set(res.data.contextMessageIds || []));
+
+                        console.log(`✅ [신고조회] 신고 메시지 ${res.data.totalReported}개, 컨텍스트 ${res.data.totalContext}개 로드됨`);
+                        console.log(`✅ [신고조회] reportedMessages 배열:`, res.data.reportedMessages.map(m => m._id));
+                        console.log(`✅ [신고조회] contextMessageIds Set:`, Array.from(res.data.contextMessageIds || []).slice(0, 10));
+                    } else {
+                        setReportedMessages([]);
+                        setContextMessageIds(new Set());
+                    }
+                })
+                .catch(err => {
+                    console.error('❌ [신고조회] 실패:', err);
+                    console.error('❌ [신고조회] 에러 상세:', err.response?.data || err.message);
+                    setReportedMessages([]);
+                    setContextMessageIds(new Set());
+                });
+        } else {
+            setReportedMessages([]);
+            setContextMessageIds(new Set());
+        }
+    }, [mode, selectedRoom]);
 
     useEffect(() => {
         axios
@@ -168,6 +197,7 @@ const DeveloperComponent = () => {
                         view={userView}
                         className="w-1/3"
                     />
+
                 </div>
             )}
             {mode === "chat" && (
@@ -189,11 +219,13 @@ const DeveloperComponent = () => {
                         setSelectedRoom={setSelectedRoom}
                     />
 
-                    {/* 3) 메시지 뷰 */}
+                    {/* 🆕 contextMessageIds 추가 전달 , 메세지 뷰*/}
                     <ChatMessageView
                         messages={messages}
                         currentUser={chatUser}
                         selectedRoom={selectedRoom}
+                        reportedMessages={reportedMessages}
+                        contextMessageIds={contextMessageIds}
                     />
                 </div>
             )}

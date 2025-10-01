@@ -27,10 +27,11 @@ export const createFriendRoom = async (roomType, capacity) => {
 export const fetchChatRooms = async (params = {}) => {
     try {
         const response = await axios.get(`${host}/rooms`, { params });
+        console.log(`🏛️ [방목록] 조회 성공: ${response.data.length}개`);
         return response.data;
     } catch (error) {
         console.error("채팅방 목록을 불러오는 중 오류 발생:", error);
-        return [];
+        throw error; // ❌ 빈 배열 대신 에러 던지기
     }
 };
 
