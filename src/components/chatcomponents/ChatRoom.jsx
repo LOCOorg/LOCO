@@ -10,6 +10,7 @@ import ReportForm from "../../components/reportcomponents/ReportForm.jsx";
 import ProfileButton from "../../components/MyPageComponent/ProfileButton.jsx";
 import LeagueRecordSection from "./LeagueRecordSection.jsx";
 import useNotificationStore from '../../stores/notificationStore.js';
+import MessageReportModal from "./MessageReportModal.jsx";
 
 const ChatRoom = ({roomId, userId}) => {
     const [messages, setMessages] = useState([]);
@@ -39,6 +40,10 @@ const ChatRoom = ({roomId, userId}) => {
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
+
+    // 메시지 신고 모달 관련 상태
+    const [showMessageReportModal, setShowMessageReportModal] = useState(false);
+    const [reportTargetMessage, setReportTargetMessage] = useState(null);
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const { removeNotificationsByRoom } = useNotificationStore();
@@ -247,6 +252,22 @@ const ChatRoom = ({roomId, userId}) => {
         setDeleteTargetId(null);
     };
 
+// ============================================================================
+//   🚨 메시지 신고 관련 함수들
+// ============================================================================
+
+    // 메시지 신고 모달 열기
+    const openMessageReportModal = (message) => {
+        setReportTargetMessage(message);
+        setShowMessageReportModal(true);
+    };
+
+    // 메시지 신고 모달 닫기
+    const closeMessageReportModal = () => {
+        setReportTargetMessage(null);
+        setShowMessageReportModal(false);
+    };
+
 
     const getChatRoomDetails = async () => {
         try {
@@ -450,13 +471,22 @@ const ChatRoom = ({roomId, userId}) => {
                                             {/* 말풍선과 시간 */}
                                             <div className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                                                 <div
-                                                    className={`max-w-full p-3 rounded-lg shadow ${
-                                                        isMe ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'
-                                                    }`}
+                                                    className={`relative max-w-full p-3 rounded-lg shadow ${isMe ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'}`}
                                                 >
                                                     <p className="whitespace-pre-wrap break-all">
                                                         {msg.isDeleted ? '삭제된 메시지입니다.' : msg.text}
                                                     </p>
+                                                    
+                                                    {/* 상대방 메시지에 신고 버튼 추가 */}
+                                                    {!isMe && !msg.isDeleted && !msg.isSystem && (
+                                                        <button
+                                                            onClick={() => openMessageReportModal(msg)}
+                                                            className="absolute -top-1 -right-1 bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 rounded-full w-6 h-6 flex items-center justify-center text-xs transition-colors"
+                                                            title="메시지 신고"
+                                                        >
+                                                            ⋯
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 <span className="text-xs text-gray-400 pb-1">
                                                     {formatTime(msg.textTime)}
@@ -612,6 +642,15 @@ const ChatRoom = ({roomId, userId}) => {
                     </div>
                 </div>
             )}
+            
+            {/* 메시지 신고 모달 */}
+            <MessageReportModal
+                isOpen={showMessageReportModal}
+                onClose={closeMessageReportModal}
+                message={reportTargetMessage}
+                roomType="random"
+            />
+            
             {/* ─── 전적 섹션 ─── */}
             <LeagueRecordSection
                 partnerRecords={partnerRecords}

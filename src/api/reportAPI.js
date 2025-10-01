@@ -75,14 +75,46 @@ export const replyToReport = async (reportId, replyData) => {
     }
 };
 
-/* 관리자가 신고된 채팅방의 메시지를 받는 함수 */
-export const fetchReportChatLog = async (reportId) => {
+/**
+ * 🎯 관리자/개발자가 신고된 채팅방의 메시지를 받는 함수 (V2)
+ * 
+ * @param {string} reportId - 신고 ID
+ * @param {string} mode - 'admin' (신고 메시지만) | 'developer' (전후 30개씩)
+ * @returns {Promise<Object>} 채팅 로그 데이터
+ * 
+ * 📌 변경사항:
+ * - admin 모드: 신고된 메시지만 반환
+ * - developer 모드: 신고된 메시지 + 전후 30개씩 반환 (총 61개)
+ */
+/**
+ * 🔒 신고된 메시지 평문 내용 조회 (관리자용)
+ * 
+ * ReportedMessageBackup에서 평문으로 저장된 내용을 가져옵니다.
+ * 
+ * @param {string} reportId - 신고 ID
+ * @returns {Promise<Object>} 평문 메시지 데이터
+ */
+export const fetchReportedMessagePlaintext = async (reportId) => {
     try {
-        const res = await axios.get(`${host}/reports/${reportId}/chat-log`, {
+        const response = await axios.get(`${host}/reports/${reportId}/plaintext`, {
             withCredentials: true,
         });
-        return res.data;          // 메시지 배열
-    } catch {
-        throw new Error('채팅 로그를 불러오지 못했습니다.');
+        return response.data;
+    } catch (error) {
+        console.error('평문 메시지 조회 실패:', error);
+        throw new Error(error.response?.data?.message || '신고 내용을 불러오지 못했습니다.');
+    }
+};
+
+export const fetchReportChatLog = async (reportId, mode = 'admin') => {
+    try {
+        const res = await axios.get(`${host}/reports/${reportId}/chat-log`, {
+            params: { mode }, // 🔐 모드 파라미터 추가
+            withCredentials: true,
+        });
+        return res.data;
+    } catch (error) {
+        console.error('채팅 로그 조회 실패:', error);
+        throw new Error(error.response?.data?.message || '채팅 로그를 불러오지 못했습니다.');
     }
 };
