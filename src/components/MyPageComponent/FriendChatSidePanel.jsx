@@ -172,7 +172,7 @@ const FriendChatSidePanel = () => {
     const loadRooms = useCallback(async () => {
         if (!user?._id) return;
         try {
-            const rooms = await fetchChatRooms({ roomType: 'friend' });
+            const rooms = await fetchChatRooms({ roomType: 'friend', chatUsers: user._id, isActive: true  });
             if (!rooms || !Array.isArray(rooms)) return;
 
             const myRooms = rooms.filter((r) =>
