@@ -6,6 +6,7 @@ import useFriendChatStore from '../../stores/useFriendChatStore';
 import useNotificationStore from '../../stores/notificationStore.js';
 import DropdownTransition from '../../layout/css/DropdownTransition.jsx';
 import { BellIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
+import { filterProfanity } from '../../utils/profanityFilter.js';
 
 const GlobalChatNotification = () => {
     const socket = useSocket();
@@ -21,7 +22,8 @@ const GlobalChatNotification = () => {
         removeNotificationsByRoom,
         chatPreviewEnabled,
         clearNotifications,
-        cleanupOldNotifications
+        cleanupOldNotifications,
+        wordFilterEnabled
     } = useNotificationStore();
 
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -57,19 +59,18 @@ const GlobalChatNotification = () => {
                 return;
             }
 
+            const newNotif = { id: Date.now(), ...data };
+
             if (!chatPreviewEnabled) {
-                addNotification({ id: Date.now(), ...data });
+                addNotification(newNotif);
                 return;
             }
-
-            const id = Date.now();
-            const newNotif = { id, ...data };
 
             addNotification(newNotif);
             setToasts((prev) => [...prev, newNotif]);
 
             setTimeout(() => {
-                setToasts((prev) => prev.filter((t) => t.id !== id));
+                setToasts((prev) => prev.filter((t) => t.id !== newNotif.id));
             }, 5000);
 
             cleanupOldNotifications();
@@ -153,7 +154,7 @@ const GlobalChatNotification = () => {
                                                 <span className="font-medium text-blue-600">
                                                     {renderRoomTag(notif.roomType)}
                                                 </span>
-                                                {notif.notification}
+                                                {wordFilterEnabled ? filterProfanity(notif.notification) : notif.notification}
                                             </p>
                                             <p className="text-xs text-gray-500 mt-1">
                                                 {new Date(notif.timestamp).toLocaleString()}
@@ -184,7 +185,7 @@ const GlobalChatNotification = () => {
                                     <span className="font-medium text-blue-600">
                                         {renderRoomTag(toast.roomType)}
                                     </span>
-                                    {toast.notification}
+                                    {wordFilterEnabled ? filterProfanity(toast.notification) : toast.notification}
                                 </p>
                             </div>
                         </div>

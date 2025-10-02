@@ -363,12 +363,7 @@ const CommentSection = ({
                                     {!isCommentDeleted && !comment.isAnonymous ? (
                                         <ProfileButton
                                             profile={profileMap[comment.userId]}
-                                            area="커뮤니티"
-                                            anchor={{
-                                                type: 'comment',
-                                                parentId: community._id,
-                                                targetId: comment._id,
-                                            }}
+                                            area="프로필"
                                         />
                                     ) : (
                                         <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0"></div>
@@ -466,12 +461,7 @@ const CommentSection = ({
                                                                 {!isReplyDeleted && !reply.isAnonymous ? (
                                                                     <ProfileButton
                                                                         profile={profileMap[reply.userId]}
-                                                                        area="커뮤니티"
-                                                                        anchor={{
-                                                                            type: 'reply',
-                                                                            parentId: community._id,
-                                                                            targetId: reply._id,
-                                                                        }}
+                                                                        area="프로필"
                                                                     />
                                                                 ) : (
                                                                     <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0"></div>
@@ -547,12 +537,7 @@ const CommentSection = ({
                                                                                     {!subReply.isAnonymous ? (
                                                                                         <ProfileButton
                                                                                             profile={profileMap[subReply.userId]}
-                                                                                            area="커뮤니티"
-                                                                                            anchor={{
-                                                                                                type: 'subReply',
-                                                                                                parentId: community._id,
-                                                                                                targetId: subReply._id,
-                                                                                            }}
+                                                                                            area="프로필"
                                                                                         />
                                                                                     ) : (
                                                                                         <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0"></div>

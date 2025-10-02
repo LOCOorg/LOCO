@@ -5,7 +5,8 @@ import useAuthStore from "../../stores/authStore.js";
 import ProfileButton from "../MyPageComponent/ProfileButton.jsx";
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
 import useNotificationStore from '../../stores/notificationStore.js';
-import MessageReportModal from './MessageReportModal.jsx';
+import { filterProfanity } from '../../utils/profanityFilter.js';
+import MessageReportModal from "./MessageReportModal.jsx";
 
 // eslint-disable-next-line react/prop-types
 function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
@@ -19,6 +20,7 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
     const messagesContainerRef = useRef(null);
     const scrollPositionRef = useRef(null);
     const { removeNotificationsByRoom } = useNotificationStore();
+    const wordFilterEnabled = useNotificationStore(state => state.wordFilterEnabled);
 
     // 메시지 신고 모달 관련 상태
     const [showMessageReportModal, setShowMessageReportModal] = useState(false);
@@ -224,7 +226,7 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
                                             )}
                                             <div className={`flex ${isMyMessage ? 'flex-row-reverse' : 'flex-row'} items-end gap-1`}>
                                                 <div className={`px-4 py-2 rounded-2xl whitespace-pre-wrap ${isMyMessage ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'} max-w-full break-words relative`}>
-                                                    {message.text}
+                                                    {wordFilterEnabled ? filterProfanity(message.text) : message.text}
                                                     {/* 신고 버튼 - 내 메시지가 아닐 때만 표시 */}
                                                     {!isMyMessage && (
                                                         <button

@@ -23,6 +23,8 @@ import { XMarkIcon as XMarkOutlineIcon } from '@heroicons/react/24/outline';
 import ProfileButton from "./ProfileButton.jsx";
 import FriendListPanel from "./FriendListPanel.jsx";
 import ChatOverlay from "../chatcomponents/ChatOverlay.jsx";
+import { filterProfanity } from '../../utils/profanityFilter.js';
+import useNotificationStore from '../../stores/notificationStore.js';
 
 const FriendChatSidePanel = () => {
     // ✅ 모든 hooks를 최상위에서 먼저 호출
@@ -47,6 +49,7 @@ const FriendChatSidePanel = () => {
     const socket = useSocket();
     const addFriend = useFriendListStore((s) => s.addFriend);
     const { notifications, removeNotification } = useContext(NotificationContext);
+    const wordFilterEnabled = useNotificationStore(state => state.wordFilterEnabled);
 
     const [showPanel, setShowPanel] = useState(false);
     const [friendRequests, setFriendRequests] = useState([]);
@@ -169,7 +172,7 @@ const FriendChatSidePanel = () => {
     const loadRooms = useCallback(async () => {
         if (!user?._id) return;
         try {
-            const rooms = await fetchChatRooms({ roomType: 'friend' });
+            const rooms = await fetchChatRooms({ roomType: 'friend', chatUsers: user._id, isActive: true  });
             if (!rooms || !Array.isArray(rooms)) return;
 
             const myRooms = rooms.filter((r) =>
@@ -706,7 +709,7 @@ const FriendChatSidePanel = () => {
                                                         )}
                                                     </div>
                                                     <p className="text-sm text-gray-500 truncate">
-                                                        {summary.lastMessage || '채팅을 시작해보세요'}
+                                                        {summary.lastMessage ? (wordFilterEnabled ? filterProfanity(summary.lastMessage) : summary.lastMessage) : '채팅을 시작해보세요'}
                                                     </p>
                                                 </div>
                                                 <ChatBubbleLeftEllipsisIcon

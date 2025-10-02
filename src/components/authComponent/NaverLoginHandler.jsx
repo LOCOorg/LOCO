@@ -27,6 +27,7 @@ const NaverLoginHandler = () => {
                     await syncWithUserPrefs({
                         friendReqEnabled: data.user.friendReqEnabled ?? true,
                         chatPreviewEnabled: data.user.chatPreviewEnabled ?? true,
+                        wordFilterEnabled: data.user.wordFilterEnabled ?? true,
                     });
                     navigate('/');
                 } else if (data.status === 'reactivation_possible') {

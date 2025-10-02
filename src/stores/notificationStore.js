@@ -31,11 +31,6 @@ const useNotificationStore = create((set, get) => ({
             setEncryptedItem('notifications', newNotifications);
             return { notifications: newNotifications };
         });
-        // ✅ 욕설 필터 설정 동기화 추가
-        if (userPrefs && typeof userPrefs.wordFilterEnabled === 'boolean') {
-            set({ wordFilterEnabled: userPrefs.wordFilterEnabled });
-            setEncryptedItem('wordFilterEnabled', userPrefs.wordFilterEnabled);
-        }
     },
 
     removeNotification: (id) =>

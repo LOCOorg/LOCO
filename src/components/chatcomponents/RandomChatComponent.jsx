@@ -35,6 +35,7 @@ const RandomChatComponent = () => {
     const [currentParticipants, setCurrentParticipants] = useState([]);
     const [waitingCapacity, setWaitingCapacity] = useState(0);
     const [showWaitingModal, setShowWaitingModal] = useState(false);
+    const [initialCheckComplete, setInitialCheckComplete] = useState(false);
 
     const socket = useSocket(); // 소켓 연결
 
@@ -65,17 +66,6 @@ const RandomChatComponent = () => {
         });
     };
 
-
-    // // 생년월일을 이용한 나이 계산 함수
-    // const calculateAge = (birthdate) => {
-    //     const today = new Date();
-    //     const birth = new Date(birthdate);
-    //     let age = today.getFullYear() - birth.getFullYear();
-    //     const m = today.getMonth() - birth.getMonth();
-    //     if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    //     return age;
-    // };
-
     // ① 주기적 카운트다운
     useEffect(() => {
         if (!userInfo?.nextRefillAt) return;
@@ -99,6 +89,37 @@ const RandomChatComponent = () => {
         const id = setInterval(tick, 1_000);  // 1 초마다 갱신
         return () => clearInterval(id);       // 클린업
     }, [userInfo?.nextRefillAt, userId]);
+
+    useEffect(() => {
+        const checkForActiveRandomChat = async () => {
+            if (!userInfo || initialCheckComplete) {
+                return;
+            }
+            setInitialCheckComplete(true);
+
+            try {
+                const rooms = await fetchChatRooms({ roomType: "random", userId });
+                const leftRooms = await fetchUserLeftRooms(userId);
+                const blockedIds = (blockedUsers || []).map((u) => u._id);
+
+                const existingRoom = rooms.find(
+                    (room) =>
+                        room.status !== 'closed' &&
+                        room.chatUsers.some((u) => u._id === userId) &&
+                        !leftRooms.includes(room._id) &&
+                        !room.chatUsers.some((u) => blockedIds.includes(u._id))
+                );
+
+                if (existingRoom) {
+                    navigate(`/chat/${existingRoom._id}/${userId}`);
+                }
+            } catch (error) {
+                console.error("Error checking for active random chat:", error);
+            }
+        };
+
+        checkForActiveRandomChat();
+    }, [userInfo, userId, navigate, blockedUsers, initialCheckComplete]);
 
     // 소켓 이벤트 리스너 설정
     useEffect(() => {
@@ -259,26 +280,8 @@ const RandomChatComponent = () => {
                 };
                 const rooms = await fetchChatRooms(query);
 
-                // (2) 내가 이미 참여중인 방?
+
                 const leftRooms = await fetchUserLeftRooms(userId);
-                const existingRoom = rooms.find(
-                    (room) =>
-                        room.chatUsers.some((u) => u._id === userId) &&
-                        !leftRooms.includes(room._id) &&
-                        !room.chatUsers.some((u) => blockedIds.includes(u._id))
-                );
-                if (existingRoom) {
-                    setModalTitle("알림");
-                    setModalMessage("이미 참여중인 채팅방으로 이동합니다.");
-                    setModalButtons([
-                        {
-                            text: "확인",
-                            action: () => navigate(`/chat/${existingRoom._id}/${userId}`)
-                        }
-                    ]);
-                    setModalOpen(true);
-                    return;
-                }
 
                 // (3) 차단된 유저가 없는 대기방 필터링
                 const availableRooms = rooms.filter((room) => {
