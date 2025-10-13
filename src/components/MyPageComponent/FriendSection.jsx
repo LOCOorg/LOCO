@@ -35,7 +35,7 @@ const FriendSection = ({ title, friends, total, hasMore, loadMore, loading, onFr
                                             <button
                                                 onClick={() => onFriendSelect(f)}
                                                 className="p-1 text-gray-400 hover:text-blue-600 rounded-full hover:bg-gray-200 transition-colors"
-                                                title={`Chat with ${f.nickname}`}
+                                                title={`${f.nickname}님과 채팅하기`}
                                             >
                                                 <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
                                             </button>
