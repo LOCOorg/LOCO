@@ -73,6 +73,7 @@ const CommunityEdit = () => {
     const [sideTab, setSideTab] = useState('viewed');
     const [topViewed, setTopViewed] = useState([]);
     const [topCommented, setTopCommented] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState('전체');
 
     useEffect(() => {
         (async () => {
@@ -197,11 +198,13 @@ const CommunityEdit = () => {
     /* ───────── 렌더 ───────── */
     return (
         <CommunityLayout
-            leftSidebar={<LeftSidebar handleCategoryClick={handleCategoryNav} />}
+            leftSidebar={<LeftSidebar
+                selectedCategory={selectedCategory}
+                handleCategoryClick={handleCategoryNav} />}
             rightSidebar={
                 <RightSidebar
-                    tab={sideTab}
-                    setTab={setSideTab}
+                    sideTab={sideTab}
+                    setSideTab={setSideTab}
                     topViewed={topViewed}
                     topCommented={topCommented}
                 />

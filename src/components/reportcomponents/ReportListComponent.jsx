@@ -147,6 +147,12 @@ const ReportListComponent = () => {
                     전체 구역
                 </button>
                 <button
+                    onClick={() => handleAreaFilterChange("프로필")}
+                    className={`px-3 py-1 rounded ${filterArea === "프로필" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                    프로필
+                </button>
+                <button
                     onClick={() => handleAreaFilterChange("친구채팅")}
                     className={`px-3 py-1 rounded ${filterArea === "친구채팅" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
