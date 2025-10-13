@@ -377,10 +377,6 @@ const ChatRoom = ({roomId, userId}) => {
             {/* ─── 채팅 섹션 ─── */}
             <section className="flex-1 flex flex-col bg-white shadow-2xl rounded-xl overflow-hidden">
                 <header className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6">
-                    {/* 채팅방 제목 & 인원 수 */}
-                    <h2 className="font-bold tracking-wide text-lg">
-                        채팅방 ({participants.length}/{capacity}명)
-                    </h2>
 
                     {/* 참가자 리스트 */}
                     <div className="mt-2 flex flex-wrap gap-2 text-sm">
