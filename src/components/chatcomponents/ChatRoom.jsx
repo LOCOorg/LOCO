@@ -380,7 +380,7 @@ const ChatRoom = ({roomId, userId}) => {
 
                     {/* 참가자 리스트 */}
                     <div className="mt-2 flex flex-wrap gap-2 text-sm">
-                        {participants.map(user => (
+                        {participants.filter(user => user && user._id).map(user => (
                             <div key={user._id} className="flex items-center bg-white bg-opacity-20 rounded px-3 py-1 text-black">
                                 <ProfileButton profile={user} className="mr-1" area="프로필" onModalToggle={setIsProfileOpen}/>
                                 <span className="text-white">{user.nickname}</span>
@@ -394,7 +394,7 @@ const ChatRoom = ({roomId, userId}) => {
                             ref={messagesContainerRef}
                             className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"
                         >
-                            {messages.map(msg => {
+                            {messages.filter(msg => msg && msg.sender).map(msg => {
                                 /* 시스템-메시지라면 중앙 정렬 회색 글씨로 */
                                 if (msg.isSystem) {
                                     return (
@@ -543,7 +543,7 @@ const ChatRoom = ({roomId, userId}) => {
                             채팅 종료 전,
                             다른 참가자들의 매너를 평가 해주세요.
                         </p>
-                        {evaluationUsers
+                        {evaluationUsers.filter(user => user && user._id)
                             .filter((user) => {
                                 const participantId = typeof user === "object" ? user._id : user;
                                 return participantId !== userId;
