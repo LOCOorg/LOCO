@@ -394,7 +394,7 @@ const ChatRoom = ({roomId, userId}) => {
                             ref={messagesContainerRef}
                             className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"
                         >
-                            {messages.filter(msg => msg && msg.sender).map(msg => {
+                            {messages.filter(msg => msg && (msg.isSystem || msg.sender)).map(msg => {
                                 /* 시스템-메시지라면 중앙 정렬 회색 글씨로 */
                                 if (msg.isSystem) {
                                     return (
