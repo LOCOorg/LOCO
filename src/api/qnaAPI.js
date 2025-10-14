@@ -1,7 +1,8 @@
 // qnaApi.js
-import axios from 'axios';
 
-const host = `${import.meta.env.VITE_API_HOST}/api/qna`;
+import instance from './axiosInstance';
+
+
 
 /**
  * 백엔드에서 모든 QnA 목록을 가져옵니다.
@@ -9,7 +10,7 @@ const host = `${import.meta.env.VITE_API_HOST}/api/qna`;
  */
 export async function getQnas() {
     try {
-        const response = await axios.get(host);
+        const response = await instance.get('/api/qna');
         return response.data;
     } catch (error) {
         throw new Error('Failed to fetch QnAs');
@@ -25,7 +26,7 @@ export async function getQnas() {
  */
 export async function getQnaPageByStatus(page, size, status, keyword = "", searchType = 'both') {
     try {
-        const response = await axios.get(host, {
+        const response = await instance.get('/api/qna', {
             params: { page, size, qnaStatus: status, keyword, searchType }
         });
         return response.data;
@@ -42,7 +43,7 @@ export async function getQnaPageByStatus(page, size, status, keyword = "", searc
  */
 export async function createQna(qnaData) {
     try {
-        const response = await axios.post(host, qnaData, {
+        const response = await instance.post('/api/qna', qnaData, {
             headers: { 'Content-Type': 'application/json' }
         });
         return response.data;
@@ -58,7 +59,7 @@ export async function createQna(qnaData) {
  */
 export async function getQnaById(id) {
     try {
-        const response = await axios.get(`${host}/${id}`);
+        const response = await instance.get(`/api/qna/${id}`);
         return response.data;
     } catch (error) {
         throw new Error('Failed to fetch QnA details');
@@ -73,7 +74,7 @@ export async function getQnaById(id) {
  */
 export async function updateQna(id, updateData) {
     try {
-        const response = await axios.put(`${host}/${id}`, updateData, {
+        const response = await instance.put(`/api/qna/${id}`, updateData, {
             headers: { 'Content-Type': 'application/json' }
         });
         return response.data;
@@ -89,7 +90,7 @@ export async function updateQna(id, updateData) {
  */
 export async function deleteQna(id) {
     try {
-        const response = await axios.delete(`${host}/${id}`);
+        const response = await instance.delete(`/api/qna/${id}`);
         return response.data;
     } catch (error) {
         throw new Error('Failed to delete QnA');

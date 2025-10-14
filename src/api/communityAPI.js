@@ -1,7 +1,7 @@
 // src/api/communityApi.js
-import axios from 'axios';
+import instance from './axiosInstance';
 
-const host = `${import.meta.env.VITE_API_HOST}/api/communities`;
+
 
 export const fetchCommunities = async (
     page = 1,
@@ -13,7 +13,7 @@ export const fetchCommunities = async (
     searchType = 'title+content',
     period = '전체'
 ) => {
-    let url = `${host}?page=${page}&size=${size}`;
+    let url = `/api/communities?page=${page}&size=${size}`;
     if (category)    url += `&category=${encodeURIComponent(category)}`;
     if (userId)      url += `&userId=${userId}`;
     if (sort)        url += `&sort=${encodeURIComponent(sort)}`;
@@ -21,14 +21,14 @@ export const fetchCommunities = async (
     if (searchType)  url += `&searchType=${encodeURIComponent(searchType)}`;
     if (period) url += `&period=${encodeURIComponent(period)}`;
 
-    const response = await axios.get(url);
+    const response = await instance.get(url);
     return response.data;
 };
 
 
 export const fetchCommunityById = async (id) => {
     try {
-        const response = await axios.get(`${host}/${id}`);
+        const response = await instance.get(`/api/communities/${id}`);
         return response.data;
     } catch (error) {
         console.error("fetchCommunityById error:", error);
@@ -38,7 +38,7 @@ export const fetchCommunityById = async (id) => {
 
 export const createCommunity = async (communityData) => {
     try {
-        const response = await axios.post(host, communityData, {
+        const response = await instance.post('/api/communities', communityData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -52,7 +52,7 @@ export const createCommunity = async (communityData) => {
 
 export const updateCommunity = async (id, updateData) => {
     try {
-        const response = await axios.put(`${host}/${id}`, updateData, {
+        const response = await instance.put(`/api/communities/${id}`, updateData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -67,7 +67,7 @@ export const updateCommunity = async (id, updateData) => {
 // communityAPI.js에서 삭제 관련 에러 메시지 개선
 export const deleteCommunity = async (id) => {
     try {
-        const response = await axios.delete(`${host}/${id}`);
+        const response = await instance.delete(`/api/communities/${id}`);
         return response.data;
     } catch (error) {
         console.error("deleteCommunity error:", error);
@@ -81,7 +81,7 @@ export const deleteCommunity = async (id) => {
 
 export const recommendCommunity = async (id, userId) => {
     try {
-        const response = await axios.post(`${host}/${id}/recommend`, { userId });
+        const response = await instance.post(`/api/communities/${id}/recommend`, { userId });
         return response.data;
     } catch (error) {
         console.error("recommendCommunity error:", error);
@@ -92,7 +92,7 @@ export const recommendCommunity = async (id, userId) => {
 // 추천 취소
 export const cancelRecommendCommunity = async (id, userId) => {
     try {
-        const response = await axios.delete(`${host}/${id}/recommend`,{ data: { userId }
+        const response = await instance.delete(`/api/communities/${id}/recommend`,{ data: { userId }
         });
         return response.data;
     } catch (error) {
@@ -104,7 +104,7 @@ export const cancelRecommendCommunity = async (id, userId) => {
 // 댓글 추가 API 호출 함수
 export const addComment = async (communityId, commentData) => {
     try {
-        const response = await axios.post(`${host}/${communityId}/comments`, commentData, {
+        const response = await instance.post(`/api/communities/${communityId}/comments`, commentData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             }
@@ -118,8 +118,8 @@ export const addComment = async (communityId, commentData) => {
 
 export const addReply = async (communityId, commentId, replyData) => {
     try {
-        const response = await axios.post(
-            `${host}/${communityId}/comments/${commentId}/replies`,
+        const response = await instance.post(
+            `/api/communities/${communityId}/comments/${commentId}/replies`,
             replyData,
             {
                 headers: {
@@ -136,8 +136,8 @@ export const addReply = async (communityId, commentId, replyData) => {
 
 export const addSubReply = async (communityId, commentId, replyId, subReplyData) => {
     try {
-        const response = await axios.post(
-            `${host}/${communityId}/comments/${commentId}/replies/${replyId}/subreplies`,
+        const response = await instance.post(
+            `/api/communities/${communityId}/comments/${commentId}/replies/${replyId}/subreplies`,
             subReplyData,
             {
                 headers: {
@@ -155,7 +155,7 @@ export const addSubReply = async (communityId, commentId, replyId, subReplyData)
 // 댓글 삭제 API 호출 함수
 export const deleteComment = async (communityId, commentId) => {
     try {
-        const response = await axios.delete(`${host}/${communityId}/comments/${commentId}`);
+        const response = await instance.delete(`/api/communities/${communityId}/comments/${commentId}`);
         return response.data;
     } catch (error) {
         console.error("deleteComment error:", error);
@@ -166,7 +166,7 @@ export const deleteComment = async (communityId, commentId) => {
 // 대댓글 삭제 API 호출 함수
 export const deleteReply = async (communityId, commentId, replyId) => {
     try {
-        const response = await axios.delete(`${host}/${communityId}/comments/${commentId}/replies/${replyId}`);
+        const response = await instance.delete(`/api/communities/${communityId}/comments/${commentId}/replies/${replyId}`);
         return response.data;
     } catch (error) {
         console.error("deleteReply error:", error);
@@ -177,7 +177,7 @@ export const deleteReply = async (communityId, commentId, replyId) => {
 // 대대댓글 삭제 API 호출 함수
 export const deleteSubReply = async (communityId, commentId, replyId, subReplyId) => {
     try {
-        const response = await axios.delete(`${host}/${communityId}/comments/${commentId}/replies/${replyId}/subreplies/${subReplyId}`);
+        const response = await instance.delete(`/api/communities/${communityId}/comments/${commentId}/replies/${replyId}/subreplies/${subReplyId}`);
         return response.data;
     } catch (error) {
         console.error("deleteSubReply error:", error);
@@ -188,7 +188,7 @@ export const deleteSubReply = async (communityId, commentId, replyId, subReplyId
 //커뮤니티 최다 조회
 export const fetchTopViewed = async () => {
     try {
-        const response = await axios.get(`${host}/top-viewed`);
+        const response = await instance.get(`/api/communities/top-viewed`);
         return response.data;
     } catch (error) {
         console.error("fetchTopViewed error:", error);
@@ -199,7 +199,7 @@ export const fetchTopViewed = async () => {
 //커뮤니티 최다 댓글
 export const fetchTopCommented = async () => {
     try {
-        const response = await axios.get(`${host}/top-commented`);
+        const response = await instance.get(`/api/communities/top-commented`);
         return response.data;
     } catch (error) {
         console.error("fetchTopCommented error:", error);
@@ -208,99 +208,159 @@ export const fetchTopCommented = async () => {
 };
 
 export const createPoll = async (postId, pollData) => {
-    const response = await fetch(`${host}/${postId}/polls`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(pollData)
-    });
-    return await response.json();
+    try {
+    const response = await instance.post(
+        `/api/communities/${postId}/polls`, pollData);
+
+        return response.data;
+    } catch (error) {
+        console.error('투표 생성 실패:', error);
+        throw error;
+    }
 };
 
 export const votePoll = async (postId, pollId, userId, optionIndex) => {
-    const response = await fetch(`${host}/${postId}/polls/${pollId}/vote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, optionIndex })
-    });
-    return await response.json();
+    try {
+        const response = await instance.post(
+          `/api/communities/${postId}/polls/${pollId}/vote`,
+          { userId, optionIndex });
+        return response.data;
+    } catch (error) {
+        console.error('투표 참여 실패:', error);
+        throw error;
+    }
 };
 
 export const getPollResults = async (postId, pollId) => {
-    const response = await fetch(`${host}/${postId}/polls/${pollId}/results`);
-    return await response.json();
+    try {
+        const response = await instance.get(
+            `/api/communities/${postId}/polls/${pollId}/results`
+        );
+        return response.data;
+    } catch (error) {
+        console.error('투표 결과 조회 실패:', error);
+        throw error;
+    }
 };
 
 export const getUserVoteStatus = async (postId, pollId, userId) => {
-    const response = await fetch(`${host}/${postId}/polls/${pollId}/status?userId=${userId}`);
-    return await response.json();
+    try {
+        const response = await instance.get(
+            `/api/communities/${postId}/polls/${pollId}/status`,
+            { params: { userId } }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('투표 상태 조회 실패:', error);
+        throw error;
+    }
 };
 
 export const cancelVote = async (communityId, pollId, userId) => {
-    const response = await fetch(`${host}/${communityId}/polls/${pollId}/cancel-vote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
-    });
-    return await response.json();
+    try {
+        const response = await instance.post(
+            `/api/communities/${communityId}/polls/${pollId}/cancel-vote`,
+            { userId }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('투표 취소 실패:', error);
+        throw error;
+    }
 };
 
 export const deletePoll = async (communityId, pollId, userId) => {
-    const response = await fetch(`${host}/${communityId}/polls/${pollId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
-    });
-    return await response.json();
+    try {
+        const response = await instance.delete(
+            `/api/communities/${communityId}/polls/${pollId}`,
+            { data: { userId } }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('투표 삭제 실패:', error);
+        throw error;
+    }
 };
 
-// 댓글 투표 생성
+// 🔍 댓글 투표 생성
 export const createCommentPoll = async (communityId, commentId, pollData) => {
-    const response = await fetch(`${host}/${communityId}/comments/${commentId}/polls`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(pollData)
-    });
-    return await response.json();
+    try {
+        const response = await instance.post(
+            `/api/communities/${communityId}/comments/${commentId}/polls`,
+            pollData
+        );
+        return response.data;
+    } catch (error) {
+        console.error('댓글 투표 생성 실패:', error);
+        throw error;
+    }
 };
 
 // 댓글 투표 참여
 export const voteCommentPoll = async (communityId, commentId, pollId, userId, optionIndex) => {
-    const response = await fetch(`${host}/${communityId}/comments/${commentId}/polls/${pollId}/vote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, optionIndex })
-    });
-    return await response.json();
+    try {
+        const response = await instance.post(
+            `/api/communities/${communityId}/comments/${commentId}/polls/${pollId}/vote`,
+            { userId, optionIndex }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('댓글 투표 참여 실패:', error);
+        throw error;
+    }
 };
 
 // 댓글 투표 결과 조회
 export const getCommentPollResults = async (communityId, commentId, pollId) => {
-    const response = await fetch(`${host}/${communityId}/comments/${commentId}/polls/${pollId}/results`);
-    return await response.json();
+    try {
+        const response = await instance.get(
+            `/api/communities/${communityId}/comments/${commentId}/polls/${pollId}/results`
+        );
+        return response.data;
+    } catch (error) {
+        console.error('댓글 투표 결과 조회 실패:', error);
+        throw error;
+    }
 };
 
 // 댓글 투표 상태 확인
 export const getCommentUserVoteStatus = async (communityId, commentId, pollId, userId) => {
-    const response = await fetch(`${host}/${communityId}/comments/${commentId}/polls/${pollId}/status?userId=${userId}`);
-    return await response.json();
+    try {
+        const response = await instance.get(
+            `/api/communities/${communityId}/comments/${commentId}/polls/${pollId}/status`,
+            { params: { userId } }  // ✅ 쿼리 파라미터는 params 객체로
+        );
+        return response.data;
+    } catch (error) {
+        console.error('댓글 투표 상태 조회 실패:', error);
+        throw error;
+    }
 };
 
 // 댓글 투표 취소
 export const cancelCommentVote = async (communityId, commentId, pollId, userId) => {
-    const response = await fetch(`${host}/${communityId}/comments/${commentId}/polls/${pollId}/cancel-vote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
-    });
-    return await response.json();
+    try {
+        const response = await instance.post(
+            `/api/communities/${communityId}/comments/${commentId}/polls/${pollId}/cancel-vote`,
+            { userId }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('댓글 투표 취소 실패:', error);
+        throw error;
+    }
 };
 
 // 댓글 투표 삭제
 export const deleteCommentPoll = async (communityId, commentId, pollId, userId) => {
-    const response = await fetch(`${host}/${communityId}/comments/${commentId}/polls/${pollId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
-    });
-    return await response.json();
+    try {
+        const response = await instance.delete(
+            `/api/communities/${communityId}/comments/${commentId}/polls/${pollId}`,
+            { data: { userId } }  // ✅ DELETE 메서드에서 body 전송 시 data 객체 사용
+        );
+        return response.data;
+    } catch (error) {
+        console.error('댓글 투표 삭제 실패:', error);
+        throw error;
+    }
 };

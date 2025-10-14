@@ -1,12 +1,12 @@
-import axios from 'axios';
 
-const host = `${import.meta.env.VITE_API_HOST}/api/reportNotification`;
+import instance from './axiosInstance';
+
 
 // 로그인한 사용자의 미확인 알림 조회 함수
 export const fetchNotifications = async (userId) => {
     try {
-        const response = await axios.get(`${host}/${userId}`, {
-            withCredentials: true,
+        const response = await instance.get(`/api/reportNotification/${userId}`, {
+
         });
         // 서버의 응답에서 알림 리스트가 data.data에 있다고 가정합니다.
         return response.data.data;
@@ -18,8 +18,8 @@ export const fetchNotifications = async (userId) => {
 // 알림 읽음 처리를 위한 함수
 export const markNotificationAsRead = async (notificationId) => {
     try {
-        const response = await axios.patch(`${host}/${notificationId}`, {}, {
-            withCredentials: true,
+        const response = await instance.patch(`/api/reportNotification/${notificationId}`, {}, {
+
         });
         return response.data;
     } catch (error) {
@@ -30,8 +30,8 @@ export const markNotificationAsRead = async (notificationId) => {
 // 알림 읽음 후 즉시 삭제 처리를 위한 함수
 export const markNotificationAsReadAndDelete = async (notificationId) => {
     try {
-        const response = await axios.patch(`${host}/${notificationId}/delete`, {}, {
-            withCredentials: true,
+        const response = await instance.patch(`/api/reportNotification/${notificationId}/delete`, {}, {
+
         });
         return response.data;
     } catch (error) {
