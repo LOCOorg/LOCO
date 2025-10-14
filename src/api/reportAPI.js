@@ -1,6 +1,6 @@
-import axios from 'axios';
 
-const host = `${import.meta.env.VITE_API_HOST}/api/report`;
+import instance from './axiosInstance';
+
 
 /**
  * 전체 신고 목록을 불러오는 함수
@@ -8,14 +8,14 @@ const host = `${import.meta.env.VITE_API_HOST}/api/report`;
  */
 export const fetchReports = async (page = 1, size = 10, filters = {}, orderByDate = 'desc') => {
     try {
-        const response = await axios.get(`${host}/reports`, {
+        const response = await instance.get(`/api/report/reports`, {
             params: {
                 page,
                 size,
                 ...filters,
                 orderByDate  // 정렬 순서 파라미터 추가
             },
-            withCredentials: true,
+
         });
         return response.data;
     } catch (error) {
@@ -31,9 +31,9 @@ export const fetchReports = async (page = 1, size = 10, filters = {}, orderByDat
  */
 export const createReport = async (reportData) => {
     try {
-        const response = await axios.post(`${host}/reports`, reportData, {
+        const response = await instance.post(`/api/report/reports`, reportData, {
             headers: { 'Content-Type': 'application/json' },
-            withCredentials: true,
+
         });
         return response.data;
     } catch (error) {
@@ -48,8 +48,8 @@ export const createReport = async (reportData) => {
  */
 export const deleteReport = async (reportId) => {
     try {
-        const response = await axios.delete(`${host}/reports/${reportId}`, {
-            withCredentials: true,
+        const response = await instance.delete(`/api/report/reports/${reportId}`, {
+
         });
         return response.data;
     } catch (error) {
@@ -65,9 +65,9 @@ export const deleteReport = async (reportId) => {
  */
 export const replyToReport = async (reportId, replyData) => {
     try {
-        const response = await axios.post(`${host}/reports/${reportId}/reply`, replyData, {
+        const response = await instance.post(`/api/report/reports/${reportId}/reply`, replyData, {
             headers: { 'Content-Type': 'application/json' },
-            withCredentials: true,
+
         });
         return response.data;
     } catch (error) {
@@ -96,8 +96,8 @@ export const replyToReport = async (reportId, replyData) => {
  */
 export const fetchReportedMessagePlaintext = async (reportId) => {
     try {
-        const response = await axios.get(`${host}/reports/${reportId}/plaintext`, {
-            withCredentials: true,
+        const response = await instance.get(`/api/report/reports/${reportId}/plaintext`, {
+
         });
         return response.data;
     } catch (error) {
@@ -108,9 +108,9 @@ export const fetchReportedMessagePlaintext = async (reportId) => {
 
 export const fetchReportChatLog = async (reportId, mode = 'admin') => {
     try {
-        const res = await axios.get(`${host}/reports/${reportId}/chat-log`, {
+        const res = await instance.get(`/api/report/reports/${reportId}/chat-log`, {
             params: { mode }, // 🔐 모드 파라미터 추가
-            withCredentials: true,
+
         });
         return res.data;
     } catch (error) {

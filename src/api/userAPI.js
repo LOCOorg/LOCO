@@ -1,13 +1,13 @@
 // src/api/userAPI.js
-import axios from "axios";
+// import axios from "axios";
 import instance from "./axiosInstance.js"; // axios 모듈 import
 
-const host = `${import.meta.env.VITE_API_HOST}/api/user`;
+
 
 // 유저 정보 조회 API 함수
 export const getUserInfo = async (userId) => {
     try {
-        const response = await axios.get(`${host}/${userId}`); // API 호출
+        const response = await instance.get(`/api/user/${userId}`); // API 호출
         return response.data.data; // 성공적으로 데이터 받으면 반환
         // eslint-disable-next-line no-unused-vars
     } catch (error) {
@@ -21,7 +21,7 @@ export const getUserInfo = async (userId) => {
 export const updateUserProfile = async (userId, updatedData) => {
     // eslint-disable-next-line no-useless-catch
     try {
-        const response = await axios.patch(`${host}/${userId}`, updatedData);
+        const response = await instance.patch(`/api/user/${userId}`, updatedData);
         return response.data.data || response.data.user;
     } catch (error) {
         throw error;
@@ -32,8 +32,8 @@ export const updateUserProfile = async (userId, updatedData) => {
 // 유저 별점 업데이트 API 함수 (fetch 사용)
 export const rateUser = async (userId, rating) => {
     try {
-        const response = await axios.post(
-            `${host}/${userId}/rate`,
+        const response = await instance.post(
+            `/api/user/${userId}/rate`,
             { rating },
             {
                 headers: {
@@ -55,7 +55,7 @@ export const rateUser = async (userId, rating) => {
 // 별칭(nickname)으로 사용자 조회 API 함수
 export const getUserByNickname = async (nickname) => {
     try {
-        const response = await axios.get(`${host}/nickname/${encodeURIComponent(nickname)}`);
+        const response = await instance.get(`/api/user/nickname/${encodeURIComponent(nickname)}`);
         console.log("API 응답 데이터:", response.data); // 응답 데이터 확인
         const data = response.data.data;
         if (!data) {
@@ -78,8 +78,8 @@ export const getUserByNickname = async (nickname) => {
 
 export const decrementChatCount = async (userId) => {
     try {
-        const response = await axios.post(
-            `${host}/${userId}/decrementChatCount`,
+        const response = await instance.post(
+            `/api/user/${userId}/decrementChatCount`,
             { userId },
             {
                 headers: {
@@ -98,7 +98,7 @@ export const decrementChatCount = async (userId) => {
 export const sendFriendRequest = async (senderId, receiverId) => {
     try {
         // senderId를 URL 경로에 추가 (라우터: "/:userId/friend-request")
-        const response = await axios.post(`${host}/${senderId}/friend-request`, { senderId, receiverId });
+        const response = await instance.post(`/api/user/${senderId}/friend-request`, { senderId, receiverId });
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data.message || error.message);
@@ -109,7 +109,7 @@ export const sendFriendRequest = async (senderId, receiverId) => {
 export const acceptFriendRequest = async (userId, requestId) => {
     try {
         // userId(친구 요청을 수락하는 사용자)를 URL 경로에 추가 (라우터: "/:userId/friend-request/accept")
-        const response = await axios.post(`${host}/${userId}/friend-request/accept`, { requestId });
+        const response = await instance.post(`/api/user/${userId}/friend-request/accept`, { requestId });
         return response.data.data;
     } catch (error) {
         throw new Error(error.response?.data.message || error.message);
@@ -120,7 +120,7 @@ export const acceptFriendRequest = async (userId, requestId) => {
 export const getFriendRequestList = async (userId) => {
     try {
         // 라우터 경로: "/:userId/friend-requests"
-        const response = await axios.get(`${host}/${userId}/friend-requests`);
+        const response = await instance.get(`/api/user/${userId}/friend-requests`);
         return response.data.data; // 백엔드에서 data 필드에 목록 전달
     } catch (error) {
         throw new Error(error.response?.data.message || error.message);
@@ -130,7 +130,7 @@ export const getFriendRequestList = async (userId) => {
 // 친구 요청 거절 API 함수
 export const declineFriendRequest = async (userId, requestId) => {
     try {
-        const response = await axios.post(`${host}/${userId}/friend-request/decline`, { requestId });
+        const response = await instance.post(`/api/user/${userId}/friend-request/decline`, { requestId });
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data.message || error.message);
@@ -140,7 +140,7 @@ export const declineFriendRequest = async (userId, requestId) => {
 // 친구 삭제 요청 API
 export const deleteFriend = async (userId, friendId) => {
     try {
-        const response = await axios.delete(`${host}/${userId}/friends/${friendId}`);
+        const response = await instance.delete(`/api/user/${userId}/friends/${friendId}`);
         return response.data;
     } catch (error) {
         throw new Error(error.response?.data.message || error.message);
@@ -153,8 +153,8 @@ export const deleteFriend = async (userId, friendId) => {
  */
 export const blockUser = async (userId, targetUserId) => {
     try {
-        const response = await axios.post(
-            `${host}/${userId}/block/${targetUserId}`
+        const response = await instance.post(
+            `/api/user/${userId}/block/${targetUserId}`
         );
         return response.data;
     } catch (error) {
@@ -168,8 +168,8 @@ export const blockUser = async (userId, targetUserId) => {
  */
 export const unblockUser = async (userId, targetUserId) => {
     try {
-        const response = await axios.delete(
-            `${host}/${userId}/block/${targetUserId}`
+        const response = await instance.delete(
+            `/api/user/${userId}/block/${targetUserId}`
         );
         return response.data;
     } catch (error) {
@@ -183,8 +183,8 @@ export const unblockUser = async (userId, targetUserId) => {
  */
 export const getBlockedUsers = async (userId) => {
     try {
-        const response = await axios.get(
-            `${host}/${userId}/blocked`
+        const response = await instance.get(
+            `/api/user/${userId}/blocked`
         );
         // console.log('getBlockedUsers API 응답:', response.data); // 디버깅용
         return response.data.blockedUsers; // blockedUsers 필드로 수정
@@ -203,8 +203,8 @@ export const getLeagueRecord = async (gameName, tagLine) => {
     try {
         const encodedGameName = encodeURIComponent(gameName);
         const encodedTagLine = encodeURIComponent(tagLine);
-        const response = await axios.get(
-            `${host}/lol/${encodedGameName}/${encodedTagLine}`
+        const response = await instance.get(
+            `/api/user/lol/${encodedGameName}/${encodedTagLine}`
         );
         return response.data.data; // { summoner: {...}, matches: [...] }
     } catch (error) {
@@ -219,7 +219,7 @@ export const getFriendsPage = async (userId, offset = 0, limit = 20, online) => 
         if (online !== undefined) {
             params.online = online;
         }
-        const url = `${host}/${userId}/friends`;
+        const url = `/api/user/${userId}/friends`;
         const res = await instance.get(url, { params });
         return res.data;
     } catch (err) {
@@ -231,7 +231,7 @@ export const getFriendsPage = async (userId, offset = 0, limit = 20, online) => 
 export const updateUserPrefs = async (userId, prefs) => {
     try {
         // PATCH /api/user/:userId/prefs
-        const response = await axios.patch(`${host}/${userId}/prefs`, prefs);
+        const response = await instance.patch(`/api/user/${userId}/prefs`, prefs);
         return response.data.data;
     } catch (error) {
         throw new Error(error.response?.data.message || error.message);
