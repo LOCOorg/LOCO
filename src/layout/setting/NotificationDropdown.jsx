@@ -1,7 +1,7 @@
 // src/components/layout/NotificationDropdown.jsx
 import {Switch} from '@headlessui/react';
-import useNotificationStore from '../../src/stores/notificationStore.js';
-import useAuthStore from '../../src/stores/authStore.js';
+import useNotificationStore from '../../stores/notificationStore.js';
+import useAuthStore from '../../stores/authStore.js';
 
 const NotificationDropdown = () => {
 

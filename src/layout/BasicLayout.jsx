@@ -11,7 +11,7 @@ import React, {useEffect, useRef, useState} from "react";
 //import MyMenus from './layoutMyMenus/MyMenus.jsx';
 import MyMenuDrop from "./layoutMyMenus/MyMenuDrop.jsx";
 import DropdownTransition from './css/DropdownTransition.jsx';
-import NotificationToggleButton from "./NotificationToggleButton.jsx";
+import NotificationToggleButton from "./setting/NotificationToggleButton.jsx";
 import ReactivationModal from '../components/authComponent/ReactivationModal.jsx';
 
 
