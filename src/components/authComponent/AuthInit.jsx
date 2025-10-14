@@ -1,7 +1,7 @@
 //src/components/authComponent/AuthInit.jsx
 
 import {useEffect, useRef} from 'react';
-import { refresh, fetchCurrentUser } from '../../api/authAPI.js';
+import { fetchCurrentUser } from '../../api/authAPI.js';
 import useAuthStore from '../../stores/authStore.js';
 import { useSocket } from '../../hooks/useSocket.js';
 
@@ -9,7 +9,7 @@ import { useSocket } from '../../hooks/useSocket.js';
 const AuthInit = () => {
     const triedOnce = useRef(false);
     const setUser        = useAuthStore(s => s.setUser);
-    const setAccessToken = useAuthStore(s => s.setAccessToken);
+    // const setAccessToken = useAuthStore(s => s.setAccessToken);
     const logout = useAuthStore((s) => s.logout);
     const user = useAuthStore(s => s.user);  // 🔧 현재 사용자 정보
     const socket = useSocket();  // 🔧 소켓 인스턴스
@@ -24,7 +24,7 @@ const AuthInit = () => {
         (async () => {
             try {
                 // 1) Silent refresh (쿠키에 담긴 리프레시 토큰으로 액세스 토큰 발급)
-                await refresh();
+                // await refresh();
 
                 // 2) /api/auth/me 호출하여 현재 사용자 정보 및 추가 토큰을 받아옴
                 const { user } = await fetchCurrentUser();
@@ -40,7 +40,7 @@ const AuthInit = () => {
                 logout();
             }
         })();
-    }, [setUser, setAccessToken, logout]);
+    }, [setUser, logout]);
 
     // 🔧 사용자 로그인 완료 후 소켓 등록
     useEffect(() => {

@@ -1,11 +1,10 @@
 // src/api/prAPI.js
 import instance from "./axiosInstance";
 
-const baseURL = `${import.meta.env.VITE_API_HOST}/api/pr`;
 
 export const getPRTopUsers = async () => {
     try {
-        const { data } = await instance.get(`${baseURL}/top`);
+        const { data } = await instance.get(`/api/pr/top`);
         return data;
     } catch (err) {
         console.error("[PR] getPRTopUsers error:", err);
@@ -17,7 +16,7 @@ export const getPRTopUsers = async () => {
 export const getPRUserList = async (params) => {
     try {
         // axiosInstance 에서는 이미 baseURL, withCredentials 등을 전역 설정해두었다고 가정
-        const { data } = await instance.get(`${baseURL}/list`, { params });
+        const { data } = await instance.get(`/api/pr/list`, { params });
 
         // 만약 백엔드가 { success, users, total } 형태로 내려온다면,
         // 호출부에서 매번 data.users 를 구조분해하기 번거로울 수 있으니
