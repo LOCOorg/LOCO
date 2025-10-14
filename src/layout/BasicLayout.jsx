@@ -4,9 +4,8 @@ import ChatNotification from "../components/chatcomponents/ChatNotification.jsx"
 import useAuthStore from '../stores/authStore';
 import FriendChatSidePanel from '../components/MyPageComponent/FriendChatSidePanel.jsx';
 import FriendRequestNotification from '../components/MyPageComponent/FriendRequestNotification.jsx';
-import GlobalFriendChatOverlay from "../components/chatcomponents/GlobalFriendChatOverlay.jsx";
 import LoginModal from "../components/loginComponent/LoginModal.jsx";
-import React, {useEffect, useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 //import LogoutButton from '../components/authComponent/LogoutButton.jsx';
 //import MyMenus from './layoutMyMenus/MyMenus.jsx';
 import MyMenuDrop from "./layoutMyMenus/MyMenuDrop.jsx";
