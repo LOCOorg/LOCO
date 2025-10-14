@@ -7,7 +7,7 @@ const QnaHistoryComponent = ({ profile }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [loading, setLoading] = useState(false);
-    const pageSize = 6;
+    const pageSize = 5;
 
     const fetchQnaHistory = async (page) => {
         if (!profile?._id || loading) return;
@@ -198,7 +198,7 @@ const QnaHistoryComponent = ({ profile }) => {
                                     </span>
                                 ) : (
                                     <span className="flex items-center gap-2">
-                                        더 보기
+                                        QnA 더 보기
                                         <svg className="w-5 h-5 group-hover:translate-y-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                         </svg>
