@@ -446,10 +446,10 @@ const RandomChatComponent = () => {
                     <span className="text-sm font-medium text-gray-500">별점(추천점수)</span>
                     <span className="mt-1 text-gray-700">{userInfo?.star || "–"}</span>
                 </div>
-                <div className="flex flex-col">
-                    <span className="text-sm font-medium text-gray-500">플랜</span>
-                    <span className="mt-1 text-gray-700">{userInfo?.plan.planType || "–"}</span>
-                </div>
+                {/*<div className="flex flex-col">*/}
+                {/*    <span className="text-sm font-medium text-gray-500">플랜</span>*/}
+                {/*    <span className="mt-1 text-gray-700">{userInfo?.plan.planType || "–"}</span>*/}
+                {/*</div>*/}
                 <div className="flex flex-col">
                     <span className="text-sm font-medium text-gray-500">남은 채팅 횟수</span>
 
