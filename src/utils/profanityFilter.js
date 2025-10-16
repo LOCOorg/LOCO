@@ -1,23 +1,53 @@
-import axios from 'axios';
+import instance from '../api/axiosInstance.js';
+import { setEncryptedItem, getDecryptedItem, removeEncryptedItem } from './storageUtils.js';
 
 let badWords = [];
 let regex = null;
 let isInitialized = false;
+const CACHE_KEY = import.meta.env.VITE_PROFANITY_SECRET_KEY;
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 // Fetch bad words from the server and initialize the filter
 async function initializeProfanityFilter() {
     if (isInitialized) {
         return;
     }
+
+    // 1. Try to load from encrypted cache
     try {
-        const response = await axios.get('/api/profanity/list');
+        const cachedData = getDecryptedItem(CACHE_KEY);
+        if (cachedData) {
+            const { timestamp, words } = cachedData;
+            if (Date.now() - timestamp < CACHE_DURATION) {
+                console.log(`[ProfanityFilter] 암호화된 캐시에서 비속어 목록을 불러옵니다. (${words.length}개)`);
+                badWords = words;
+                const escapedWords = badWords.map(word => word.replace(/[.*+?^${}()|[\\]/g, '\\$&'));
+                regex = new RegExp(`(${escapedWords.join('|')})`, 'gi');
+                isInitialized = true;
+                return; // Cache is valid, no need to fetch
+            }
+        }
+    } catch (error) {
+        console.error('[ProfanityFilter] 암호화된 캐시 로드 실패:', error);
+        removeEncryptedItem(CACHE_KEY); // Clear corrupted cache
+    }
+
+    // 2. Fetch from API if cache is invalid or missing
+    try {
+        const response = await instance.get('/api/profanity/list');
         if (response.data.success && Array.isArray(response.data.words)) {
             badWords = response.data.words;
-            // Escape special regex characters from words
             const escapedWords = badWords.map(word => word.replace(/[.*+?^${}()|[\\]/g, '\\$&'));
             regex = new RegExp(`(${escapedWords.join('|')})`, 'gi');
             isInitialized = true;
-            console.log(`[ProfanityFilter] 초기화 완료. ${badWords.length}개의 단어 로드.`);
+            console.log(`[ProfanityFilter] API에서 비속어 목록을 불러옵니다. (${badWords.length}개)`);
+
+            // 3. Save to encrypted cache
+            const cacheData = {
+                timestamp: Date.now(),
+                words: badWords
+            };
+            setEncryptedItem(CACHE_KEY, cacheData);
         }
     } catch (error) {
         console.error('[ProfanityFilter] 비속어 목록 로드 실패:', error);

@@ -1,4 +1,3 @@
-// src/components/communitycomponents/CommunityDetail.jsx
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -17,11 +16,11 @@ import CommunityLayout from "../../layout/CommunityLayout/CommunityLayout.jsx";
 import LeftSidebar from "../../layout/CommunityLayout/LeftSidebar.jsx";
 import RightSidebar from "../../layout/CommunityLayout/RightSidebar.jsx";
 import ReportForm from "../reportcomponents/ReportForm.jsx";
-import ProfileButton from '../../components/MyPageComponent/ProfileButton.jsx';
 import CommentSection from './CommentSection.jsx'; // 새로 분리할 컴포넌트
-import {FaThumbsUp} from 'react-icons/fa';
-import clsx from 'clsx';
 import PollManager from "./PollManager.jsx";
+import PostHeader from "./PostHeader.jsx";
+import PostBody from "./PostBody.jsx";
+import PostActions from "./PostActions.jsx";
 
 // 유틸리티 함수
 const formatRelativeTime = (dateString) => {
@@ -90,7 +89,8 @@ const CommunityDetail = () => {
             } catch (err) {
                 setError('게시글을 불러오는 데 실패했습니다.');
                 console.log(err);
-            } finally {
+            }
+            finally {
                 setLoading(false);
             }
         };
@@ -151,8 +151,9 @@ const CommunityDetail = () => {
                         try {
                             const userInfo = await getUserInfo(uid);
                             newUserMap[uid] = userInfo.nickname || userInfo.name || uid;
-                        } catch (error) {
+                        } catch (err) {
                             newUserMap[uid] = uid;
+                            console.error(err);
                         }
                     }
                 })
@@ -334,68 +335,25 @@ const CommunityDetail = () => {
 
                 {/* 메인 콘텐츠 */}
                 <div className="bg-white rounded-lg shadow-md p-6">
-                    {/* 게시글 헤더 */}
-                    <h1 className="text-3xl font-bold mb-2">{community.communityTitle}</h1>
-                    <div className="text-sm text-gray-600 mb-4 space-x-2">
-                        <span>
-                            {!community.isAnonymous && postProfile && (
-                                <ProfileButton
-                                    profile={postProfile}
-                                    area="프로필"
-                                />
-                            )}
-                            작성자: <span className="font-semibold">{getDisplayNickname(community)}</span>
-                        </span>
-                        <span>카테고리: <span className="font-semibold">{community.communityCategory}</span></span>
-                        <span>작성일: <span className="font-medium">{formatRelativeTime(community.communityRegDate)}</span></span>
-                        <span>조회수: <span className="font-medium">{community.communityViews}</span></span>
-                        <span>추천: <span className="font-medium">{community.recommendedUsers?.length || 0}</span></span>
-                    </div>
+                    <PostHeader
+                        community={community}
+                        postProfile={postProfile}
+                        getDisplayNickname={getDisplayNickname}
+                        formatRelativeTime={formatRelativeTime}
+                    />
 
-                    {/* 게시글 이미지 */}
-                    {community.communityImages?.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-4">
-                            {community.communityImages.map((src) => (
-                                <img
-                                    key={src}
-                                    src={`${API_HOST}/uploads${src}`}
-                                    alt="본문 이미지"
-                                    className="max-h-96 w-auto rounded object-contain"
-                                />
-                            ))}
-                        </div>
-                    )}
+                    <PostBody community={community} API_HOST={API_HOST} />
 
-                    {/* 게시글 내용 */}
-                    <p className="text-gray-800 mb-4" id={`post-${community._id}`}>
-                        {community.communityContents}
-                    </p>
+                    <PostActions
+                        community={community}
+                        isRecommended={isRecommended}
+                        onToggleRecommend={handleToggleRecommend}
+                        onReport={handlePostReport}
+                        onDelete={handleDelete}
+                        currentUserId={currentUserId}
+                        isAdmin={isAdmin}
+                    />
 
-                    {/* 추천 및 신고 버튼 */}
-                    <div className="mt-4 flex items-center gap-2">
-                        <button
-                            onClick={handleToggleRecommend}
-                            aria-label="추천하기"
-                            className={clsx(
-                                'w-10 h-10 rounded-full border flex items-center justify-center transition-colors',
-                                {
-                                    'bg-blue-500 border-blue-500 text-white': isRecommended,
-                                    'bg-transparent border-gray-300 text-gray-500 hover:bg-gray-100': !isRecommended,
-                                }
-                            )}
-                        >
-                            <FaThumbsUp size={20} />
-                        </button>
-
-                        {community.userId !== currentUserId && (
-                            <button
-                                onClick={handlePostReport}
-                                className="text-sm font-medium text-gray-500 hover:text-rose-600 hover:underline"
-                            >
-                                신고
-                            </button>
-                        )}
-                    </div>
                     {/* 투표 관리자 컴포넌트 */}
                     <PollManager
                         community={community}
@@ -403,7 +361,6 @@ const CommunityDetail = () => {
                         currentUserId={currentUserId}
                         isAdmin={isAdmin}
                     />
-
 
                     {/* 댓글 섹션 - 별도 컴포넌트로 분리 */}
                     <CommentSection
@@ -423,28 +380,7 @@ const CommunityDetail = () => {
                         commentIsAnonymous={commentIsAnonymous}
                         setCommentIsAnonymous={setCommentIsAnonymous}
                         onAddComment={handleAddComment}
-                        onCancelVote={() => handleCancelVote(poll._id)}
                     />
-
-                    {/* 게시글 관리 버튼 */}
-                    {(community.userId === currentUserId || isAdmin) && (
-                        <div className="mt-6 flex space-x-4">
-                            {community.userId === currentUserId && (
-                                <button
-                                    onClick={() => navigate(`/community/edit/${community._id}`)}
-                                    className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 transition duration-200"
-                                >
-                                    수정
-                                </button>
-                            )}
-                            <button
-                                onClick={handleDelete}
-                                className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-200"
-                            >
-                                삭제
-                            </button>
-                        </div>
-                    )}
 
                     {/* 목록으로 버튼 */}
                     <div className="mt-6">
