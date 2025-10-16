@@ -41,7 +41,14 @@ const BasicLayout = ({ children }) => {
         };
     }, [overflowOpen]);
 
-
+    useEffect(() => {
+        console.log('=== 🎨 BasicLayout 렌더링 ===');
+        console.log('user:', user);
+        console.log('userLv:', user?.userLv);
+        console.log('Has userLv:', user && 'userLv' in user);
+        console.log('개발자 메뉴:', user && user.userLv >= 3);
+        console.log('================================');
+    }, [user]);
 
     return (
         <div className="flex flex-col min-h-screen">
