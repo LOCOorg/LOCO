@@ -14,6 +14,29 @@ export const createChatRoom = async (roomType, capacity, matchedGender, ageGroup
     }
 };
 
+/**
+ * 🎯 방 찾기 또는 생성 (통합 API)
+ */
+export const findOrCreateChatRoom = async (params) => {
+    try {
+        console.log('🔍 [API] 방 찾기/생성 요청:', params);
+
+        const response = await instance.post('/api/chat/rooms/find-or-create', params);
+
+        console.log('✅ [API] 방 찾기/생성 성공:', {
+            action: response.data.action,
+            roomId: response.data.room._id,
+            attemptedRooms: response.data.attemptedRooms
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error('❌ [API] 방 찾기/생성 실패:', error);
+        throw error;
+    }
+};
+
+
 // 친구와 채팅방 생성
 export const createFriendRoom = async (roomType, capacity) => {
     try {
