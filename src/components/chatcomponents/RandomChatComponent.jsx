@@ -10,7 +10,7 @@ import {
     createChatRoom,
     joinChatRoom,
     fetchChatRooms,
-    fetchUserLeftRooms, leaveChatRoom
+    fetchUserLeftRooms, leaveChatRoom, findOrCreateChatRoom
 } from "../../api/chatAPI";
 import CommonModal from "../../common/CommonModal";
 import SimpleProfileModal from "../MyPageComponent/SimpleProfileModal.jsx";
@@ -266,132 +266,84 @@ const RandomChatComponent = () => {
                 return;
             }
 
-            /* ─── 2. 실제 방 탐색/참가를 담당할 내부 재귀 함수 ─── */
-            const tryMatch = async () => {
-                const ageGroup = userInfo.ageGroup;
-                const blockedIds  = (blockedUsers || []).map((u) => u._id);
+            // 2️⃣ 확인 모달
+            setModalTitle("듀오 찾기 시작");
+            setModalMessage(
+                `듀오 찾기(${capacity}명, ${genderLabels[matchedGender]})를 시작하시겠습니까?`
+            );
+            setModalButtons([
+                {
+                    text: "시작",
+                    action: async () => {
+                        try {
+                            setModalOpen(false);
 
-                // (1) 방 목록 조회
-                const query = {
-                    roomType: "random",
-                    ...(matchedGender !== "any" && { matchedGender }),
-                    ageGroup,
-                    userId
-                };
-                const rooms = await fetchChatRooms(query);
+                            // 3️⃣ 백엔드 API 한 번만 호출! (핵심 개선)
+                            const result = await findOrCreateChatRoom({
+                                userId: userId,
+                                roomType: 'random',
+                                capacity: capacity,
+                                matchedGender: matchedGender,
+                                ageGroup: userInfo.ageGroup,
+                                selectedGender: matchedGender
+                            });
 
+                            if (result.success) {
+                                // 4️⃣ 성공 - 대기 모달 표시
+                                console.log(`✅ ${result.action === 'joined' ? '기존 방 참가' : '새 방 생성'}`);
 
-                const leftRooms = await fetchUserLeftRooms(userId);
-
-                // (3) 차단된 유저가 없는 대기방 필터링
-                const availableRooms = rooms.filter((room) => {
-                    if (leftRooms.includes(room._id))  return false;
-                    if (room.capacity !== capacity) return false;
-                    if (room.chatUsers.length >= room.capacity) return false;
-                    if (room.isActive || room.status !== "waiting") return false;
-
-                    if (
-                        matchedGender === "same" &&
-                        (room.matchedGender !== "same" ||
-                            room.chatUsers.some((u) => u.gender !== userInfo.gender))
-                    )
-                        return false;
-                    if (
-                        matchedGender === "opposite" &&
-                        (room.matchedGender !== "opposite" ||
-                            room.chatUsers.every((u) => u.gender === userInfo.gender))
-                    )
-                        return false;
-
-                    // 동성방에 참가할 때, 동성이 아닌 경우 참가 안되게 필터 추가
-                    if (room.matchedGender === 'same' && room.chatUsers.length > 0) {
-                        const roomGender = room.chatUsers[0].gender;
-                        if (userInfo.gender !== roomGender) {
-                            return false;
-                        }
-                    }
-
-                    if (room.ageGroup !== ageGroup) return false;
-                    if (room.chatUsers.some((u) => blockedIds.includes(u._id))) return false;  // 내가 차단
-                    /* 👇 추가: 상대가 나를 차단한 방도 제외 */
-                    if (room.chatUsers.some((u) => (u.blockedUsers || []).includes(userId))) return false;
-
-                    return true;
-                });
-
-                // (3-A) 참여 가능한 대기방이 존재할 때
-                if (availableRooms.length) {
-                    const target = availableRooms[Math.floor(Math.random() * availableRooms.length)];
-                    setModalTitle("알림");
-                    setModalMessage(
-                        `듀오 찾기(${capacity}명, ${genderLabels[matchedGender]})에 참가합니다.`
-                    );
-                    setModalButtons([
-                        {
-                            text: "확인",
-                            action: async () => {
-                                try {
-                                    await joinChatRoom(target._id, userId, matchedGender);
-
-                                    // 대기 상태로 전환 (바로 navigate 하지 않음)
-                                    setIsWaiting(true);
-                                    setWaitingRoomId(target._id);
-                                    setShowWaitingModal(true);
-
-                                    // 소켓 방 참가
-                                    socket.emit("joinRoom", target._id, "random");
-
-                                } catch (err) {
-                                    if (err.response?.status === 403) {
-                                        setModalOpen(false);
-                                        await tryMatch(); // 차단 관계시 재시도
-                                    } else {
-                                        throw err;
-                                    }
-                                }
-                            }
-                        }
-                    ]);
-                    setModalOpen(true);
-                    return;
-                }
-
-                // (3-B) 대기방이 없으면 새 방 생성 안내
-                setModalTitle("듀오 찾기 시작");
-                setModalMessage(
-                    `듀오 찾기(${capacity}명, ${genderLabels[matchedGender]})을 참가하시겠습니까?`
-                );
-                setModalButtons([
-                    {
-                        text: "생성",
-                        action: async () => {
-                            try {
-                                const room = await createChatRoom("random", capacity, matchedGender, ageGroup);
-                                await joinChatRoom(room._id, userId, matchedGender);
-
-                                // 대기 상태로 전환
                                 setIsWaiting(true);
-                                setWaitingRoomId(room._id);
+                                setWaitingRoomId(result.room._id);
                                 setShowWaitingModal(true);
 
                                 // 소켓 방 참가
-                                socket.emit("joinRoom", room._id, "random");
-
-                            } catch (err) {
-                                if (err.response?.status === 403) {
-                                    setModalOpen(false);
-                                    await tryMatch();
-                                } else {
-                                    throw err;
+                                if (socket) {
+                                    socket.emit("joinRoom", result.room._id, "random");
                                 }
                             }
+
+                        } catch (err) {
+                            console.error('❌ 방 찾기/생성 실패:', err);
+
+                            // 5️⃣ 에러 처리
+                            let errorMessage = '듀오 찾기에 실패했습니다.';
+
+                            if (err.response?.data) {
+                                const { error, code } = err.response.data;
+
+                                switch (code) {
+                                    case 'BIRTHDATE_REQUIRED':
+                                        errorMessage = '생년월일 정보가 필요합니다.';
+                                        break;
+                                    case 'AGE_VERIFICATION_FAILED':
+                                        errorMessage = '나이 확인이 불가능합니다.';
+                                        break;
+                                    case 'AGE_GROUP_MISMATCH':
+                                        errorMessage = error || '연령대가 맞지 않습니다.';
+                                        break;
+                                    case 'DECRYPTION_FAILED':
+                                        errorMessage = '생년월일 정보 확인 중 오류가 발생했습니다.';
+                                        break;
+                                    default:
+                                        errorMessage = error || errorMessage;
+                                }
+                            }
+
+                            setModalTitle("에러");
+                            setModalMessage(errorMessage);
+                            setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
+                            setModalOpen(true);
                         }
                     }
-                ]);
-                setModalOpen(true);
-            };
+                },
+                {
+                    text: "취소",
+                    action: () => setModalOpen(false)
+                }
+            ]);
+            setModalOpen(true);
 
-            await tryMatch();
+
         } catch (e) {
             console.error(e);
             setModalTitle("에러");
