@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchCommunities, fetchTopViewed, fetchTopCommented } from '../../api/communityApi.js';
-import { getUserInfo } from '../../api/userAPI.js';
 import PageComponent from '../../common/pageComponent.jsx';
 import CommunityLayout from '../../layout/CommunityLayout/CommunityLayout.jsx';
 import LeftSidebar from '../../layout/CommunityLayout/LeftSidebar.jsx';
@@ -40,7 +39,6 @@ const CommunityList = () => {
     const [filteredCommunities, setFilteredCommunities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [userMap, setUserMap] = useState({});
 
     // 필터 및 정렬 상태
     const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -66,7 +64,7 @@ const CommunityList = () => {
     // 닉네임 표시 함수 (익명 처리)
     const getDisplayNickname = (community) => {
         if (community.isAnonymous) return '익명';
-        return userMap[community.userId] || community.userId;
+        return community.userNickname;
     };
 
     // 커뮤니티 데이터 로드
@@ -144,34 +142,6 @@ const CommunityList = () => {
         }
         loadCommunities(currentPage);
     }, [currentPage, selectedCategory, selectedSort, currentUserId, selectedPeriod]);
-
-    useEffect(() => {
-        const fetchUserNames = async () => {
-            if (!pageResponse?.dtoList) return;
-
-            const userIds = new Set();
-            pageResponse.dtoList.forEach((comm) => {
-                if (comm.userId && !comm.isAnonymous) {
-                    userIds.add(comm.userId);
-                }
-            });
-
-            const newUserMap = {};
-            await Promise.all(
-                Array.from(userIds).map(async (uid) => {
-                    try {
-                        const userInfo = await getUserInfo(uid);
-                        newUserMap[uid] = userInfo.nickname || userInfo.name || uid;
-                    } catch (err) {
-                        newUserMap[uid] = uid;
-                        console.error(err);
-                    }
-                })
-            );
-            setUserMap(newUserMap);
-        };
-        fetchUserNames();
-    }, [pageResponse]);
 
     // 로딩 상태
     if (loading) {
