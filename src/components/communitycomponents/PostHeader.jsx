@@ -17,7 +17,7 @@ const PostHeader = ({ community, postProfile, getDisplayNickname, formatRelative
                     작성자: <span className="font-semibold">{getDisplayNickname(community)}</span>
                 </span>
                 <span>카테고리: <span className="font-semibold">{community.communityCategory}</span></span>
-                <span>작성일: <span className="font-medium">{formatRelativeTime(community.communityRegDate)}</span></span>
+                <span>작성일: <span className="font-medium">{formatRelativeTime(community.createdAt)}</span></span>
                 <span>조회수: <span className="font-medium">{community.communityViews}</span></span>
                 <span>추천: <span className="font-medium">{community.recommendedUsers?.length || 0}</span></span>
             </div>

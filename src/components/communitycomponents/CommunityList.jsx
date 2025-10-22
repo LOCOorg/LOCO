@@ -318,7 +318,7 @@ const CommunityList = () => {
                                             <span>
                                                 작성일{' '}
                                                 <span className="font-medium text-gray-700">
-                                                    {formatRelativeTime(community.communityRegDate)}
+                                                    {formatRelativeTime(community.createdAt)}
                                                 </span>
                                             </span>
                                             <span>
