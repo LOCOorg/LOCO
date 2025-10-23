@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import ChatOverlay from '../../components/chatcomponents/ChatOverlay.jsx';
 import useFriendChatStore from '../../stores/useFriendChatStore.js';
-import { getUserInfo } from '../../api/userAPI.js'; // getUserInfo import 추가
+import { getUserMinimal } from '../../api/userProfileLightAPI.js'; // 경량 API: 3개 필드만 (_id, nickname, profilePhoto)
 
 function GlobalFriendChatOverlay() {
     const { friendChats, closeFriendChat, swapFriendChat, hiddenRoomIds, toggleHideChat } = useFriendChatStore();
@@ -12,7 +12,7 @@ function GlobalFriendChatOverlay() {
     // 친구 정보를 가져오는 함수
     const fetchFriendInfo = async (friendId) => {
         try {
-            const friendInfo = await getUserInfo(friendId);
+            const friendInfo = await getUserMinimal(friendId);
             setFriendsInfo(prev => ({
                 ...prev,
                 [friendId]: friendInfo
