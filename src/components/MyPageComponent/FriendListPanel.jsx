@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { usePaginatedFriends } from '../../hooks/usePaginatedFriends';
 import useAuthStore from '../../stores/authStore';
-import { getUserInfo } from '../../api/userAPI.js';
+//import { getUserInfo } from '../../api/userAPI.js';
+import { getUserBasic } from '../../api/userLightAPI.js';  // ✅ 경량 API
 import ProfileButton from './ProfileButton';
 import CommonModal from '../../common/CommonModal.jsx';
 import { createFriendRoom, joinChatRoom, toggleFriendRoomActive, fetchChatRooms } from '../../api/chatAPI.js';
@@ -28,7 +29,7 @@ const FriendListPanel = () => {
         if (!authUser) return;
         (async () => {
             try {
-                const me = await getUserInfo(authUser._id);
+                const me = await getUserBasic(authUser._id);
                 setUser(me);
             } catch (e) {
                 console.error("유저 정보 로드 실패", e);
