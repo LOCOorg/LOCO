@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchCommunities, fetchTopViewed, fetchTopCommented } from '../../api/communityApi.js';
-import { getUserInfo } from '../../api/userAPI.js';
+import { getUserMinimal } from '../../api/userProfileLightAPI.js'; // 커뮤니티 목록: nickname만 필요
 import PageComponent from '../../common/pageComponent.jsx';
 import CommunityLayout from '../../layout/CommunityLayout/CommunityLayout.jsx';
 import LeftSidebar from '../../layout/CommunityLayout/LeftSidebar.jsx';
@@ -160,7 +160,7 @@ const CommunityList = () => {
             await Promise.all(
                 Array.from(userIds).map(async (uid) => {
                     try {
-                        const userInfo = await getUserInfo(uid);
+                        const userInfo = await getUserMinimal(uid);
                         newUserMap[uid] = userInfo.nickname || userInfo.name || uid;
                     } catch (err) {
                         newUserMap[uid] = uid;
