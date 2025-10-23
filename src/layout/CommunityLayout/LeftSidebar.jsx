@@ -1,17 +1,5 @@
-import useAuthStore from '../../stores/authStore.js';
-import ProfileButton from "../../components/MyPageComponent/ProfileButton.jsx";
-
 // eslint-disable-next-line react/prop-types
 const LeftSidebar = ({ selectedCategory, handleCategoryClick }) => {
-    // 현재 사용자 정보 (authStore에 저장되어 있다고 가정)
-    const currentUser = useAuthStore((state) => state.user);
-    const userNickname = currentUser
-        ? currentUser.nickname || currentUser.name || currentUser.email || '사용자'
-        : '로그인 해주세요';
-
-    // 사용자 이니셜 (없을 땐 U)
-    const userInitial =
-        userNickname !== '로그인 해주세요' ? userNickname.charAt(0) : 'U';
 
     const categories = [
         '전체',
@@ -25,16 +13,6 @@ const LeftSidebar = ({ selectedCategory, handleCategoryClick }) => {
 
     return (
         <aside className="w-full lg:w-64 space-y-6 sticky top-20">
-            {/* User Card */}
-            <div className="flex items-center bg-white shadow-md rounded-lg p-4">
-                <ProfileButton/>
-                <div className="ml-3">
-                    <p className="text-lg font-semibold text-gray-800">
-                        {userNickname}님
-                    </p>
-                    <p className="text-sm text-gray-500">오늘도 좋은 하루 되세요 😊</p>
-                </div>
-            </div>
 
             {/* 내 활동 섹션 */}
             <div className="bg-white shadow-md rounded-lg p-4">

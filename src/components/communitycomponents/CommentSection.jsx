@@ -380,7 +380,7 @@ const CommentSection = ({
                                                 {isCommentDeleted ? "삭제된 사용자" : getDisplayNickname(comment)}
                                             </span>
                                             <span className="text-xs text-gray-500">
-                                                {formatRelativeTime(comment.commentRegDate)}
+                                                {formatRelativeTime(comment.createdAt)}
                                             </span>
 
                                             {/* 액션 버튼들 - 삭제된 댓글은 표시하지 않음 */}
@@ -475,7 +475,7 @@ const CommentSection = ({
                                                                         {isReplyDeleted ? "삭제된 사용자" : getDisplayNickname(reply)}
                                                                     </span>
                                                                     <span className="ml-2 text-gray-400">
-                                                                        {formatRelativeTime(reply.commentRegDate)}
+                                                                        {formatRelativeTime(reply.createdAt)}
                                                                     </span>
 
                                                                     {/* 액션 버튼들 - 삭제된 대댓글은 표시하지 않음 */}
@@ -550,7 +550,7 @@ const CommentSection = ({
                                                                                         {getDisplayNickname(subReply)}
                                                                                     </span>
                                                                                     <span className="ml-2 text-gray-400">
-                                                                                        {formatRelativeTime(subReply.commentRegDate)}
+                                                                                        {formatRelativeTime(subReply.createdAt)}
                                                                                     </span>
                                                                                     {subReply.userId === currentUserId || isAdmin ? (
                                                                                         <button
