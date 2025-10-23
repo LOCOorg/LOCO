@@ -1,6 +1,6 @@
 // src/components/ui/myMenus.jsx
 import {useState, useEffect} from 'react';
-import {getUserInfo} from '../../api/userAPI.js';
+import { getUserMinimal } from '../../api/userProfileLightAPI.js'; // 아바타용 경량 API: profilePhoto만 필요
 import useAuthStore from '../../stores/authStore.js';
 import { FiUser } from 'react-icons/fi';
 
@@ -29,7 +29,7 @@ export default function MyMenus({
         if (!id) return;
 
         let cancelled = false;
-        getUserInfo(id)
+        getUserMinimal(id)
             .then(data => {
                 if (!cancelled) setProfile(data);
             })
