@@ -1,0 +1,59 @@
+프로필 버튼 api별도로 만들기
+
+userAPI 사용처
+
+getUserInfo             /api/user/${userId}
+
+updateUserProfile       /api/user/${userId}
+
+rateUser                /api/user/${userId}/rate
+
+getUserByNickname
+
+decrementChatCount
+
+sendFriendRequest
+
+acceptFriendRequest
+
+getFriendRequestList
+
+declineFriendRequest
+
+deleteFriend
+
+blockUser
+
+unblockUser
+
+getBlockedUsers
+
+getLeagueRecord
+
+getFriendsPage
+
+updateUserPrefs
+
+checkNickname
+
+checkChangeAvailability
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

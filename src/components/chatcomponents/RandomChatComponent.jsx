@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSocket } from "../../hooks/useSocket.js";
 import {
-    getUserInfo,
     getBlockedUsers,
-    unblockUser
+    unblockUserMinimal
 } from "../../api/userAPI";
+import { getUserChatStatus } from '../../api/userProfileLightAPI.js';
 import {
     createChatRoom,
     joinChatRoom,
@@ -159,7 +159,7 @@ const RandomChatComponent = () => {
     // 유저 정보 호출 함수
     const fetchUserInfoAsync = async (userId) => {
         try {
-            const data = await getUserInfo(userId);
+            const data = await getUserChatStatus(userId);
             setUserInfo(data);
             const blocked = await getBlockedUsers(userId);
             setBlockedUsersStore(blocked);
@@ -173,17 +173,23 @@ const RandomChatComponent = () => {
     }, [userId]);
 
     // 차단 해제
+
     const handleUnblock = async (blockedUserId) => {
         try {
-            await unblockUser(userId, blockedUserId);
+            // ✅ minimal API 사용
+            const response = await unblockUserMinimal(userId, blockedUserId);
+
+            // ✅ ID로 store에서 제거
             removeBlockedUser(blockedUserId);
+
+            // ✅ API 응답 메시지 사용
             setModalTitle("성공");
-            setModalMessage("차단이 해제되었습니다.");
+            setModalMessage(response.message || "차단이 해제되었습니다.");
             setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
             setModalOpen(true);
-        } catch {
+        } catch (error) {
             setModalTitle("에러");
-            setModalMessage("차단 해제에 실패했습니다.");
+            setModalMessage(error.response?.data?.message || "차단 해제에 실패했습니다.");
             setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
             setModalOpen(true);
         }

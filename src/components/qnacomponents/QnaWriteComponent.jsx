@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createQna } from '../../api/qnaAPI.js';
 import useAuthStore from '../../stores/authStore';
-import { getUserInfo } from '../../api/userAPI';
+// import { getUserInfo } from '../../api/userAPI';
 import CommonModal from '../../common/CommonModal.jsx';
 
 /**
@@ -20,18 +20,18 @@ function QnaWriteComponent() {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [userData, setUserData] = useState(null);
+    // const [userData, setUserData] = useState(null);
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
-    useEffect(() => {
-        if (user && user._id) {
-            getUserInfo(user._id)
-                .then((data) => setUserData(data))
-                .catch((err) => console.error(err));
-        }
-    }, [user]);
+    // useEffect(() => {
+    //     if (user && user._id) {
+    //         getUserInfo(user._id)
+    //             .then((data) => setUserData(data))
+    //             .catch((err) => console.error(err));
+    //     }
+    // }, [user]);
 
     const handleChange = (e) => {
         const { name, type, value, checked } = e.target;

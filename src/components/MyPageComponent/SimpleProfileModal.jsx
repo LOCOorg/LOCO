@@ -1,7 +1,7 @@
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useState, useEffect} from 'react';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
 import useAuthStore from '../../stores/authStore';
-import {sendFriendRequest, blockUser, deleteFriend, unblockUser} from "../../api/userAPI.js";
+import {sendFriendRequest, blockUserMinimal, deleteFriend, unblockUserMinimal } from "../../api/userAPI.js";
 import CommonModal from '../../common/CommonModal.jsx';
 import PhotoGallery from './PhotoGallery.jsx';
 import { useNavigate } from 'react-router-dom';
@@ -23,16 +23,37 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
     const [confirmBlockOpen, setConfirmBlockOpen] = useState(false);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [confirmUnblockOpen, setConfirmUnblockOpen] = useState(false);
+    const [localIsFriend, setLocalIsFriend] = useState(false);
+
     const addBlockedUser = useBlockedStore((s) => s.addBlockedUser);
     const removeBlockedUser = useBlockedStore((s) => s.removeBlockedUser);
     const setUser    = useAuthStore((s) => s.setUser);
 
     const friends = useFriendListStore((s) => s.friends);              // 추가
+
+
     const isFriend = useMemo(() => {
-        const byStore = friends.some(f => f._id === profile?._id);
-        const byAuth  = authUser?.friends?.includes(profile?._id);
-        return byStore || byAuth;
-    }, [friends, authUser?.friends, profile?._id]);
+        if (!profile?._id || !authUser?.friends) return false;
+
+        const profileIdStr = profile._id.toString();
+
+        // ✅ authUser.friends 배열에서 확인
+        const result = authUser.friends.some(id => {
+            if (!id) return false;
+            return id.toString() === profileIdStr;
+        });
+
+        console.log('🔍 [isFriend 계산]', {
+            profileId: profileIdStr,
+            profileNickname: profile.nickname,
+            result,
+            friendsCount: authUser.friends.length
+        });
+
+        return result;
+    }, [authUser?.friends, profile?._id, profile?.nickname]);
+
+
 
     const needAccept = !!requestId;
 
@@ -41,6 +62,51 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
     const navigate = useNavigate();
 
     const { closeFriendChat } = useFriendChatStore();
+
+// ✅✅✅ 여기에 디버깅 코드 추가! ✅✅✅
+    useEffect(() => {
+        if (!profile?._id) return;
+
+        console.log('=== 🔍 SimpleProfileModal 디버깅 ===');
+        console.log('프로필 대상:', profile.nickname, '(', profile._id, ')');
+        console.log('\n--- authUser.friends 확인 ---');
+        console.log('전체:', authUser?.friends);
+        console.log('포함 여부:', authUser?.friends?.includes(profile._id));
+        console.log('포함 여부 (toString):', authUser?.friends?.some(id => id?.toString() === profile._id?.toString()));
+
+        console.log('\n--- useFriendListStore.friends 확인 ---');
+        console.log('전체:', friends.map(f => ({ _id: f._id, nickname: f.nickname })));
+        console.log('포함 여부:', friends.some(f => f._id === profile._id));
+        console.log('포함 여부 (toString):', friends.some(f => f._id?.toString() === profile._id?.toString()));
+
+        console.log('\n--- 타입 확인 ---');
+        console.log('profile._id 타입:', typeof profile._id);
+        console.log('authUser.friends[0] 타입:', typeof authUser?.friends?.[0]);
+        console.log('friends[0]._id 타입:', typeof friends?.[0]?._id);
+
+        console.log('\n--- isFriend 계산 결과 ---');
+        const byStore = friends.some(f => f._id?.toString() === profile._id?.toString());
+        const byAuth = authUser?.friends?.some(id => id?.toString() === profile._id?.toString());
+        console.log('byStore:', byStore);
+        console.log('byAuth:', byAuth);
+        console.log('isFriend (최종):', byStore || byAuth);
+        console.log('=========================================\n');
+    }, [profile?._id, authUser?.friends, friends]);
+
+    // 초기값 설정
+    useEffect(() => {
+        if (!profile?._id || !authUser?.friends) {
+            setLocalIsFriend(false);
+            return;
+        }
+
+        const result = authUser.friends.some(
+            id => id?.toString() === profile._id.toString()
+        );
+        setLocalIsFriend(result);
+    }, [authUser?.friends, profile?._id]);
+
+
 
     if (!profile) return null;
 
@@ -90,11 +156,38 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
         }
     };
 
+    // Line 144-153: handleBlockUser 수정
     const handleBlockUser = async () => {
         try {
-            await blockUser(authUser._id, profile._id);
-            addBlockedUser(profile);
-            setAlertModalMessage("사용자를 차단했습니다.");
+            // ✅ minimal API 사용
+            const response = await blockUserMinimal(authUser._id, profile._id);
+
+            // ✅ 수정: API에서 받은 blockedUser 사용
+            addBlockedUser(response.blockedUser);
+
+            // ⭐ 핵심: 로컬 상태를 즉시 false로 설정
+            setLocalIsFriend(false);
+
+
+            // 3️⃣ authUser의 friends에서 제거 (중요!)
+            const updatedUser = {
+                ...authUser,
+                friends: authUser.friends.filter((id) => id !== profile._id)
+            };
+            setUser(updatedUser);
+
+            // 4️⃣ 친구 목록 store에서도 제거
+            useFriendListStore.getState().removeFriend(profile._id);
+
+            // 5️⃣ 열려있는 친구 채팅창 닫기
+            const friendChats = useFriendChatStore.getState().friendChats;
+            const targetChat = friendChats.find(c => c.friend._id === profile._id);
+            if (targetChat) {
+                await closeFriendChat(targetChat.roomId);
+            }
+
+            // ✅ API 응답 메시지 사용 (선택사항)
+            setAlertModalMessage(response.message || "사용자를 차단했습니다.");
         } catch (error) {
             setAlertModalMessage(error.response?.data?.message || error.message);
         }
@@ -102,11 +195,17 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
         onClose();
     };
 
+    // Line 155-164: handleUnblockUser 수정
     const handleUnblockUser = async () => {
         try {
-            await unblockUser(authUser._id, profile._id);
+            // ✅ minimal API 사용
+            const response = await unblockUserMinimal(authUser._id, profile._id);
+
+            // ✅ ID로 store에서 제거
             removeBlockedUser(profile._id);
-            setAlertModalMessage("차단이 해제되었습니다.");
+
+            // ✅ API 응답 메시지 사용
+            setAlertModalMessage(response.message || "차단이 해제되었습니다.");
         } catch (error) {
             setAlertModalMessage(error.response?.data?.message || error.message);
         } finally {

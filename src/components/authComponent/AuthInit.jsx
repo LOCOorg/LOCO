@@ -2,9 +2,11 @@
 
 import {useEffect, useRef} from 'react';
 import { fetchCurrentUser } from '../../api/authAPI.js';
+import { getUserFriendIds } from '../../api/userLightAPI.js';  // ✅ 추가
 import useAuthStore from '../../stores/authStore.js';
 import { useSocket } from '../../hooks/useSocket.js';
-
+import { getBlockedUsers } from '../../api/userAPI.js';  // ✅ 추가
+import useBlockedStore from '../../stores/useBlockedStore.js';  // ✅ 추가
 
 const AuthInit = () => {
     const triedOnce = useRef(false);
@@ -13,7 +15,7 @@ const AuthInit = () => {
     const logout = useAuthStore((s) => s.logout);
     const user = useAuthStore(s => s.user);  // 🔧 현재 사용자 정보
     const socket = useSocket();  // 🔧 소켓 인스턴스
-
+    const setBlockedUsers = useBlockedStore(s => s.setBlockedUsers);
 
 
 
@@ -30,10 +32,36 @@ const AuthInit = () => {
                 const { user } = await fetchCurrentUser();
                 setUser(user);
 
+                console.log('✅ [AuthInit] 인증 완료:', user._id);
                 // // 3) fetchCurrentUser()가 추가 새로운 액세스 토큰을  내려줄 경우, 스토어 갱신
                 // if (maybeNew) {
                 //     setAccessToken(maybeNew);
                 // }
+
+                getUserFriendIds(user._id)
+                    .then(({ friendIds }) => {
+                        // authStore에 friends 추가
+                        setUser({
+                            ...useAuthStore.getState().user,
+                            friends: friendIds
+                        });
+                        console.log(`✅ [AuthInit] 친구 ID 로드 완료: ${friendIds.length}명`);
+                    })
+                    .catch(err => {
+                        console.error('❌ [AuthInit] 친구 ID 로드 실패:', err);
+                    });
+
+                getBlockedUsers(user._id)
+                    .then((blockedList) => {
+                        setBlockedUsers(blockedList);
+                        console.log(`✅ [AuthInit] 차단 목록 로드 완료: ${blockedList.length}명`);
+                    })
+                    .catch(err => {
+                        console.error('❌ [AuthInit] 차단 목록 로드 실패:', err);
+                    });
+
+
+
             } catch (err) {
                 // 리프레시나 사용자 조회 단계에서 오류(401 등) 발생 시, 완전 로그아웃 상태로 전환
                 console.error('AuthInit 오류:', err);
