@@ -10,7 +10,7 @@ import {
     fetchTopCommented,
     cancelRecommendCommunity
 } from '../../api/communityApi.js';
-import { getUserInfo } from '../../api/userAPI.js';
+import { getUserMinimal } from '../../api/userProfileLightAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import useAuthStore from '../../stores/authStore.js';
 import CommunityLayout from "../../layout/CommunityLayout/CommunityLayout.jsx";
@@ -118,7 +118,7 @@ const CommunityDetail = () => {
     // 프로필 관련 Effects
     useEffect(() => {
         if (community?.userId && !community.isAnonymous) {
-            getUserInfo(community.userId)
+            getUserMinimal(community.userId)
                 .then((data) => setPostProfile(data))
                 .catch((error) => console.error("프로필 불러오기 실패", error));
         }
@@ -149,7 +149,7 @@ const CommunityDetail = () => {
                 Array.from(userIds).map(async (uid) => {
                     if (!newUserMap[uid]) {
                         try {
-                            const userInfo = await getUserInfo(uid);
+                            const userInfo = await getUserMinimal(uid);
                             newUserMap[uid] = userInfo.nickname || userInfo.name || uid;
                         } catch (error) {
                             newUserMap[uid] = uid;
