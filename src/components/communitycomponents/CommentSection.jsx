@@ -1,7 +1,7 @@
 // src/components/communitycomponents/CommentSection.jsx
 import { useState, useEffect } from 'react';
 import { addReply, addSubReply, deleteComment, deleteReply, deleteSubReply } from '../../api/communityApi.js';
-import { getUserInfo } from '../../api/userAPI.js';
+import { getUserMinimal } from '../../api/userProfileLightAPI.js'; // 댓글용 경량 API: nickname, profilePhoto만 필요
 import CommonModal from '../../common/CommonModal.jsx';
 import ProfileButton from '../MyPageComponent/ProfileButton.jsx';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
@@ -73,7 +73,7 @@ const CommentSection = ({
             await Promise.all(
                 Array.from(userIds).map(async (uid) => {
                     try {
-                        const userInfo = await getUserInfo(uid);
+                        const userInfo = await getUserMinimal(uid);
                         newProfileMap[uid] = userInfo;
                     } catch (error) {
                         console.error(error);
