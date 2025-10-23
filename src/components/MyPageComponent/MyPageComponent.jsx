@@ -1,10 +1,8 @@
 // src/components/MyPageComponent.jsx
 import {useEffect, useRef, useState} from 'react';
 import { Link } from 'react-router-dom';
-import {
-    getUserInfo,
-    updateUserProfile,
-} from "../../api/userAPI"; // declineFriendRequest 추가됨
+import { updateUserProfile } from "../../api/userAPI"; // declineFriendRequest 추가됨
+import { getUserForEdit } from '../../api/userProfileLightAPI.js';
 import {uploadFile} from "../../api/fileUploadAPI";
 import useAuthStore from '../../stores/authStore';
 import ProfilePhotoSection from './ProfilePhotoSection';
@@ -39,7 +37,7 @@ const MyPageContent = ({overrideProfile}) => {
                 photo: overrideProfile.photo || [],
             });
         } else if (authUser) {
-            getUserInfo(authUser._id)
+            getUserForEdit(authUser._id)
                 .then((data) => {
                     setProfile(data);
                     setFormData({
