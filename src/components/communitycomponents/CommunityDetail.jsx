@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     fetchCommunityById,
+    fetchCommentsByPostId,
     deleteCommunity,
     recommendCommunity,
     addComment,
@@ -45,6 +46,8 @@ const CommunityDetail = () => {
     const isAdmin = currentUser?.userLv >= 2;
     const API_HOST = import.meta.env.VITE_API_HOST;
 
+    const [comments, setComments] = useState([]);
+
     // 커뮤니티 관련 상태
     const [community, setCommunity] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -53,7 +56,7 @@ const CommunityDetail = () => {
 
     // 프로필 관련 상태
     const [postProfile, setPostProfile] = useState(null);
-    const [userMap, setUserMap] = useState({});
+
 
     // 모달 상태
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -77,7 +80,7 @@ const CommunityDetail = () => {
     // 닉네임 표시 함수
     const getDisplayNickname = (item) => {
         if (item.isAnonymous) return '익명';
-        return userMap[item.userId] || item.userId;
+        return item.userNickname || item.userId; // ✅ userNickname 사용
     };
 
     // 데이터 로딩 Effects
@@ -86,6 +89,8 @@ const CommunityDetail = () => {
             try {
                 const data = await fetchCommunityById(id);
                 setCommunity(data);
+                const commentsData = await fetchCommentsByPostId(id);
+                setComments(commentsData);
             } catch (err) {
                 setError('게시글을 불러오는 데 실패했습니다.');
                 console.log(err);
@@ -124,44 +129,7 @@ const CommunityDetail = () => {
         }
     }, [community]);
 
-    useEffect(() => {
-        const fetchUserNames = async () => {
-            if (!community) return;
 
-            const userIds = new Set();
-
-            if (community.userId && !community.isAnonymous) {
-                userIds.add(community.userId);
-            }
-
-            community.comments?.forEach((cmt) => {
-                if (cmt.userId && !cmt.isAnonymous) userIds.add(cmt.userId);
-                cmt.replies?.forEach((r) => {
-                    if (r.userId && !r.isAnonymous) userIds.add(r.userId);
-                    r.subReplies?.forEach((sr) => {
-                        if (sr.userId && !sr.isAnonymous) userIds.add(sr.userId);
-                    });
-                });
-            });
-
-            const newUserMap = { ...userMap };
-            await Promise.all(
-                Array.from(userIds).map(async (uid) => {
-                    if (!newUserMap[uid]) {
-                        try {
-                            const userInfo = await getUserInfo(uid);
-                            newUserMap[uid] = userInfo.nickname || userInfo.name || uid;
-                        } catch (err) {
-                            newUserMap[uid] = uid;
-                            console.error(err);
-                        }
-                    }
-                })
-            );
-            setUserMap(newUserMap);
-        };
-        fetchUserNames();
-    }, [community]);
 
     // 추천 관련 Effects
     useEffect(() => {
@@ -240,8 +208,8 @@ const CommunityDetail = () => {
             formData.append('isAnonymous', commentIsAnonymous);
             if (commentFile) formData.append('commentImage', commentFile);
 
-            const updated = await addComment(community._id, formData);
-            setCommunity(updated);
+            const newCommentData = await addComment(community._id, formData);
+            setComments([newCommentData, ...comments]);
             setNewComment('');
             setCommentFile(null);
             setCommentError('');
@@ -365,10 +333,11 @@ const CommunityDetail = () => {
                     {/* 댓글 섹션 - 별도 컴포넌트로 분리 */}
                     <CommentSection
                         community={community}
-                        setCommunity={setCommunity}
+                        comments={comments}
+                        setComments={setComments}
                         currentUserId={currentUserId}
                         isAdmin={isAdmin}
-                        userMap={userMap}
+                        setCommunity={setCommunity}
                         getDisplayNickname={getDisplayNickname}
                         formatRelativeTime={formatRelativeTime}
                         newComment={newComment}

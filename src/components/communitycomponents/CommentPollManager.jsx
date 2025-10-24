@@ -7,7 +7,7 @@ import { useCommentPoll } from '../../hooks/useCommentPoll.js';
 const CommentPollManager = ({
                                 comment,
                                 community,
-                                setCommunity,
+                                setComments,
                                 currentUserId,
                                 isAdmin
                             }) => {
@@ -21,7 +21,7 @@ const CommentPollManager = ({
         handleDeleteCommentPoll,
         handleRefreshCommentPollResults,
         canDeleteCommentPoll
-    } = useCommentPoll(community, currentUserId, isAdmin);
+    } = useCommentPoll(community, comment, setComments, currentUserId, isAdmin);
 
     // 댓글 투표 생성 권한 확인
     const canCreateCommentPoll = () => {
@@ -47,10 +47,10 @@ const CommentPollManager = ({
                     currentUserId={currentUserId}
                     hasVoted={commentUserVotes[`${comment._id}-${poll._id}`] !== undefined}
                     userVote={commentUserVotes[`${comment._id}-${poll._id}`]}
-                    onVote={(optionIndex) => handleCommentVote(comment._id, poll._id, optionIndex, setCommunity)}
-                    onRefreshResults={(pollId) => handleRefreshCommentPollResults(comment._id, pollId, setCommunity)}
-                    onCancelVote={() => handleCancelCommentVote(comment._id, poll._id, setCommunity)}
-                    onDeletePoll={() => handleDeleteCommentPoll(comment._id, poll._id, setCommunity)}
+                    onVote={(optionIndex) => handleCommentVote(poll._id, optionIndex)}
+                    onRefreshResults={() => handleRefreshCommentPollResults(poll._id)}
+                    onCancelVote={() => handleCancelCommentVote(poll._id)}
+                    onDeletePoll={() => handleDeleteCommentPoll(poll._id)}
                     canDeletePoll={canDeleteCommentPoll(comment, poll)}
                 />
             ))}
@@ -78,7 +78,7 @@ const CommentPollManager = ({
                     ...prev,
                     [comment._id]: false
                 }))}
-                onCreatePoll={(pollData) => handleCreateCommentPoll(comment._id, pollData, setCommunity)}
+                onCreatePoll={(pollData) => handleCreateCommentPoll(pollData)}
             />
         </div>
     );
