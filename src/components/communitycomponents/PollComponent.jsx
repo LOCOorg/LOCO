@@ -44,7 +44,7 @@ const PollComponent = ({
                 let results;
                 if (commentId) {
                     // 댓글 투표인 경우
-                    results = await getCommentPollResults(communityId, commentId, poll._id);
+                    results = await getCommentPollResults(commentId, poll._id);
                 } else {
                     // 게시글 투표인 경우
                     results = await getPollResults(communityId, poll._id);
@@ -103,7 +103,7 @@ const PollComponent = ({
             // 결과 새로고침 시에도 구분 처리
             let results;
             if (commentId) {
-                results = await getCommentPollResults(communityId, commentId, poll._id);
+                results = await getCommentPollResults(commentId, poll._id);
             } else {
                 results = await getPollResults(communityId, poll._id);
             }
@@ -138,7 +138,7 @@ const PollComponent = ({
             // 투표 결과 다시 로딩 (댓글/게시글 구분)
             let results;
             if (commentId) {
-                results = await getCommentPollResults(communityId, commentId, poll._id);
+                results = await getCommentPollResults(commentId, poll._id);
             } else {
                 results = await getPollResults(communityId, poll._id);
             }
