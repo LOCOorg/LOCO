@@ -3,7 +3,8 @@ import {useSocket} from "../../hooks/useSocket.js";
 import {fetchMessages, deleteMessage, leaveChatRoom, getChatRoomInfo} from "../../api/chatAPI.js";
 import PropTypes from "prop-types";
 import {useNavigate} from "react-router-dom";
-import {decrementChatCount, getUserInfo, rateUser, getLeagueRecord} from "../../api/userAPI.js";
+import {decrementChatCount,  rateUser, getLeagueRecord} from "../../api/userAPI.js";
+import { getUserNickname, getUserBasic , getUserRiotInfo  } from "../../api/userLightAPI.js";  // ✅ 경량 API
 import CommonModal from "../../common/CommonModal.jsx";
 import ProfileButton from "../../components/MyPageComponent/ProfileButton.jsx";
 import LeagueRecordSection from "./LeagueRecordSection.jsx";
@@ -58,7 +59,7 @@ const ChatRoom = ({roomId, userId}) => {
 
     const getUserName = async () => {
         try {
-            const response = await getUserInfo(userId);
+            const response = await getUserNickname(userId);
             if (response && response.nickname) {
                 setUserName(response.nickname);
             } else {
@@ -75,7 +76,7 @@ const ChatRoom = ({roomId, userId}) => {
 
         if (typeof message.sender === "string") {
             try {
-                const user = await getUserInfo(message.sender);
+                const user = await getUserBasic(message.sender);
                 if (user && user.nickname) {
                     message.sender = {_id: message.sender, ...user};
                 } else {
@@ -289,7 +290,7 @@ const ChatRoom = ({roomId, userId}) => {
                     const participantsWithNames = await Promise.all(
                         activeUsers.map(async u => {
                             const id = typeof u === "object" ? u._id : u;
-                            const userInfo = await getUserInfo(id);
+                            const userInfo = await getUserBasic(id);
                             return { _id: id, nickname: userInfo.nickname || "알 수 없음" };
                         })
                     );
@@ -342,9 +343,11 @@ const ChatRoom = ({roomId, userId}) => {
             otherIds.map(async participantId => {
                 try {
 
-                    const userInfo = await getUserInfo(participantId);
+                    // const userInfo = await getUserInfo(participantId);
 
-                    const { riotGameName, riotTagLine } = userInfo;
+                    // const { riotGameName, riotTagLine } = userInfo;
+
+                    const { riotGameName, riotTagLine } = await getUserRiotInfo(participantId);
 
                     if (!riotGameName || !riotTagLine) {
                         throw new Error("Riot ID 정보가 없습니다.");
@@ -352,7 +355,7 @@ const ChatRoom = ({roomId, userId}) => {
 
                     const leagueRecord = await getLeagueRecord(riotGameName, riotTagLine);
 
-                    return { participantId, userInfo, leagueRecord, error: null };
+                    return { participantId,  leagueRecord, error: null };
                 } catch (err) {
                     console.error('전적 조회 오류:', err);
                     return { participantId, userInfo: null, leagueRecord: null, error: err.message };

@@ -4,7 +4,7 @@ import instance from "./axiosInstance.js"; // axios 모듈 import
 
 
 
-// 유저 정보 조회 API 함수
+// 유저 정보 조회 API 함수(사용 안함)
 export const getUserInfo = async (userId) => {
     try {
         const response = await instance.get(`/api/user/${userId}`); // API 호출
@@ -15,6 +15,7 @@ export const getUserInfo = async (userId) => {
     }
 };
 
+//====================================================================================================================
 
 // 유저 프로필 업데이트 API 함수 (PATCH 요청)
 // 전체 저장 방식으로, 수정된 모든 필드를 한 번에 전송합니다.
@@ -76,6 +77,8 @@ export const getUserByNickname = async (nickname) => {
     }
 };
 
+//===================================================================================================================
+
 export const decrementChatCount = async (userId) => {
     try {
         const response = await instance.post(
@@ -94,6 +97,8 @@ export const decrementChatCount = async (userId) => {
     }
 };
 
+//===================================================================================================================
+
 // 친구 요청 보내기 API 함수
 export const sendFriendRequest = async (senderId, receiverId) => {
     try {
@@ -104,6 +109,7 @@ export const sendFriendRequest = async (senderId, receiverId) => {
         throw new Error(error.response?.data.message || error.message);
     }
 };
+//===================================================================================================================
 
 // 친구 요청 수락 API 함수
 export const acceptFriendRequest = async (userId, requestId) => {
@@ -116,6 +122,8 @@ export const acceptFriendRequest = async (userId, requestId) => {
     }
 };
 
+//===================================================================================================================
+
 // 친구 요청 목록 조회 API 함수
 export const getFriendRequestList = async (userId) => {
     try {
@@ -127,6 +135,8 @@ export const getFriendRequestList = async (userId) => {
     }
 };
 
+//===================================================================================================================
+
 // 친구 요청 거절 API 함수
 export const declineFriendRequest = async (userId, requestId) => {
     try {
@@ -136,6 +146,9 @@ export const declineFriendRequest = async (userId, requestId) => {
         throw new Error(error.response?.data.message || error.message);
     }
 };
+
+//===================================================================================================================
+
 
 // 친구 삭제 요청 API
 export const deleteFriend = async (userId, friendId) => {
@@ -147,35 +160,32 @@ export const deleteFriend = async (userId, friendId) => {
     }
 };
 
+//===================================================================================================================
+
+
 /**
- * 사용자 차단
- * POST /api/user/:userId/block/:targetUserId
+ * 사용자 차단 (최소 응답)
+ * @returns {Promise<{success: boolean, message: string}>}
  */
-export const blockUser = async (userId, targetUserId) => {
-    try {
-        const response = await instance.post(
-            `/api/user/${userId}/block/${targetUserId}`
-        );
-        return response.data;
-    } catch (error) {
-        throw new Error(error.response?.data.message || error.message);
-    }
+export const blockUserMinimal = async (userId, targetUserId) => {
+    const response = await instance.post(
+        `/api/user/${userId}/block/${targetUserId}/minimal`
+    );
+    return response.data;
 };
 
 /**
- * 차단 해제
- * DELETE /api/user/:userId/block/:targetUserId
+ * 차단 해제 (최소 응답)
+ * @returns {Promise<{success: boolean, message: string}>}
  */
-export const unblockUser = async (userId, targetUserId) => {
-    try {
-        const response = await instance.delete(
-            `/api/user/${userId}/block/${targetUserId}`
-        );
-        return response.data;
-    } catch (error) {
-        throw new Error(error.response?.data.message || error.message);
-    }
+export const unblockUserMinimal = async (userId, targetUserId) => {
+    const response = await instance.delete(
+        `/api/user/${userId}/block/${targetUserId}/minimal`
+    );
+    return response.data;
 };
+
+//===================================================================================================================
 
 /**
  * 차단 목록 조회
