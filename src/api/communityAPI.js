@@ -36,9 +36,9 @@ export const fetchCommunityById = async (id) => {
     }
 };
 
-export const fetchCommentsByPostId = async (postId) => {
+export const fetchCommentsByPostId = async (postId, page = 1, size = 20) => {
     try {
-        const response = await instance.get(`/api/communities/${postId}/comments`);
+        const response = await instance.get(`/api/communities/${postId}/comments?page=${page}&size=${size}`);
         return response.data;
     } catch (error) {
         console.error("fetchCommentsByPostId error:", error);
