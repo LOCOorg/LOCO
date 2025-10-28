@@ -10,7 +10,6 @@ import {
     fetchTopCommented,
     cancelRecommendCommunity
 } from '../../api/communityApi.js';
-import { getUserInfo } from '../../api/userAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import useAuthStore from '../../stores/authStore.js';
 import CommunityLayout from "../../layout/CommunityLayout/CommunityLayout.jsx";
@@ -91,7 +90,8 @@ const CommunityDetail = () => {
             try {
                 const data = await fetchCommunityById(id);
                 setCommunity(data);
-                const commentsData = await fetchCommentsByPostId(id, 1, 10); // Fetch first page
+                const commentsData = await fetchCommentsByPostId(id, 1, 20); // Fetch first page
+                console.log('Initial comments data:', commentsData);
                 setComments(commentsData.comments);
                 setHasMoreComments(commentsData.currentPage < commentsData.totalPages);
             } catch (err) {
@@ -123,16 +123,6 @@ const CommunityDetail = () => {
         fetchGlobalTop();
     }, []);
 
-    // 프로필 관련 Effects
-    useEffect(() => {
-        if (community?.userId && !community.isAnonymous) {
-            getUserInfo(community.userId)
-                .then((data) => setPostProfile(data))
-                .catch((error) => console.error("프로필 불러오기 실패", error));
-        }
-    }, [community]);
-
-
 
     // 추천 관련 Effects
     useEffect(() => {
@@ -156,6 +146,7 @@ const CommunityDetail = () => {
         const nextPage = commentsPage + 1;
         try {
             const newCommentsData = await fetchCommentsByPostId(id, nextPage, 20);
+            console.log('More comments data:', newCommentsData);
             setComments(prevComments => [...prevComments, ...newCommentsData.comments]);
             setCommentsPage(nextPage);
             setHasMoreComments(newCommentsData.currentPage < newCommentsData.totalPages);
