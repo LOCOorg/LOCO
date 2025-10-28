@@ -22,6 +22,8 @@ const CommentSection = ({
                             commentIsAnonymous,
                             setCommentIsAnonymous,
                             onAddComment,
+                            loadMoreComments,
+                            hasMoreComments,
                         }) => {
     // 댓글 관련 상태
     const [replyState, setReplyState] = useState({});
@@ -437,6 +439,16 @@ const CommentSection = ({
                     </ul>
                 ) : (
                     <p className="text-gray-500 text-sm">댓글이 없습니다.</p>
+                )}
+                {hasMoreComments && (
+                    <div className="text-center mt-4">
+                        <button
+                            onClick={loadMoreComments}
+                            className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
+                        >
+                            더보기
+                        </button>
+                    </div>
                 )}
             </div>
 

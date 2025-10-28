@@ -47,6 +47,8 @@ const CommunityDetail = () => {
     const API_HOST = import.meta.env.VITE_API_HOST;
 
     const [comments, setComments] = useState([]);
+    const [commentsPage, setCommentsPage] = useState(1);
+    const [hasMoreComments, setHasMoreComments] = useState(false);
 
     // 커뮤니티 관련 상태
     const [community, setCommunity] = useState(null);
@@ -89,8 +91,9 @@ const CommunityDetail = () => {
             try {
                 const data = await fetchCommunityById(id);
                 setCommunity(data);
-                const commentsData = await fetchCommentsByPostId(id);
-                setComments(commentsData);
+                const commentsData = await fetchCommentsByPostId(id, 1, 10); // Fetch first page
+                setComments(commentsData.comments);
+                setHasMoreComments(commentsData.currentPage < commentsData.totalPages);
             } catch (err) {
                 setError('게시글을 불러오는 데 실패했습니다.');
                 console.log(err);
@@ -148,6 +151,18 @@ const CommunityDetail = () => {
             setTimeout(() => el.classList.remove('highlight'), 3000);
         }
     }, [hash, community]);
+
+    const loadMoreComments = async () => {
+        const nextPage = commentsPage + 1;
+        try {
+            const newCommentsData = await fetchCommentsByPostId(id, nextPage, 20);
+            setComments(prevComments => [...prevComments, ...newCommentsData.comments]);
+            setCommentsPage(nextPage);
+            setHasMoreComments(newCommentsData.currentPage < newCommentsData.totalPages);
+        } catch (error) {
+            console.error('Failed to load more comments:', error);
+        }
+    };
 
     // 추천 관련 함수
     const handleToggleRecommend = async () => {
@@ -349,6 +364,8 @@ const CommunityDetail = () => {
                         commentIsAnonymous={commentIsAnonymous}
                         setCommentIsAnonymous={setCommentIsAnonymous}
                         onAddComment={handleAddComment}
+                        loadMoreComments={loadMoreComments}
+                        hasMoreComments={hasMoreComments}
                     />
 
                     {/* 목록으로 버튼 */}
