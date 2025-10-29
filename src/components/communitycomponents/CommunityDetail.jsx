@@ -91,7 +91,6 @@ const CommunityDetail = () => {
                 const data = await fetchCommunityById(id);
                 setCommunity(data);
                 const commentsData = await fetchCommentsByPostId(id, 1, 20); // Fetch first page
-                console.log('Initial comments data:', commentsData);
                 setComments(commentsData.comments);
                 setHasMoreComments(commentsData.currentPage < commentsData.totalPages);
             } catch (err) {
@@ -146,7 +145,6 @@ const CommunityDetail = () => {
         const nextPage = commentsPage + 1;
         try {
             const newCommentsData = await fetchCommentsByPostId(id, nextPage, 20);
-            console.log('More comments data:', newCommentsData);
             setComments(prevComments => [...prevComments, ...newCommentsData.comments]);
             setCommentsPage(nextPage);
             setHasMoreComments(newCommentsData.currentPage < newCommentsData.totalPages);

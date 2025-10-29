@@ -36,6 +36,16 @@ export const fetchCommunityById = async (id) => {
     }
 };
 
+export const fetchCommunityForEdit = async (id) => {
+    try {
+        const response = await instance.get(`/api/communities/${id}/edit`);
+        return response.data;
+    } catch (error) {
+        console.error("fetchCommunityForEdit error:", error);
+        throw error;
+    }
+};
+
 export const fetchCommentsByPostId = async (postId, page = 1, size = 20) => {
     try {
         const response = await instance.get(`/api/communities/${postId}/comments?page=${page}&size=${size}`);
@@ -241,31 +251,6 @@ export const votePoll = async (postId, pollId, userId, optionIndex) => {
     }
 };
 
-export const getPollResults = async (postId, pollId) => {
-    try {
-        const response = await instance.get(
-            `/api/communities/${postId}/polls/${pollId}/results`
-        );
-        return response.data;
-    } catch (error) {
-        console.error('투표 결과 조회 실패:', error);
-        throw error;
-    }
-};
-
-export const getUserVoteStatus = async (postId, pollId, userId) => {
-    try {
-        const response = await instance.get(
-            `/api/communities/${postId}/polls/${pollId}/status`,
-            { params: { userId } }
-        );
-        return response.data;
-    } catch (error) {
-        console.error('투표 상태 조회 실패:', error);
-        throw error;
-    }
-};
-
 export const cancelVote = async (communityId, pollId, userId) => {
     try {
         const response = await instance.post(
@@ -291,7 +276,7 @@ export const deletePoll = async (communityId, pollId, userId) => {
         throw error;
     }
 };
-
+//-----------------최적화 중------------------------//
 // 🔍 댓글 투표 생성
 export const createCommentPoll = async (commentId, pollData) => {
     try {
