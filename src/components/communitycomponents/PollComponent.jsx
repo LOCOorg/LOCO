@@ -15,6 +15,11 @@ const PollComponent = ({
                            canDeletePoll = false, // 삭제 권한 여부
                        }) => {
     const [selectedOption, setSelectedOption] = useState(userVote);
+
+    // Update selectedOption when userVote prop changes
+    useEffect(() => {
+        setSelectedOption(userVote);
+    }, [userVote]);
     const [isVoting, setIsVoting] = useState(false);
     const [isExpired, setIsExpired] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);     // 삭제 모달
