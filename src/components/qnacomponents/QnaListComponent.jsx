@@ -244,7 +244,7 @@ function QnaListComponent() {
                             <p className="text-gray-600 leading-relaxed mb-6">
                                 {hide ? <i>비공개</i> : qna.qnaContents.substring(0, 100) + '…'}
                             </p>
-                            <p className="text-sm text-gray-500 mb-4">작성일: {toKST(qna.qnaRegdate)}</p>
+                            <p className="text-sm text-gray-500 mb-4">작성일: {toKST(qna.createdAt)}</p>
                             <div className="flex justify-between items-center text-sm">
                                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
                                         {qna.qnaStatus}
@@ -328,7 +328,7 @@ function QnaListComponent() {
                             <p className="text-gray-600 leading-relaxed mb-6">
                                 {hide ? <i>비공개</i> : qna.qnaContents.substring(0, 100) + '…'}
                             </p>
-                            <p className="text-sm text-gray-500 mb-4">작성일: {toKST(qna.qnaRegdate)}</p>
+                            <p className="text-sm text-gray-500 mb-4">작성일: {toKST(qna.createdAt)}</p>
                             <p className="text-sm text-gray-500 mb-4">답변일: {toKST(qna.updatedAt)}</p>
                             <div className="flex justify-between items-center text-sm">
                                       <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full">
