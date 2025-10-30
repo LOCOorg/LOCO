@@ -1,6 +1,6 @@
 import ProfileButton from '../MyPageComponent/ProfileButton.jsx';
 
-const PostHeader = ({ community, postProfile, getDisplayNickname, formatRelativeTime }) => {
+const PostHeader = ({ community, getDisplayNickname, formatRelativeTime }) => {
     if (!community) return null;
 
     return (
@@ -8,9 +8,9 @@ const PostHeader = ({ community, postProfile, getDisplayNickname, formatRelative
             <h1 className="text-3xl font-bold mb-2">{community.communityTitle}</h1>
             <div className="text-sm text-gray-600 space-x-2 flex flex-wrap items-center">
                 <span>
-                    {!community.isAnonymous && postProfile && (
+                    {!community.isAnonymous && community.userId && (
                         <ProfileButton
-                            profile={postProfile}
+                            profile={{ _id: community.userId }}
                             area="프로필"
                         />
                     )}

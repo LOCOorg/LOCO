@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     fetchCommunityById,
+    fetchCommentsByPostId,
     deleteCommunity,
     recommendCommunity,
     addComment,
@@ -9,7 +10,6 @@ import {
     fetchTopCommented,
     cancelRecommendCommunity
 } from '../../api/communityApi.js';
-import { getUserMinimal } from '../../api/userProfileLightAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import useAuthStore from '../../stores/authStore.js';
 import CommunityLayout from "../../layout/CommunityLayout/CommunityLayout.jsx";
@@ -45,6 +45,10 @@ const CommunityDetail = () => {
     const isAdmin = currentUser?.userLv >= 2;
     const API_HOST = import.meta.env.VITE_API_HOST;
 
+    const [comments, setComments] = useState([]);
+    const [commentsPage, setCommentsPage] = useState(1);
+    const [hasMoreComments, setHasMoreComments] = useState(false);
+
     // 커뮤니티 관련 상태
     const [community, setCommunity] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -53,7 +57,7 @@ const CommunityDetail = () => {
 
     // 프로필 관련 상태
     const [postProfile, setPostProfile] = useState(null);
-    const [userMap, setUserMap] = useState({});
+
 
     // 모달 상태
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -77,7 +81,7 @@ const CommunityDetail = () => {
     // 닉네임 표시 함수
     const getDisplayNickname = (item) => {
         if (item.isAnonymous) return '익명';
-        return userMap[item.userId] || item.userId;
+        return item.userNickname || item.userId; // ✅ userNickname 사용
     };
 
     // 데이터 로딩 Effects
@@ -86,6 +90,9 @@ const CommunityDetail = () => {
             try {
                 const data = await fetchCommunityById(id);
                 setCommunity(data);
+                const commentsData = await fetchCommentsByPostId(id, 1, 20); // Fetch first page
+                setComments(commentsData.comments);
+                setHasMoreComments(commentsData.currentPage < commentsData.totalPages);
             } catch (err) {
                 setError('게시글을 불러오는 데 실패했습니다.');
                 console.log(err);
@@ -115,53 +122,6 @@ const CommunityDetail = () => {
         fetchGlobalTop();
     }, []);
 
-    // 프로필 관련 Effects
-    useEffect(() => {
-        if (community?.userId && !community.isAnonymous) {
-            getUserMinimal(community.userId)
-                .then((data) => setPostProfile(data))
-                .catch((error) => console.error("프로필 불러오기 실패", error));
-        }
-    }, [community]);
-
-    useEffect(() => {
-        const fetchUserNames = async () => {
-            if (!community) return;
-
-            const userIds = new Set();
-
-            if (community.userId && !community.isAnonymous) {
-                userIds.add(community.userId);
-            }
-
-            community.comments?.forEach((cmt) => {
-                if (cmt.userId && !cmt.isAnonymous) userIds.add(cmt.userId);
-                cmt.replies?.forEach((r) => {
-                    if (r.userId && !r.isAnonymous) userIds.add(r.userId);
-                    r.subReplies?.forEach((sr) => {
-                        if (sr.userId && !sr.isAnonymous) userIds.add(sr.userId);
-                    });
-                });
-            });
-
-            const newUserMap = { ...userMap };
-            await Promise.all(
-                Array.from(userIds).map(async (uid) => {
-                    if (!newUserMap[uid]) {
-                        try {
-                            const userInfo = await getUserMinimal(uid);
-                            newUserMap[uid] = userInfo.nickname || userInfo.name || uid;
-                        } catch (err) {
-                            newUserMap[uid] = uid;
-                            console.error(err);
-                        }
-                    }
-                })
-            );
-            setUserMap(newUserMap);
-        };
-        fetchUserNames();
-    }, [community]);
 
     // 추천 관련 Effects
     useEffect(() => {
@@ -180,6 +140,18 @@ const CommunityDetail = () => {
             setTimeout(() => el.classList.remove('highlight'), 3000);
         }
     }, [hash, community]);
+
+    const loadMoreComments = async () => {
+        const nextPage = commentsPage + 1;
+        try {
+            const newCommentsData = await fetchCommentsByPostId(id, nextPage, 20);
+            setComments(prevComments => [...prevComments, ...newCommentsData.comments]);
+            setCommentsPage(nextPage);
+            setHasMoreComments(newCommentsData.currentPage < newCommentsData.totalPages);
+        } catch (error) {
+            console.error('Failed to load more comments:', error);
+        }
+    };
 
     // 추천 관련 함수
     const handleToggleRecommend = async () => {
@@ -240,8 +212,8 @@ const CommunityDetail = () => {
             formData.append('isAnonymous', commentIsAnonymous);
             if (commentFile) formData.append('commentImage', commentFile);
 
-            const updated = await addComment(community._id, formData);
-            setCommunity(updated);
+            const newCommentData = await addComment(community._id, formData);
+            setComments([newCommentData, ...comments]);
             setNewComment('');
             setCommentFile(null);
             setCommentError('');
@@ -365,10 +337,11 @@ const CommunityDetail = () => {
                     {/* 댓글 섹션 - 별도 컴포넌트로 분리 */}
                     <CommentSection
                         community={community}
-                        setCommunity={setCommunity}
+                        comments={comments}
+                        setComments={setComments}
                         currentUserId={currentUserId}
                         isAdmin={isAdmin}
-                        userMap={userMap}
+                        setCommunity={setCommunity}
                         getDisplayNickname={getDisplayNickname}
                         formatRelativeTime={formatRelativeTime}
                         newComment={newComment}
@@ -380,6 +353,8 @@ const CommunityDetail = () => {
                         commentIsAnonymous={commentIsAnonymous}
                         setCommentIsAnonymous={setCommentIsAnonymous}
                         onAddComment={handleAddComment}
+                        loadMoreComments={loadMoreComments}
+                        hasMoreComments={hasMoreComments}
                     />
 
                     {/* 목록으로 버튼 */}

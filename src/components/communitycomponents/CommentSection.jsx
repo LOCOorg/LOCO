@@ -1,18 +1,17 @@
 // src/components/communitycomponents/CommentSection.jsx
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { addReply, addSubReply, deleteComment, deleteReply, deleteSubReply } from '../../api/communityApi.js';
-import { getUserMinimal } from '../../api/userProfileLightAPI.js'; // 댓글용 경량 API: nickname, profilePhoto만 필요
 import CommonModal from '../../common/CommonModal.jsx';
-import ProfileButton from '../MyPageComponent/ProfileButton.jsx';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
-import CommentPollManager from "./CommentPollManager.jsx";
+import Comment from './Comment.jsx';
 
 const CommentSection = ({
                             community,
+                            comments,
+                            setComments,
                             setCommunity,
                             currentUserId,
                             isAdmin,
-                            userMap,
                             getDisplayNickname,
                             formatRelativeTime,
                             newComment,
@@ -20,17 +19,17 @@ const CommentSection = ({
                             commentFile,
                             setCommentFile,
                             commentError,
-                            setCommentError,
                             commentIsAnonymous,
                             setCommentIsAnonymous,
-                            onAddComment
+                            onAddComment,
+                            loadMoreComments,
+                            hasMoreComments,
                         }) => {
     // 댓글 관련 상태
     const [replyState, setReplyState] = useState({});
     const [subReplyState, setSubReplyState] = useState({});
     const [replyIsAnonymous, setReplyIsAnonymous] = useState({});
     const [subReplyIsAnonymous, setSubReplyIsAnonymous] = useState({});
-    const [profileMap, setProfileMap] = useState({});
 
     // 삭제 모달 상태
     const [commentDeleteModalOpen, setCommentDeleteModalOpen] = useState(false);
@@ -46,61 +45,26 @@ const CommentSection = ({
 
     const API_HOST = import.meta.env.VITE_API_HOST;
 
-    // 프로필 정보 로드
-    useEffect(() => {
-        const fetchUserProfiles = async () => {
-            if (!community) return;
-
-            const userIds = new Set();
-
-            community.comments?.forEach((comment) => {
-                if (comment.userId && !comment.isAnonymous) {
-                    userIds.add(comment.userId);
-                }
-                comment.replies?.forEach((reply) => {
-                    if (reply.userId && !reply.isAnonymous) {
-                        userIds.add(reply.userId);
-                    }
-                    reply.subReplies?.forEach((subReply) => {
-                        if (subReply.userId && !subReply.isAnonymous) {
-                            userIds.add(subReply.userId);
-                        }
-                    });
-                });
-            });
-
-            const newProfileMap = {};
-            await Promise.all(
-                Array.from(userIds).map(async (uid) => {
-                    try {
-                        const userInfo = await getUserMinimal(uid);
-                        newProfileMap[uid] = userInfo;
-                    } catch (error) {
-                        console.error(error);
-                    }
-                })
-            );
-            setProfileMap(newProfileMap);
-        };
-        fetchUserProfiles();
-    }, [community]);
 
     // 총 댓글 수 계산
     const getTotalCommentCount = () => {
-        if (!community?.comments) return 0;
+        if (!comments) return 0;
 
         let totalCount = 0;
-        community.comments.forEach((comment) => {
+        comments.forEach((comment) => {
             const hasActiveReplies = comment.replies?.some(reply =>
                 !reply.isDeleted || (reply.subReplies?.some(sub => !sub.isDeleted))
             );
 
             if (!comment.isDeleted || hasActiveReplies) {
                 if (!comment.isDeleted) totalCount++;
+
                 comment.replies?.forEach((reply) => {
                     const hasActiveSubReplies = reply.subReplies?.some(sub => !sub.isDeleted);
+
                     if (!reply.isDeleted || hasActiveSubReplies) {
                         if (!reply.isDeleted) totalCount++;
+
                         reply.subReplies?.forEach((subReply) => {
                             if (!subReply.isDeleted) totalCount++;
                         });
@@ -139,7 +103,7 @@ const CommentSection = ({
         }));
     };
 
-    const handleAddReply = async (commentId) => {
+    const handleAddReply = async (communityId, commentId) => {
         const state = replyState[commentId] || { text: '', file: null };
         const text = state.text.trim();
         if (!text) return;
@@ -151,15 +115,27 @@ const CommentSection = ({
             formData.append('isAnonymous', replyIsAnonymous[commentId] || false);
             if (state.file) formData.append('replyImage', state.file);
 
-            const updated = await addReply(community._id, commentId, formData);
-            setCommunity(updated);
+            const newReply = await addReply(communityId, commentId, formData);
+
+            setComments(comments.map(c => {
+                if (c._id === commentId) {
+                    // ✅ replies가 배열인지 확인하고 없으면 빈 배열 사용
+                    const existingReplies = Array.isArray(c.replies) ? c.replies : [];
+                    return { ...c, replies: [...existingReplies, newReply] };
+                }
+                return c;
+            }));
+
             setReplyState((prev) => ({
                 ...prev,
                 [commentId]: { open: false, text: '', file: null },
             }));
             setReplyIsAnonymous((prev) => ({ ...prev, [commentId]: false }));
+
+            // ✅ 댓글 수 증가
+            setCommunity({ ...community, commentCount: community.commentCount + 1 });
         } catch (err) {
-            console.log(err);
+            console.error('답글 추가 오류:', err);
         }
     };
 
@@ -175,7 +151,22 @@ const CommentSection = ({
         }));
     };
 
-    const handleAddSubReply = async (commentId, replyId) => {
+    const handleSubReplyTextChange = (replyId, text) => {
+        if (text.length > 1000) return;
+        setSubReplyState((prev) => ({
+            ...prev,
+            [replyId]: { ...prev[replyId], text },
+        }));
+    };
+
+    const handleSubReplyFileChange = (replyId, file) => {
+        setSubReplyState((prev) => ({
+            ...prev,
+            [replyId]: { ...prev[replyId], file },
+        }));
+    };
+
+    const handleAddSubReply = async (communityId, commentId, replyId) => {
         const state = subReplyState[replyId] || { text: '', file: null };
         const text = state.text.trim();
         if (!text) return;
@@ -187,71 +178,143 @@ const CommentSection = ({
             formData.append('isAnonymous', subReplyIsAnonymous[replyId] || false);
             if (state.file) formData.append('subReplyImage', state.file);
 
-            const updated = await addSubReply(community._id, commentId, replyId, formData);
-            setCommunity(updated);
+            const newSubReply = await addSubReply(communityId, commentId, replyId, formData);
+
+            setComments(comments.map(c => {
+                if (c._id === commentId) {
+                    // ✅ replies가 배열인지 확인
+                    const existingReplies = Array.isArray(c.replies) ? c.replies : [];
+                    const newReplies = existingReplies.map(r => {
+                        if (r._id === replyId) {
+                            // ✅ subReplies가 배열인지 확인하고 없으면 빈 배열 사용
+                            const existingSubReplies = Array.isArray(r.subReplies) ? r.subReplies : [];
+                            return { ...r, subReplies: [...existingSubReplies, newSubReply] };
+                        }
+                        return r;
+                    });
+                    return { ...c, replies: newReplies };
+                }
+                return c;
+            }));
+
             setSubReplyState((prev) => ({
                 ...prev,
                 [replyId]: { open: false, text: '', file: null },
             }));
             setSubReplyIsAnonymous((prev) => ({ ...prev, [replyId]: false }));
+
+            // ✅ 댓글 수 증가
+            setCommunity({ ...community, commentCount: community.commentCount + 1 });
         } catch (err) {
-            console.log(err);
+            console.error('대댓글 추가 오류:', err);
         }
     };
 
     // 삭제 관련 함수들
-    const openCommentDeleteModal = (commentId) => {
-        setCommentToDelete(commentId);
+    const openCommentDeleteModal = (communityId, commentId) => {
+        setCommentToDelete({ communityId, commentId });
         setCommentDeleteModalOpen(true);
     };
 
+// ✅ 댓글 삭제
     const confirmDeleteComment = async () => {
         try {
-            const updated = await deleteComment(community._id, commentToDelete);
-            setCommunity(updated);
+            await deleteComment(commentToDelete.communityId, commentToDelete.commentId);
+
+            // 프론트에서 isDeleted만 설정 (하위 항목 유지)
+            setComments(comments.map(c =>
+                c._id === commentToDelete.commentId
+                    ? { ...c, isDeleted: true }
+                    : c
+            ));
+
+            setCommunity({ ...community, commentCount: community.commentCount - 1 });
             setCommentDeleteModalOpen(false);
             setCommentToDelete(null);
         } catch (err) {
-            console.log(err);
+            console.error('댓글 삭제 오류:', err);
             setCommentDeleteModalOpen(false);
         }
     };
 
-    const openReplyDeleteModal = (commentId, replyId) => {
-        setReplyToDelete({ commentId, replyId });
+    const openReplyDeleteModal = (communityId, commentId, replyId) => {
+        setReplyToDelete({ communityId, commentId, replyId });
         setReplyDeleteModalOpen(true);
     };
 
+// ✅ 답글 삭제
     const confirmDeleteReply = async () => {
         try {
-            const updated = await deleteReply(community._id, replyToDelete.commentId, replyToDelete.replyId);
-            setCommunity(updated);
+            await deleteReply(
+                replyToDelete.communityId,
+                replyToDelete.commentId,
+                replyToDelete.replyId
+            );
+
+            // 프론트에서 isDeleted만 설정 (하위 대댓글 유지)
+            setComments(comments.map(c =>
+                c._id === replyToDelete.commentId
+                    ? {
+                        ...c,
+                        replies: c.replies.map(r =>
+                            r._id === replyToDelete.replyId
+                                ? { ...r, isDeleted: true }
+                                : r
+                        )
+                    }
+                    : c
+            ));
+
+            setCommunity({ ...community, commentCount: community.commentCount - 1 });
             setReplyDeleteModalOpen(false);
-            setReplyToDelete({ commentId: null, replyId: null });
+            setReplyToDelete({ communityId: null, commentId: null, replyId: null });
         } catch (err) {
-            console.log(err);
+            console.error('답글 삭제 오류:', err);
             setReplyDeleteModalOpen(false);
         }
     };
 
-    const openSubReplyDeleteModal = (commentId, replyId, subReplyId) => {
-        setSubReplyToDelete({ commentId, replyId, subReplyId });
+    const openSubReplyDeleteModal = (communityId, commentId, replyId, subReplyId) => {
+        setSubReplyToDelete({ communityId, commentId, replyId, subReplyId });
         setSubReplyDeleteModalOpen(true);
     };
 
+// ✅ 대댓글 삭제
     const confirmDeleteSubReply = async () => {
         try {
-            const updated = await deleteSubReply(
-                community._id,
+            await deleteSubReply(
+                subReplyToDelete.communityId,
                 subReplyToDelete.commentId,
                 subReplyToDelete.replyId,
                 subReplyToDelete.subReplyId
             );
-            setCommunity(updated);
+
+            // 프론트에서 isDeleted만 설정
+            setComments(comments.map(c =>
+                c._id === subReplyToDelete.commentId
+                    ? {
+                        ...c,
+                        replies: c.replies.map(r =>
+                            r._id === subReplyToDelete.replyId
+                                ? {
+                                    ...r,
+                                    subReplies: r.subReplies.map(s =>
+                                        s._id === subReplyToDelete.subReplyId
+                                            ? { ...s, isDeleted: true }
+                                            : s
+                                    )
+                                }
+                                : r
+                        )
+                    }
+                    : c
+            ));
+
+            setCommunity({ ...community, commentCount: community.commentCount - 1 });
             setSubReplyDeleteModalOpen(false);
-            setSubReplyToDelete({ commentId: null, replyId: null, subReplyId: null });
+            setSubReplyToDelete({ communityId: null, commentId: null, replyId: null, subReplyId: null });
         } catch (err) {
-            console.log(err);
+            console.error('대댓글 삭제 오류:', err);
             setSubReplyDeleteModalOpen(false);
         }
     };
@@ -260,23 +323,23 @@ const CommentSection = ({
     const handleCommentReport = (comment) => {
         setReportTarget({
             nickname: getDisplayNickname(comment),
-            anchor: { type: 'comment', parentId: community._id, targetId: comment._id }
+            anchor: { type: 'comment', parentId: comment.postId, targetId: comment._id }
         });
         setReportModalOpen(true);
     };
 
-    const handleReplyReport = (reply) => {
+    const handleReplyReport = (reply, postId) => {
         setReportTarget({
             nickname: getDisplayNickname(reply),
-            anchor: { type: 'reply', parentId: community._id, targetId: reply._id }
+            anchor: { type: 'reply', parentId: postId, targetId: reply._id }
         });
         setReportModalOpen(true);
     };
 
-    const handleSubReplyReport = (subReply) => {
+    const handleSubReplyReport = (subReply, postId) => {
         setReportTarget({
             nickname: getDisplayNickname(subReply),
-            anchor: { type: 'subReply', parentId: community._id, targetId: subReply._id }
+            anchor: { type: 'subReply', parentId: postId, targetId: subReply._id }
         });
         setReportModalOpen(true);
     };
@@ -336,539 +399,105 @@ const CommentSection = ({
                 <h3 className="text-xl font-semibold mb-3">댓글 ({getTotalCommentCount()})</h3>
 
                 {/* 댓글 목록 */}
-                {community.comments && community.comments.length > 0 ? (
+                {comments && comments.length > 0 ? (
                     <ul className="space-y-3">
-                        {community.comments.map((comment) => {
-                            // 삭제된 댓글인지 확인
-                            const isCommentDeleted = comment.isDeleted;
+                        {comments.map((comment) => (
+                            <Comment
+                                key={comment._id}
+                                comment={comment}
+                                community={community}
+                                currentUserId={currentUserId}
+                                isAdmin={isAdmin}
+                                getDisplayNickname={getDisplayNickname}
+                                formatRelativeTime={formatRelativeTime}
 
-                            // 자식 댓글(대댓글, 대대댓글)이 있는지 확인
-                            const hasActiveReplies = comment.replies && comment.replies.some(reply =>
-                                !reply.isDeleted || (reply.subReplies && reply.subReplies.some(sub => !sub.isDeleted))
-                            );
-
-                            // 삭제된 댓글이지만 자식 댓글이 없으면 렌더링하지 않음
-                            if (isCommentDeleted && !hasActiveReplies) {
-                                return null;
-                            }
-
-                            const state = replyState[comment._id] || { open: false, text: '', file: null };
-
-                            return (
-                                <li
-                                    key={comment._id}
-                                    className="flex space-x-3 p-3 border border-gray-200 rounded hover:bg-gray-50 transition duration-200"
-                                >
-                                    {/* 프로필 버튼 - 삭제된 댓글 또는 익명 댓글은 기본 프로필 */}
-                                    {!isCommentDeleted && !comment.isAnonymous ? (
-                                        <ProfileButton
-                                            profile={profileMap[comment.userId]}
-                                            area="프로필"
-                                        />
-                                    ) : (
-                                        <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0"></div>
-                                    )}
-
-                                    <div className="flex-1">
-                                        <div className="flex items-center space-x-2 mb-1">
-                                            <span
-                                                className={`text-sm font-semibold ${
-                                                    !isCommentDeleted && comment.userId === community.userId ? 'text-gray-500' :
-                                                        isCommentDeleted ? 'text-gray-500' : ''
-                                                }`}
-                                            >
-                                                {isCommentDeleted ? "삭제된 사용자" : getDisplayNickname(comment)}
-                                            </span>
-                                            <span className="text-xs text-gray-500">
-                                                {formatRelativeTime(comment.createdAt)}
-                                            </span>
-
-                                            {/* 액션 버튼들 - 삭제된 댓글은 표시하지 않음 */}
-                                            {!isCommentDeleted && (
-                                                <>
-                                                    {comment.userId === currentUserId || isAdmin ? (
-                                                        <button
-                                                            onClick={() => openCommentDeleteModal(comment._id)}
-                                                            className="text-red-500 text-xs ml-2 hover:underline"
-                                                        >
-                                                            삭제
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handleCommentReport(comment)}
-                                                            className="text-gray-500 text-xs ml-2 hover:text-rose-600 hover:underline"
-                                                        >
-                                                            신고
-                                                        </button>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-
-                                        {/* 댓글 내용 */}
-                                        <p className="text-gray-800" id={`comment-${comment._id}`}>
-                                            {isCommentDeleted ? (
-                                                <span className="text-gray-500 italic">삭제된 댓글입니다.</span>
-                                            ) : (
-                                                comment.commentContents
-                                            )}
-                                        </p>
-
-                                        {/* 댓글 이미지 - 삭제된 댓글은 이미지 숨김 */}
-                                        {!isCommentDeleted && comment.commentImage && (
-                                            <img
-                                                src={
-                                                    comment.commentImage.startsWith('http') ||
-                                                    comment.commentImage.startsWith('data:')
-                                                        ? comment.commentImage
-                                                        : `${API_HOST}/uploads${comment.commentImage}`
-                                                }
-                                                alt="댓글 이미지"
-                                                className="w-32 h-auto mt-2"
-                                            />
-                                        )}
-
-                                        {/* 댓글 투표 관리자 - 여기가 핵심! */}
-                                        {!isCommentDeleted && (
-                                            <CommentPollManager
-                                                comment={comment}
-                                                community={community}
-                                                setCommunity={setCommunity}
-                                                currentUserId={currentUserId}
-                                                isAdmin={isAdmin}
-                                            />
-                                        )}
-
-                                        {/* 대댓글 목록 */}
-                                        {comment.replies && comment.replies.length > 0 && (
-                                            <ul className="ml-4 mt-2 space-y-2 border-l pl-2">
-                                                {comment.replies.map((reply) => {
-                                                    // 삭제된 대댓글인지 확인
-                                                    const isReplyDeleted = reply.isDeleted;
-
-                                                    // 자식 댓글(대대댓글)이 있는지 확인
-                                                    const hasActiveSubReplies = reply.subReplies && reply.subReplies.some(subReply => !subReply.isDeleted);
-
-                                                    // 삭제된 대댓글이지만 자식 댓글이 없으면 렌더링하지 않음
-                                                    if (isReplyDeleted && !hasActiveSubReplies) {
-                                                        return null;
-                                                    }
-
-                                                    return (
-                                                        <li key={reply._id}>
-                                                            <div className="flex items-start space-x-2">
-                                                                {/* 대댓글 작성자 프로필 버튼 */}
-                                                                {!isReplyDeleted && !reply.isAnonymous ? (
-                                                                    <ProfileButton
-                                                                        profile={profileMap[reply.userId]}
-                                                                        area="프로필"
-                                                                    />
-                                                                ) : (
-                                                                    <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0"></div>
-                                                                )}
-
-                                                                <div className="text-xs text-gray-500">
-                                                                    <span className={`text-sm font-semibold ${
-                                                                        !isReplyDeleted && reply.userId === community.userId ? 'text-gray-500' :
-                                                                            isReplyDeleted ? 'text-gray-500' : ''
-                                                                    }`}>
-                                                                        {isReplyDeleted ? "삭제된 사용자" : getDisplayNickname(reply)}
-                                                                    </span>
-                                                                    <span className="ml-2 text-gray-400">
-                                                                        {formatRelativeTime(reply.createdAt)}
-                                                                    </span>
-
-                                                                    {/* 액션 버튼들 - 삭제된 대댓글은 표시하지 않음 */}
-                                                                    {!isReplyDeleted && (
-                                                                        <>
-                                                                            {reply.userId === currentUserId || isAdmin ? (
-                                                                                <button
-                                                                                    onClick={() => openReplyDeleteModal(comment._id, reply._id)}
-                                                                                    className="text-red-500 text-xs ml-2 hover:underline"
-                                                                                >
-                                                                                    삭제
-                                                                                </button>
-                                                                            ) : (
-                                                                                <button
-                                                                                    onClick={() => handleReplyReport(reply)}
-                                                                                    className="text-purple-500 text-xs ml-2 hover:underline"
-                                                                                >
-                                                                                    신고
-                                                                                </button>
-                                                                            )}
-                                                                        </>
-                                                                    )}
-
-                                                                    {/* 대댓글 내용 */}
-                                                                    <div id={`reply-${reply._id}`} className="text-gray-800 mt-1">
-                                                                        {isReplyDeleted ? (
-                                                                            <span className="text-gray-500 italic">삭제된 댓글입니다.</span>
-                                                                        ) : (
-                                                                            reply.commentContents
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* 대댓글 이미지 - 삭제된 대댓글은 이미지 숨김 */}
-                                                                    {!isReplyDeleted && reply.replyImage && (
-                                                                        <div className="mt-2">
-                                                                            <img
-                                                                                src={
-                                                                                    reply.replyImage.startsWith('http') ||
-                                                                                    reply.replyImage.startsWith('data:')
-                                                                                        ? reply.replyImage
-                                                                                        : `${API_HOST}/uploads${reply.replyImage}`
-                                                                                }
-                                                                                alt="대댓글 이미지"
-                                                                                className="w-32 h-auto"
-                                                                            />
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-
-                                                            {/* 대대댓글 목록 */}
-                                                            {reply.subReplies && reply.subReplies.filter(subReply => !subReply.isDeleted).length > 0 && (
-                                                                <ul className="ml-4 mt-1 space-y-2 border-l pl-2">
-                                                                    {reply.subReplies.filter(subReply => !subReply.isDeleted).map((subReply) => {
-                                                                        return (
-                                                                            <li key={subReply._id}>
-                                                                                {/* 헤더: 프로필, 닉네임, 시간, 삭제/신고 버튼 */}
-                                                                                <div className="flex items-center space-x-2 text-xs text-gray-500">
-                                                                                    {!subReply.isAnonymous ? (
-                                                                                        <ProfileButton
-                                                                                            profile={profileMap[subReply.userId]}
-                                                                                            area="프로필"
-                                                                                        />
-                                                                                    ) : (
-                                                                                        <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0"></div>
-                                                                                    )}
-                                                                                    <span
-                                                                                        className={`text-sm font-semibold ${
-                                                                                            subReply.userId === community.userId ? 'text-gray-500' : ''
-                                                                                        }`}
-                                                                                    >
-                                                                                        {getDisplayNickname(subReply)}
-                                                                                    </span>
-                                                                                    <span className="ml-2 text-gray-400">
-                                                                                        {formatRelativeTime(subReply.createdAt)}
-                                                                                    </span>
-                                                                                    {subReply.userId === currentUserId || isAdmin ? (
-                                                                                        <button
-                                                                                            onClick={() =>
-                                                                                                openSubReplyDeleteModal(comment._id, reply._id, subReply._id)
-                                                                                            }
-                                                                                            className="text-red-500 text-xs ml-2 hover:underline"
-                                                                                        >
-                                                                                            삭제
-                                                                                        </button>
-                                                                                    ) : (
-                                                                                        <button
-                                                                                            onClick={() => handleSubReplyReport(subReply)}
-                                                                                            className="hover:underline"
-                                                                                        >
-                                                                                            신고
-                                                                                        </button>
-                                                                                    )}
-                                                                                </div>
-
-                                                                                {/* 본문 */}
-                                                                                <div id={`subReply-${subReply._id}`} className="text-gray-800 text-sm">
-                                                                                    {subReply.commentContents}
-                                                                                </div>
-
-                                                                                {/* 이미지 */}
-                                                                                {subReply.subReplyImage && (
-                                                                                    <div className="mt-1">
-                                                                                        <img
-                                                                                            src={
-                                                                                                subReply.subReplyImage.startsWith('http') ||
-                                                                                                subReply.subReplyImage.startsWith('data:')
-                                                                                                    ? subReply.subReplyImage
-                                                                                                    : `${API_HOST}/uploads${subReply.subReplyImage}`
-                                                                                            }
-                                                                                            alt="대대댓글 이미지"
-                                                                                            className="w-32 h-auto"
-                                                                                        />
-                                                                                    </div>
-                                                                                )}
-                                                                            </li>
-                                                                        );
-                                                                    })}
-                                                                </ul>
-                                                            )}
-
-                                                            {/* 대대댓글 작성 버튼 */}
-                                                            <button
-                                                                onClick={() => toggleSubReplyForm(reply._id)}
-                                                                className="text-blue-500 text-xs mt-1 hover:underline"
-                                                            >
-                                                                답글 쓰기
-                                                            </button>
-
-                                                            {/* 대대댓글 작성 폼 */}
-                                                            {subReplyState[reply._id]?.open && (
-                                                                <div className="mt-2 ml-4 border-l pl-2">
-                                                                    {/* 대대댓글 익명 체크박스 */}
-                                                                    <div className="mb-2">
-                                                                        <label className="flex items-center space-x-2">
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={subReplyIsAnonymous[reply._id] || false}
-                                                                                onChange={(e) => setSubReplyIsAnonymous(prev => ({
-                                                                                    ...prev,
-                                                                                    [reply._id]: e.target.checked
-                                                                                }))}
-                                                                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                                            />
-                                                                            <span className="text-sm text-gray-700">익명으로 작성</span>
-                                                                        </label>
-                                                                    </div>
-
-                                                                    <div className="border border-gray-300 rounded p-2">
-                                                                        <textarea
-                                                                            className="w-full border-none outline-none focus:ring-0 text-sm"
-                                                                            rows={2}
-                                                                            value={subReplyState[reply._id]?.text || ''}
-                                                                            onChange={(e) =>
-                                                                                setSubReplyState((prev) => ({
-                                                                                    ...prev,
-                                                                                    [reply._id]: {
-                                                                                        ...prev[reply._id],
-                                                                                        text: e.target.value.slice(0, 1000),
-                                                                                    },
-                                                                                }))
-                                                                            }
-                                                                            placeholder="답글을 입력하세요 (최대 1000자)"
-                                                                        />
-                                                                        <div className="flex items-center justify-between mt-2">
-                                                                            <label className="flex items-center text-sm text-blue-600 border border-gray-300 px-2 py-1 rounded cursor-pointer">
-                                                                                사진
-                                                                                <input
-                                                                                    type="file"
-                                                                                    className="hidden"
-                                                                                    accept="image/*"
-                                                                                    onChange={(e) => {
-                                                                                        if (e.target.files?.[0]) {
-                                                                                            setSubReplyState((prev) => ({
-                                                                                                ...prev,
-                                                                                                [reply._id]: {
-                                                                                                    ...prev[reply._id],
-                                                                                                    file: e.target.files[0],
-                                                                                                },
-                                                                                            }));
-                                                                                        }
-                                                                                    }}
-                                                                                />
-                                                                            </label>
-                                                                            <span className="text-xs text-gray-400">
-                                                                                {(subReplyState[reply._id]?.text || '').length}/1000
-                                                                            </span>
-                                                                        </div>
-                                                                        {subReplyState[reply._id]?.file && (
-                                                                            <div className="mt-2 flex items-center space-x-2">
-                                                                                <span className="text-xs text-gray-600">
-                                                                                    {subReplyState[reply._id]?.file.name}
-                                                                                </span>
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() =>
-                                                                                        setSubReplyState((prev) => ({
-                                                                                            ...prev,
-                                                                                            [reply._id]: {
-                                                                                                ...prev[reply._id],
-                                                                                                file: null,
-                                                                                            },
-                                                                                        }))
-                                                                                    }
-                                                                                    className="text-xs text-red-500 hover:underline"
-                                                                                >
-                                                                                    X
-                                                                                </button>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="text-right mt-2">
-                                                                        <button
-                                                                            onClick={() => handleAddSubReply(comment._id, reply._id)}
-                                                                            className="bg-blue-500 text-white text-sm px-3 py-1 rounded hover:bg-blue-600 transition duration-200"
-                                                                        >
-                                                                            작성
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </li>
-                                                    );
-                                                })}
-                                            </ul>
-                                        )}
-
-                                        {/* 대댓글 작성 버튼 - 삭제된 댓글은 표시하지 않음 */}
-                                        {!isCommentDeleted && (
-                                            <button
-                                                onClick={() => toggleReplyForm(comment._id)}
-                                                className="text-blue-500 text-xs mt-2 hover:underline"
-                                            >
-                                                답글 쓰기
-                                            </button>
-                                        )}
-
-                                        {/* 대댓글 작성 폼 - 삭제된 댓글은 표시하지 않음 */}
-                                        {!isCommentDeleted && state.open && (
-                                            <div className="mt-2 ml-4 border-l pl-2">
-                                                {/* 대댓글 익명 체크박스 */}
-                                                <div className="mb-2">
-                                                    <label className="flex items-center space-x-2">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={replyIsAnonymous[comment._id] || false}
-                                                            onChange={(e) => setReplyIsAnonymous(prev => ({
-                                                                ...prev,
-                                                                [comment._id]: e.target.checked
-                                                            }))}
-                                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                        />
-                                                        <span className="text-sm text-gray-700">익명으로 작성</span>
-                                                    </label>
-                                                </div>
-
-                                                <div className="border border-gray-300 rounded p-2">
-                                                    <textarea
-                                                        className="w-full border-none outline-none focus:ring-0 text-sm"
-                                                        rows={2}
-                                                        value={state.text}
-                                                        onChange={(e) => handleReplyTextChange(comment._id, e.target.value)}
-                                                        placeholder="대댓글을 입력하세요 (최대 1000자)"
-                                                    />
-                                                    <div className="flex items-center justify-between mt-2">
-                                                        <label className="flex items-center text-sm text-blue-600 border border-gray-300 px-2 py-1 rounded cursor-pointer">
-                                                            사진
-                                                            <input
-                                                                type="file"
-                                                                className="hidden"
-                                                                accept="image/*"
-                                                                onChange={(e) => {
-                                                                    if (e.target.files?.[0]) {
-                                                                        handleReplyFileChange(comment._id, e.target.files[0]);
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </label>
-                                                        <span className="text-xs text-gray-400">
-                                                            {state.text.length}/1000
-                                                        </span>
-                                                    </div>
-                                                    {state.file && (
-                                                        <div className="mt-2 flex items-center space-x-2">
-                                                            <span className="text-xs text-gray-600">
-                                                                {state.file.name}
-                                                            </span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    setReplyState((prev) => ({
-                                                                        ...prev,
-                                                                        [comment._id]: {
-                                                                            ...prev[comment._id],
-                                                                            file: null,
-                                                                        },
-                                                                    }))
-                                                                }
-                                                                className="text-xs text-red-500 hover:underline"
-                                                            >
-                                                                X
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="text-right mt-2">
-                                                    <button
-                                                        onClick={() => handleAddReply(comment._id)}
-                                                        className="bg-blue-500 text-white text-sm px-3 py-1 rounded hover:bg-blue-600 transition duration-200"
-                                                    >
-                                                        작성
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </li>
-                            );
-                        })}
+                                replyState={replyState}
+                                replyIsAnonymous={replyIsAnonymous}
+                                setReplyIsAnonymous={setReplyIsAnonymous}
+                                toggleReplyForm={toggleReplyForm}
+                                handleReplyTextChange={handleReplyTextChange}
+                                handleReplyFileChange={handleReplyFileChange}
+                                handleAddReply={handleAddReply}
+                                openCommentDeleteModal={openCommentDeleteModal}
+                                handleCommentReport={handleCommentReport}
+                                setComments={setComments}
+                                setCommunity={setCommunity}
+                                API_HOST={API_HOST}
+                                subReplyState={subReplyState}
+                                subReplyIsAnonymous={subReplyIsAnonymous}
+                                setSubReplyIsAnonymous={setSubReplyIsAnonymous}
+                                toggleSubReplyForm={toggleSubReplyForm}
+                                handleSubReplyTextChange={handleSubReplyTextChange}
+                                handleSubReplyFileChange={handleSubReplyFileChange}
+                                handleAddSubReply={handleAddSubReply}
+                                openReplyDeleteModal={openReplyDeleteModal}
+                                handleReplyReport={handleReplyReport}
+                                openSubReplyDeleteModal={openSubReplyDeleteModal}
+                                handleSubReplyReport={handleSubReplyReport}
+                            />
+                        ))}
                     </ul>
                 ) : (
-                    <p className="text-gray-600">댓글이 없습니다.</p>
+                    <p className="text-gray-500 text-sm">댓글이 없습니다.</p>
+                )}
+                {hasMoreComments && (
+                    <div className="text-center mt-4">
+                        <button
+                            onClick={loadMoreComments}
+                            className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
+                        >
+                            더보기
+                        </button>
+                    </div>
                 )}
             </div>
 
-            {/* 댓글 작성 폼 */}
-            <div className="mt-6">
-                <h3 className="text-xl font-semibold mb-2">댓글 작성</h3>
-                {commentError && <p className="text-red-500 mb-2">{commentError}</p>}
-
-                <div className="mb-3">
-                    <label className="flex items-center space-x-2">
+            {/* 댓글 입력 폼 (기존 위치 유지) */}
+            <div className="mt-6 p-4 border border-gray-300 rounded">
+                <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="댓글을 입력하세요 (최대 1000자)"
+                    className="w-full p-2 border border-gray-300 rounded resize-none"
+                    rows="4"
+                    maxLength={1000}
+                />
+                <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center space-x-3">
                         <input
-                            type="checkbox"
-                            checked={commentIsAnonymous}
-                            onChange={(e) => setCommentIsAnonymous(e.target.checked)}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setCommentFile(e.target.files[0])}
+                            className="text-sm"
                         />
-                        <span className="text-sm text-gray-700">익명으로 작성</span>
-                    </label>
-                </div>
-
-                <form onSubmit={onAddComment} className="flex flex-col space-y-2">
-                    <div className="border border-gray-300 rounded p-2">
-                        <textarea
-                            value={newComment}
-                            onChange={(e) => {
-                                if (e.target.value.length <= 1000) {
-                                    setNewComment(e.target.value);
-                                }
-                            }}
-                            placeholder="댓글을 입력하세요 (최대 1000자)"
-                            className="w-full border-none outline-none focus:ring-0 text-sm"
-                            rows={3}
-                        />
-                        <div className="flex items-center justify-between mt-2">
-                            <label className="flex items-center text-sm text-blue-600 border border-gray-300 px-2 py-1 rounded cursor-pointer">
-                                사진
-                                <input
-                                    type="file"
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={(e) => {
-                                        if (e.target.files?.[0]) {
-                                            setCommentFile(e.target.files[0]);
-                                        }
-                                    }}
-                                />
-                            </label>
-                            <span className="text-xs text-gray-400">
-                                {newComment.length}/1000
-                            </span>
-                        </div>
                         {commentFile && (
-                            <div className="mt-2 flex items-center space-x-2">
-                                <span className="text-xs text-gray-600">{commentFile.name}</span>
-                                <button
-                                    type="button"
-                                    onClick={() => setCommentFile(null)}
-                                    className="text-xs text-red-500 hover:underline"
-                                >
-                                    X
-                                </button>
-                            </div>
+                            <span className="text-sm text-gray-600">{commentFile.name}</span>
                         )}
                     </div>
-                    <button
-                        type="submit"
-                        className="self-end bg-blue-500 text-white font-semibold px-4 py-2 rounded hover:bg-blue-600 transition duration-200"
-                    >
-                        작성
-                    </button>
-                </form>
+                    <div className="flex items-center space-x-3">
+                        <label className="flex items-center text-sm">
+                            <input
+                                type="checkbox"
+                                checked={commentIsAnonymous}
+                                onChange={(e) => setCommentIsAnonymous(e.target.checked)}
+                                className="mr-1"
+                            />
+                            익명
+                        </label>
+                        <button
+                            onClick={onAddComment}
+                            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                        >
+                            등록
+                        </button>
+                    </div>
+                </div>
+                <div className="text-sm text-gray-500 mt-2">
+                    {newComment.length} / 1000
+                </div>
+                {commentError && (
+                    <div className="text-red-500 text-sm mt-2">{commentError}</div>
+                )}
             </div>
         </>
     );

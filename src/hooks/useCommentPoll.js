@@ -9,37 +9,29 @@ import {
     getCommentPollResults
 } from '../api/communityApi.js';
 
-export const useCommentPoll = (community, currentUserId, isAdmin) => {
+export const useCommentPoll = (community, comment, setComments, currentUserId, isAdmin) => {
     const [commentUserVotes, setCommentUserVotes] = useState({});
     const [showCommentPollModal, setShowCommentPollModal] = useState({});
 
     // 댓글 투표 데이터 로딩
     useEffect(() => {
         const loadCommentPollData = async () => {
-            if (!community?.comments || !currentUserId) return;
+            if (!comment?.polls || !currentUserId) return;
 
             const pollVotes = {};
 
             await Promise.all(
-                community.comments.map(async (comment) => {
-                    if (comment.polls && comment.polls.length > 0) {
-                        await Promise.all(
-                            comment.polls.map(async (poll) => {
-                                try {
-                                    const status = await getCommentUserVoteStatus(
-                                        community._id,
-                                        comment._id,
-                                        poll._id,
-                                        currentUserId
-                                    );
-                                    if (status.hasVoted) {
-                                        pollVotes[`${comment._id}-${poll._id}`] = status.votedOption;
-                                    }
-                                } catch (error) {
-                                    console.error(`댓글 투표 상태 로딩 실패:`, error);
-                                }
-                            })
-                        );
+                comment.polls.map(async (poll) => {
+                    try {
+                                                            const status = await getCommentUserVoteStatus(
+                                                                comment._id,
+                                                                poll._id,
+                                                                currentUserId
+                                                            );                        if (status.hasVoted) {
+                            pollVotes[`${comment._id}-${poll._id}`] = status.votedOption;
+                        }
+                    } catch (error) {
+                        console.error(`댓글 투표 상태 로딩 실패:`, error);
                     }
                 })
             );
@@ -48,31 +40,30 @@ export const useCommentPoll = (community, currentUserId, isAdmin) => {
         };
 
         loadCommentPollData();
-    }, [community, currentUserId]);
+    }, [comment, currentUserId, community]);
 
     // 댓글 투표 생성
-    const handleCreateCommentPoll = async (commentId, pollData, setCommunity) => {
+    const handleCreateCommentPoll = async (pollData) => {
         try {
-            const newPoll = await createCommentPoll(community._id, commentId, {
+            const newPoll = await createCommentPoll(comment._id, {
                 ...pollData,
                 userId: currentUserId
             });
 
-            setCommunity(prevCommunity => ({
-                ...prevCommunity,
-                comments: prevCommunity.comments.map(comment =>
-                    comment._id === commentId
+            setComments(prevComments =>
+                prevComments.map(c =>
+                    c._id === comment._id
                         ? {
-                            ...comment,
-                            polls: [...(comment.polls || []), newPoll]
+                            ...c,
+                            polls: [...(c.polls || []), newPoll]
                         }
-                        : comment
+                        : c
                 )
-            }));
+            );
 
             setShowCommentPollModal(prev => ({
                 ...prev,
-                [commentId]: false
+                [comment._id]: false
             }));
         } catch (error) {
             console.error('댓글 투표 생성 실패:', error);
@@ -80,37 +71,36 @@ export const useCommentPoll = (community, currentUserId, isAdmin) => {
         }
     };
 
+
     // 댓글 투표 참여
-    const handleCommentVote = async (commentId, pollId, optionIndex, setCommunity) => {
+    const handleCommentVote = async (pollId, optionIndex) => {
         try {
             const updatedPoll = await voteCommentPoll(
-                community._id,
-                commentId,
+                comment._id,
                 pollId,
                 currentUserId,
                 optionIndex
             );
 
-            setCommunity(prevCommunity => ({
-                ...prevCommunity,
-                comments: prevCommunity.comments.map(comment =>
-                    comment._id === commentId
+            setComments(prevComments =>
+                prevComments.map(c =>
+                    c._id === comment._id
                         ? {
-                            ...comment,
-                            polls: comment.polls.map(poll =>
+                            ...c,
+                            polls: c.polls.map(poll =>
                                 poll._id === pollId ? updatedPoll : poll
                             )
                         }
-                        : comment
+                        : c
                 )
-            }));
+            );
 
             setCommentUserVotes(prev => ({
                 ...prev,
-                [`${commentId}-${pollId}`]: optionIndex
+                [`${comment._id}-${pollId}`]: optionIndex
             }));
 
-            await handleRefreshCommentPollResults(commentId, pollId, setCommunity);
+            await handleRefreshCommentPollResults(pollId);
         } catch (error) {
             console.error('댓글 투표 실패:', error);
             throw error;
@@ -118,15 +108,15 @@ export const useCommentPoll = (community, currentUserId, isAdmin) => {
     };
 
     // 댓글 투표 취소
-    const handleCancelCommentVote = async (commentId, pollId, setCommunity) => {
+    const handleCancelCommentVote = async (pollId) => {
         try {
-            await cancelCommentVote(community._id, commentId, pollId, currentUserId);
+            await cancelCommentVote(comment._id, pollId, currentUserId);
 
             const newVotes = { ...commentUserVotes };
-            delete newVotes[`${commentId}-${pollId}`];
+            delete newVotes[`${comment._id}-${pollId}`];
             setCommentUserVotes(newVotes);
 
-            await handleRefreshCommentPollResults(commentId, pollId, setCommunity);
+            await handleRefreshCommentPollResults(pollId);
         } catch (error) {
             console.error('댓글 투표 취소 실패:', error);
             throw error;
@@ -134,24 +124,23 @@ export const useCommentPoll = (community, currentUserId, isAdmin) => {
     };
 
     // 댓글 투표 삭제
-    const handleDeleteCommentPoll = async (commentId, pollId, setCommunity) => {
+    const handleDeleteCommentPoll = async (pollId) => {
         try {
-            await deleteCommentPoll(community._id, commentId, pollId, currentUserId);
+            await deleteCommentPoll(comment._id, pollId, currentUserId);
 
-            setCommunity(prevCommunity => ({
-                ...prevCommunity,
-                comments: prevCommunity.comments.map(comment =>
-                    comment._id === commentId
+            setComments(prevComments =>
+                prevComments.map(c =>
+                    c._id === comment._id
                         ? {
-                            ...comment,
-                            polls: comment.polls.filter(poll => poll._id !== pollId)
+                            ...c,
+                            polls: c.polls.filter(poll => poll._id !== pollId)
                         }
-                        : comment
+                        : c
                 )
-            }));
+            );
 
             const newVotes = { ...commentUserVotes };
-            delete newVotes[`${commentId}-${pollId}`];
+            delete newVotes[`${comment._id}-${pollId}`];
             setCommentUserVotes(newVotes);
         } catch (error) {
             console.error('댓글 투표 삭제 실패:', error);
@@ -159,17 +148,16 @@ export const useCommentPoll = (community, currentUserId, isAdmin) => {
     };
 
     // 댓글 투표 결과 새로고침
-    const handleRefreshCommentPollResults = async (commentId, pollId, setCommunity) => {
+    const handleRefreshCommentPollResults = async (pollId) => {
         try {
-            const results = await getCommentPollResults(community._id, commentId, pollId);
+            const results = await getCommentPollResults(comment._id, pollId);
 
-            setCommunity(prevCommunity => ({
-                ...prevCommunity,
-                comments: prevCommunity.comments.map(comment =>
-                    comment._id === commentId
+            setComments(prevComments =>
+                prevComments.map(c =>
+                    c._id === comment._id
                         ? {
-                            ...comment,
-                            polls: comment.polls.map(poll =>
+                            ...c,
+                            polls: c.polls.map(poll =>
                                 poll._id === pollId
                                     ? {
                                         ...poll,
@@ -182,9 +170,9 @@ export const useCommentPoll = (community, currentUserId, isAdmin) => {
                                     : poll
                             )
                         }
-                        : comment
+                        : c
                 )
-            }));
+            );
         } catch (error) {
             console.error('댓글 투표 결과 새로고침 실패:', error);
         }

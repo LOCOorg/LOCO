@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    fetchCommunityById,
+    fetchCommunityForEdit,
     fetchTopCommented,
     fetchTopViewed,
     updateCommunity,
@@ -92,7 +92,7 @@ const CommunityEdit = () => {
     useEffect(() => {
         (async () => {
             try {
-                const data = await fetchCommunityById(id);
+                const data = await fetchCommunityForEdit(id);
                 setTitle(data.communityTitle);
                 setContents(data.communityContents);
                 setCategory(data.communityCategory);

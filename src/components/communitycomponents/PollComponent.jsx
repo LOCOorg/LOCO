@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import {FaCheck, FaClock, FaTimes, FaTrash} from 'react-icons/fa';
 import clsx from 'clsx';
-import { getCommentPollResults, getPollResults} from "../../api/communityAPI.js";
 import CommonModal from "../../common/CommonModal.jsx";
 
 const PollComponent = ({
@@ -11,16 +10,12 @@ const PollComponent = ({
                            currentUserId,
                            hasVoted,
                            userVote,
-                           communityId,
-                           onRefreshResults,
                            onCancelVote, // 투표 취소 함수 추가
                            onDeletePoll, // 투표 삭제 함수 추가
                            canDeletePoll = false, // 삭제 권한 여부
-                           commentId = null,
                        }) => {
     const [selectedOption, setSelectedOption] = useState(userVote);
     const [isVoting, setIsVoting] = useState(false);
-    const [pollResults, setPollResults] = useState(null);
     const [isExpired, setIsExpired] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);     // 삭제 모달
 
@@ -36,27 +31,6 @@ const PollComponent = ({
         const interval = setInterval(checkExpiry, 60000);
         return () => clearInterval(interval);
     }, [poll.expiresAt]);
-
-// 투표 결과 로딩 (댓글/게시글 구분)
-    useEffect(() => {
-        const loadResults = async () => {
-            try {
-                let results;
-                if (commentId) {
-                    // 댓글 투표인 경우
-                    results = await getCommentPollResults(communityId, commentId, poll._id);
-                } else {
-                    // 게시글 투표인 경우
-                    results = await getPollResults(communityId, poll._id);
-                }
-                setPollResults(results);
-            } catch (error) {
-                console.error('투표 결과 로딩 실패:', error);
-            }
-        };
-
-        loadResults();
-    }, [communityId, commentId, poll._id, hasVoted]);
 
     // 투표 삭제 모달 열기
     const handleDeletePoll = () => {
@@ -82,9 +56,7 @@ const PollComponent = ({
         setIsDeleteModalOpen(false);
     };
 
-    const totalVotes = pollResults ?
-        pollResults.totalVotes :
-        poll.options.reduce((sum, option) => sum + option.votes, 0);
+    const totalVotes = poll.options.reduce((sum, option) => sum + option.votes, 0);
 
     const handleVote = async (optionIndex) => {
         if (isVoting || !currentUserId || isExpired) return;
@@ -96,18 +68,6 @@ const PollComponent = ({
         try {
             await onVote(optionIndex);
 
-            if (onRefreshResults) {
-                await onRefreshResults(poll._id);
-            }
-
-            // 결과 새로고침 시에도 구분 처리
-            let results;
-            if (commentId) {
-                results = await getCommentPollResults(communityId, commentId, poll._id);
-            } else {
-                results = await getPollResults(communityId, poll._id);
-            }
-            setPollResults(results);
         } catch (error) {
             setSelectedOption(previousSelection);
             console.error('투표 실패:', error);
@@ -130,19 +90,6 @@ const PollComponent = ({
 
             setSelectedOption(null);
 
-            // 결과 새로고침
-            if (onRefreshResults) {
-                await onRefreshResults(poll._id);
-            }
-
-            // 투표 결과 다시 로딩 (댓글/게시글 구분)
-            let results;
-            if (commentId) {
-                results = await getCommentPollResults(communityId, commentId, poll._id);
-            } else {
-                results = await getPollResults(communityId, poll._id);
-            }
-            setPollResults(results);
         } catch (error) {
             console.error('투표 취소 실패:', error);
         } finally {
@@ -156,13 +103,7 @@ const PollComponent = ({
     };
 
     const getOptionVotes = (index) => {
-        if (pollResults?.options && pollResults.options.length > 0) {
-            return pollResults.options[index]?.votes ?? 0;
-        }
-        if (poll.options && poll.options.length > 0) {
-            return poll.options[index]?.votes ?? 0;
-        }
-        return 0;
+        return poll.options[index]?.votes ?? 0;
     };
 
     // 투표 만료되지 않으면 항상 투표 가능

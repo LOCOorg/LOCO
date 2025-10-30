@@ -36,6 +36,26 @@ export const fetchCommunityById = async (id) => {
     }
 };
 
+export const fetchCommunityForEdit = async (id) => {
+    try {
+        const response = await instance.get(`/api/communities/${id}/edit`);
+        return response.data;
+    } catch (error) {
+        console.error("fetchCommunityForEdit error:", error);
+        throw error;
+    }
+};
+
+export const fetchCommentsByPostId = async (postId, page = 1, size = 20) => {
+    try {
+        const response = await instance.get(`/api/communities/${postId}/comments?page=${page}&size=${size}`);
+        return response.data;
+    } catch (error) {
+        console.error("fetchCommentsByPostId error:", error);
+        throw error;
+    }
+};
+
 export const createCommunity = async (communityData) => {
     try {
         const response = await instance.post('/api/communities', communityData, {
@@ -231,31 +251,6 @@ export const votePoll = async (postId, pollId, userId, optionIndex) => {
     }
 };
 
-export const getPollResults = async (postId, pollId) => {
-    try {
-        const response = await instance.get(
-            `/api/communities/${postId}/polls/${pollId}/results`
-        );
-        return response.data;
-    } catch (error) {
-        console.error('투표 결과 조회 실패:', error);
-        throw error;
-    }
-};
-
-export const getUserVoteStatus = async (postId, pollId, userId) => {
-    try {
-        const response = await instance.get(
-            `/api/communities/${postId}/polls/${pollId}/status`,
-            { params: { userId } }
-        );
-        return response.data;
-    } catch (error) {
-        console.error('투표 상태 조회 실패:', error);
-        throw error;
-    }
-};
-
 export const cancelVote = async (communityId, pollId, userId) => {
     try {
         const response = await instance.post(
@@ -281,12 +276,12 @@ export const deletePoll = async (communityId, pollId, userId) => {
         throw error;
     }
 };
-
+//-----------------최적화 중------------------------//
 // 🔍 댓글 투표 생성
-export const createCommentPoll = async (communityId, commentId, pollData) => {
+export const createCommentPoll = async (commentId, pollData) => {
     try {
         const response = await instance.post(
-            `/api/communities/${communityId}/comments/${commentId}/polls`,
+            `/api/communities/comments/${commentId}/polls`,
             pollData
         );
         return response.data;
@@ -297,10 +292,10 @@ export const createCommentPoll = async (communityId, commentId, pollData) => {
 };
 
 // 댓글 투표 참여
-export const voteCommentPoll = async (communityId, commentId, pollId, userId, optionIndex) => {
+export const voteCommentPoll = async (commentId, pollId, userId, optionIndex) => {
     try {
         const response = await instance.post(
-            `/api/communities/${communityId}/comments/${commentId}/polls/${pollId}/vote`,
+            `/api/communities/comments/${commentId}/polls/${pollId}/vote`,
             { userId, optionIndex }
         );
         return response.data;
@@ -311,10 +306,10 @@ export const voteCommentPoll = async (communityId, commentId, pollId, userId, op
 };
 
 // 댓글 투표 결과 조회
-export const getCommentPollResults = async (communityId, commentId, pollId) => {
+export const getCommentPollResults = async (commentId, pollId) => {
     try {
         const response = await instance.get(
-            `/api/communities/${communityId}/comments/${commentId}/polls/${pollId}/results`
+            `/api/communities/comments/${commentId}/polls/${pollId}/results`
         );
         return response.data;
     } catch (error) {
@@ -324,10 +319,10 @@ export const getCommentPollResults = async (communityId, commentId, pollId) => {
 };
 
 // 댓글 투표 상태 확인
-export const getCommentUserVoteStatus = async (communityId, commentId, pollId, userId) => {
+export const getCommentUserVoteStatus = async (commentId, pollId, userId) => {
     try {
         const response = await instance.get(
-            `/api/communities/${communityId}/comments/${commentId}/polls/${pollId}/status`,
+            `/api/communities/comments/${commentId}/polls/${pollId}/status`,
             { params: { userId } }  // ✅ 쿼리 파라미터는 params 객체로
         );
         return response.data;
@@ -338,10 +333,10 @@ export const getCommentUserVoteStatus = async (communityId, commentId, pollId, u
 };
 
 // 댓글 투표 취소
-export const cancelCommentVote = async (communityId, commentId, pollId, userId) => {
+export const cancelCommentVote = async (commentId, pollId, userId) => {
     try {
         const response = await instance.post(
-            `/api/communities/${communityId}/comments/${commentId}/polls/${pollId}/cancel-vote`,
+            `/api/communities/comments/${commentId}/polls/${pollId}/cancel-vote`,
             { userId }
         );
         return response.data;
@@ -352,10 +347,10 @@ export const cancelCommentVote = async (communityId, commentId, pollId, userId) 
 };
 
 // 댓글 투표 삭제
-export const deleteCommentPoll = async (communityId, commentId, pollId, userId) => {
+export const deleteCommentPoll = async (commentId, pollId, userId) => {
     try {
         const response = await instance.delete(
-            `/api/communities/${communityId}/comments/${commentId}/polls/${pollId}`,
+            `/api/communities/comments/${commentId}/polls/${pollId}`,
             { data: { userId } }  // ✅ DELETE 메서드에서 body 전송 시 data 객체 사용
         );
         return response.data;

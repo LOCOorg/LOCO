@@ -5,36 +5,26 @@ import {
     votePoll,
     cancelVote,
     deletePoll,
-    getUserVoteStatus,
-    getPollResults
 } from '../api/communityAPI.js';
 
 export const usePoll = (community, currentUserId, isAdmin) => {
     const [userVotes, setUserVotes] = useState({});
     const [showPollModal, setShowPollModal] = useState(false);
 
-    // 투표 데이터 로딩
+    // 투표 데이터 로딩 (클라이언트에서 직접 계산)
     useEffect(() => {
-        const loadPollData = async () => {
-            if (!community?.polls || !currentUserId) return;
+        if (!community?.polls || !currentUserId) return;
 
-            const pollVotes = {};
-            await Promise.all(
-                community.polls.map(async (poll) => {
-                    try {
-                        const status = await getUserVoteStatus(community._id, poll._id, currentUserId);
-                        if (status.hasVoted) {
-                            pollVotes[poll._id] = status.votedOption;
-                        }
-                    } catch (error) {
-                        console.error(`투표 상태 로딩 실패 (${poll._id}):`, error);
-                    }
-                })
+        const pollVotes = {};
+        community.polls.forEach(poll => {
+            const votedOptionIndex = poll.options.findIndex(option =>
+                (option.votedUsers || []).includes(currentUserId)
             );
-            setUserVotes(pollVotes);
-        };
-
-        loadPollData();
+            if (votedOptionIndex >= 0) {
+                pollVotes[poll._id] = votedOptionIndex;
+            }
+        });
+        setUserVotes(pollVotes);
     }, [community, currentUserId]);
 
     // 투표 생성
@@ -57,10 +47,10 @@ export const usePoll = (community, currentUserId, isAdmin) => {
         }
     };
 
-    // 투표 결과 새로고침
-    const handleRefreshPollResults = async (pollId, setCommunity) => {
+    // 투표하기
+    const handleVote = async (pollId, optionIndex, setCommunity) => {
         try {
-            const results = await getPollResults(community._id, pollId);
+            const results = await votePoll(community._id, pollId, currentUserId, optionIndex);
 
             setCommunity(prevCommunity => ({
                 ...prevCommunity,
@@ -68,29 +58,13 @@ export const usePoll = (community, currentUserId, isAdmin) => {
                     poll._id === pollId
                         ? {
                             ...poll,
-                            options: results.options.map((resultOption, index) => ({
-                                ...poll.options[index],
-                                votes: resultOption.votes
+                            options: poll.options.map((option, index) => ({
+                                ...option,
+                                votes: results.options[index].votes,
                             })),
-                            totalVotes: results.totalVotes
+                            totalVotes: results.totalVotes,
                         }
                         : poll
-                )
-            }));
-        } catch (error) {
-            console.error('투표 결과 새로고침 실패:', error);
-        }
-    };
-
-    // 투표하기
-    const handleVote = async (pollId, optionIndex, setCommunity) => {
-        try {
-            const updatedPoll = await votePoll(community._id, pollId, currentUserId, optionIndex);
-
-            setCommunity(prevCommunity => ({
-                ...prevCommunity,
-                polls: prevCommunity.polls.map(poll =>
-                    poll._id === pollId ? updatedPoll : poll
                 )
             }));
 
@@ -99,7 +73,6 @@ export const usePoll = (community, currentUserId, isAdmin) => {
                 [pollId]: optionIndex
             }));
 
-            await handleRefreshPollResults(pollId, setCommunity);
         } catch (error) {
             console.error('투표 실패:', error);
             throw error;
@@ -109,13 +82,28 @@ export const usePoll = (community, currentUserId, isAdmin) => {
     // 투표 취소
     const handleCancelVote = async (pollId, setCommunity) => {
         try {
-            await cancelVote(community._id, pollId, currentUserId);
+            const results = await cancelVote(community._id, pollId, currentUserId); // Now returns results
 
             const newUserVotes = { ...userVotes };
             delete newUserVotes[pollId];
             setUserVotes(newUserVotes);
 
-            await handleRefreshPollResults(pollId, setCommunity);
+            setCommunity(prevCommunity => ({
+                ...prevCommunity,
+                polls: prevCommunity.polls.map(poll =>
+                    poll._id === pollId
+                        ? {
+                            ...poll,
+                            options: poll.options.map((option, index) => ({
+                                ...option,
+                                votes: results.options[index].votes,
+                            })),
+                            totalVotes: results.totalVotes,
+                        }
+                        : poll
+                )
+            }));
+
         } catch (error) {
             console.error('투표 취소 실패:', error);
             throw error;
@@ -157,7 +145,6 @@ export const usePoll = (community, currentUserId, isAdmin) => {
         handleVote,
         handleCancelVote,
         handleDeletePoll,
-        handleRefreshPollResults,
         canDeletePoll
     };
 };
