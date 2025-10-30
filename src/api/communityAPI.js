@@ -239,11 +239,11 @@ export const createPoll = async (postId, pollData) => {
     }
 };
 
-export const votePoll = async (postId, pollId, userId, optionIndex) => {
+export const votePoll = async (postId, pollId, optionIndex) => {
     try {
         const response = await instance.post(
           `/api/communities/${postId}/polls/${pollId}/vote`,
-          { userId, optionIndex });
+          { optionIndex });
         return response.data;
     } catch (error) {
         console.error('투표 참여 실패:', error);
@@ -251,11 +251,10 @@ export const votePoll = async (postId, pollId, userId, optionIndex) => {
     }
 };
 
-export const cancelVote = async (communityId, pollId, userId) => {
+export const cancelVote = async (communityId, pollId) => {
     try {
         const response = await instance.post(
-            `/api/communities/${communityId}/polls/${pollId}/cancel-vote`,
-            { userId }
+            `/api/communities/${communityId}/polls/${pollId}/cancel-vote`
         );
         return response.data;
     } catch (error) {
@@ -264,11 +263,10 @@ export const cancelVote = async (communityId, pollId, userId) => {
     }
 };
 
-export const deletePoll = async (communityId, pollId, userId) => {
+export const deletePoll = async (communityId, pollId) => {
     try {
         const response = await instance.delete(
-            `/api/communities/${communityId}/polls/${pollId}`,
-            { data: { userId } }
+            `/api/communities/${communityId}/polls/${pollId}`
         );
         return response.data;
     } catch (error) {
@@ -276,7 +274,7 @@ export const deletePoll = async (communityId, pollId, userId) => {
         throw error;
     }
 };
-//-----------------최적화 중------------------------//
+
 // 🔍 댓글 투표 생성
 export const createCommentPoll = async (commentId, pollData) => {
     try {
@@ -292,11 +290,11 @@ export const createCommentPoll = async (commentId, pollData) => {
 };
 
 // 댓글 투표 참여
-export const voteCommentPoll = async (commentId, pollId, userId, optionIndex) => {
+export const voteCommentPoll = async (commentId, pollId, optionIndex) => {
     try {
         const response = await instance.post(
             `/api/communities/comments/${commentId}/polls/${pollId}/vote`,
-            { userId, optionIndex }
+            { optionIndex }
         );
         return response.data;
     } catch (error) {
@@ -319,11 +317,10 @@ export const getCommentPollResults = async (commentId, pollId) => {
 };
 
 // 댓글 투표 상태 확인
-export const getCommentUserVoteStatus = async (commentId, pollId, userId) => {
+export const getCommentUserVoteStatus = async (commentId, pollId) => {
     try {
         const response = await instance.get(
-            `/api/communities/comments/${commentId}/polls/${pollId}/status`,
-            { params: { userId } }  // ✅ 쿼리 파라미터는 params 객체로
+            `/api/communities/comments/${commentId}/polls/${pollId}/status`
         );
         return response.data;
     } catch (error) {
@@ -333,11 +330,10 @@ export const getCommentUserVoteStatus = async (commentId, pollId, userId) => {
 };
 
 // 댓글 투표 취소
-export const cancelCommentVote = async (commentId, pollId, userId) => {
+export const cancelCommentVote = async (commentId, pollId) => {
     try {
         const response = await instance.post(
-            `/api/communities/comments/${commentId}/polls/${pollId}/cancel-vote`,
-            { userId }
+            `/api/communities/comments/${commentId}/polls/${pollId}/cancel-vote`
         );
         return response.data;
     } catch (error) {
@@ -347,11 +343,10 @@ export const cancelCommentVote = async (commentId, pollId, userId) => {
 };
 
 // 댓글 투표 삭제
-export const deleteCommentPoll = async (commentId, pollId, userId) => {
+export const deleteCommentPoll = async (commentId, pollId) => {
     try {
         const response = await instance.delete(
-            `/api/communities/comments/${commentId}/polls/${pollId}`,
-            { data: { userId } }  // ✅ DELETE 메서드에서 body 전송 시 data 객체 사용
+            `/api/communities/comments/${commentId}/polls/${pollId}`
         );
         return response.data;
     } catch (error) {

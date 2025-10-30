@@ -30,10 +30,7 @@ export const usePoll = (community, currentUserId, isAdmin) => {
     // 투표 생성
     const handleCreatePoll = async (pollData, setCommunity) => {
         try {
-            const newPoll = await createPoll(community._id, {
-                ...pollData,
-                userId: currentUserId
-            });
+            const newPoll = await createPoll(community._id, pollData);
 
             setCommunity(prevCommunity => ({
                 ...prevCommunity,
@@ -50,31 +47,48 @@ export const usePoll = (community, currentUserId, isAdmin) => {
     // 투표하기
     const handleVote = async (pollId, optionIndex, setCommunity) => {
         try {
-            const results = await votePoll(community._id, pollId, currentUserId, optionIndex);
+            // 1. 서버에 투표 요청 -> 최신 투표 '수'를 결과로 받음
+            const results = await votePoll(community._id, pollId, optionIndex);
 
-            setCommunity(prevCommunity => ({
-                ...prevCommunity,
-                polls: prevCommunity.polls.map(poll =>
-                    poll._id === pollId
-                        ? {
-                            ...poll,
-                            options: poll.options.map((option, index) => ({
-                                ...option,
-                                votes: results.options[index].votes,
-                            })),
-                            totalVotes: results.totalVotes,
-                        }
-                        : poll
-                )
-            }));
-
+            // 2. 로컬 UI 상태(선택한 항목) 즉시 업데이트
             setUserVotes(prev => ({
                 ...prev,
                 [pollId]: optionIndex
             }));
 
+            // 3. 게시글 데이터(votedUsers)를 업데이트하고, 서버에서 받은 투표 수로 동기화
+            setCommunity(prevCommunity => {
+                const updatedPolls = prevCommunity.polls.map(p => {
+                    if (p._id !== pollId) return p;
+
+                    // votedUsers 배열 업데이트: 현재 사용자를 이전 옵션에서 제거하고 새 옵션에 추가
+                    const updatedOptionsWithVotedUsers = p.options.map((opt, index) => {
+                        const newVotedUsers = (opt.votedUsers || []).filter(uid => uid !== currentUserId);
+                        if (index === optionIndex) {
+                            newVotedUsers.push(currentUserId);
+                        }
+                        return { ...opt, votedUsers: newVotedUsers };
+                    });
+
+                    // 서버에서 받은 최신 투표 수로 업데이트
+                    const finalOptions = updatedOptionsWithVotedUsers.map((opt, index) => ({
+                        ...opt,
+                        votes: results.options[index].votes,
+                    }));
+
+                    return {
+                        ...p,
+                        options: finalOptions,
+                        totalVotes: results.totalVotes,
+                    };
+                });
+
+                return { ...prevCommunity, polls: updatedPolls };
+            });
+
         } catch (error) {
             console.error('투표 실패:', error);
+            // TODO: Consider reverting optimistic UI updates on error
             throw error;
         }
     };
@@ -82,27 +96,41 @@ export const usePoll = (community, currentUserId, isAdmin) => {
     // 투표 취소
     const handleCancelVote = async (pollId, setCommunity) => {
         try {
-            const results = await cancelVote(community._id, pollId, currentUserId); // Now returns results
+            await cancelVote(community._id, pollId);
 
+            // 1. 로컬 UI 상태 즉시 업데이트
             const newUserVotes = { ...userVotes };
             delete newUserVotes[pollId];
             setUserVotes(newUserVotes);
 
-            setCommunity(prevCommunity => ({
-                ...prevCommunity,
-                polls: prevCommunity.polls.map(poll =>
-                    poll._id === pollId
-                        ? {
-                            ...poll,
-                            options: poll.options.map((option, index) => ({
-                                ...option,
-                                votes: results.options[index].votes,
-                            })),
-                            totalVotes: results.totalVotes,
+            // 2. 게시글 데이터(votedUsers 와 투표 수)를 즉시 업데이트
+            setCommunity(prevCommunity => {
+                const updatedPolls = prevCommunity.polls.map(p => {
+                    if (p._id !== pollId) return p;
+
+                    let userVoteIndex = -1;
+                    const updatedOptions = p.options.map((opt, index) => {
+                        const originalVotedUsers = opt.votedUsers || [];
+                        if (originalVotedUsers.includes(currentUserId)) {
+                            userVoteIndex = index;
                         }
-                        : poll
-                )
-            }));
+                        return {
+                            ...opt,
+                            votedUsers: originalVotedUsers.filter(uid => uid !== currentUserId)
+                        };
+                    });
+
+                    if (userVoteIndex > -1) {
+                        updatedOptions[userVoteIndex].votes = Math.max(0, updatedOptions[userVoteIndex].votes - 1);
+                    }
+
+                    const newTotalVotes = updatedOptions.reduce((sum, opt) => sum + opt.votes, 0);
+
+                    return { ...p, options: updatedOptions, totalVotes: newTotalVotes };
+                });
+
+                return { ...prevCommunity, polls: updatedPolls };
+            });
 
         } catch (error) {
             console.error('투표 취소 실패:', error);
@@ -113,7 +141,7 @@ export const usePoll = (community, currentUserId, isAdmin) => {
     // 투표 삭제
     const handleDeletePoll = async (pollId, setCommunity) => {
         try {
-            await deletePoll(community._id, pollId, currentUserId);
+            await deletePoll(community._id, pollId);
 
             setCommunity(prevCommunity => ({
                 ...prevCommunity,

@@ -15,40 +15,27 @@ export const useCommentPoll = (community, comment, setComments, currentUserId, i
 
     // 댓글 투표 데이터 로딩
     useEffect(() => {
-        const loadCommentPollData = async () => {
-            if (!comment?.polls || !currentUserId) return;
+        if (!comment?.polls || !currentUserId) {
+            setCommentUserVotes({}); // Clear votes if no polls or user
+            return;
+        }
 
-            const pollVotes = {};
-
-            await Promise.all(
-                comment.polls.map(async (poll) => {
-                    try {
-                                                            const status = await getCommentUserVoteStatus(
-                                                                comment._id,
-                                                                poll._id,
-                                                                currentUserId
-                                                            );                        if (status.hasVoted) {
-                            pollVotes[`${comment._id}-${poll._id}`] = status.votedOption;
-                        }
-                    } catch (error) {
-                        console.error(`댓글 투표 상태 로딩 실패:`, error);
-                    }
-                })
+        const pollVotes = {};
+        comment.polls.forEach(poll => {
+            const votedOptionIndex = poll.options.findIndex(option =>
+                (option.votedUsers || []).includes(currentUserId)
             );
-
-            setCommentUserVotes(pollVotes);
-        };
-
-        loadCommentPollData();
-    }, [comment, currentUserId, community]);
+            if (votedOptionIndex >= 0) {
+                pollVotes[`${comment._id}-${poll._id}`] = votedOptionIndex;
+            }
+        });
+        setCommentUserVotes(pollVotes);
+    }, [comment, currentUserId]);
 
     // 댓글 투표 생성
     const handleCreateCommentPoll = async (pollData) => {
         try {
-            const newPoll = await createCommentPoll(comment._id, {
-                ...pollData,
-                userId: currentUserId
-            });
+            const newPoll = await createCommentPoll(comment._id, pollData);
 
             setComments(prevComments =>
                 prevComments.map(c =>
@@ -78,7 +65,6 @@ export const useCommentPoll = (community, comment, setComments, currentUserId, i
             const updatedPoll = await voteCommentPoll(
                 comment._id,
                 pollId,
-                currentUserId,
                 optionIndex
             );
 
@@ -110,13 +96,46 @@ export const useCommentPoll = (community, comment, setComments, currentUserId, i
     // 댓글 투표 취소
     const handleCancelCommentVote = async (pollId) => {
         try {
-            await cancelCommentVote(comment._id, pollId, currentUserId);
+            await cancelCommentVote(comment._id, pollId);
 
+            // 1. 로컬 UI 상태 즉시 업데이트
             const newVotes = { ...commentUserVotes };
             delete newVotes[`${comment._id}-${pollId}`];
             setCommentUserVotes(newVotes);
 
-            await handleRefreshCommentPollResults(pollId);
+            // 2. 댓글 데이터(votedUsers 와 투표 수)를 즉시 업데이트
+            setComments(prevComments =>
+                prevComments.map(c => {
+                    if (c._id !== comment._id) return c;
+
+                    const updatedPolls = c.polls.map(p => {
+                        if (p._id !== pollId) return p;
+
+                        let userVoteIndex = -1;
+                        const updatedOptions = p.options.map((opt, index) => {
+                            const originalVotedUsers = opt.votedUsers || [];
+                            if (originalVotedUsers.includes(currentUserId)) {
+                                userVoteIndex = index;
+                            }
+                            return {
+                                ...opt,
+                                votedUsers: originalVotedUsers.filter(uid => uid !== currentUserId)
+                            };
+                        });
+
+                        if (userVoteIndex > -1) {
+                            updatedOptions[userVoteIndex].votes = Math.max(0, updatedOptions[userVoteIndex].votes - 1);
+                        }
+
+                        const newTotalVotes = updatedOptions.reduce((sum, opt) => sum + opt.votes, 0);
+
+                        return { ...p, options: updatedOptions, totalVotes: newTotalVotes };
+                    });
+
+                    return { ...c, polls: updatedPolls };
+                })
+            );
+
         } catch (error) {
             console.error('댓글 투표 취소 실패:', error);
             throw error;
@@ -126,7 +145,7 @@ export const useCommentPoll = (community, comment, setComments, currentUserId, i
     // 댓글 투표 삭제
     const handleDeleteCommentPoll = async (pollId) => {
         try {
-            await deleteCommentPoll(comment._id, pollId, currentUserId);
+            await deleteCommentPoll(comment._id, pollId);
 
             setComments(prevComments =>
                 prevComments.map(c =>

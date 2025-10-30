@@ -72,7 +72,7 @@ function QnaDetailModal({ qna, onClose }) {
                     </div>
                     <div>
                         <span className="font-medium text-gray-700">답변자</span>:{' '}
-                        {qna.answerUserId?.nickname || '-'}
+                        {qna.answerUserNickname || '-'}
                     </div>
                 </div>
 
