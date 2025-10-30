@@ -57,8 +57,10 @@ function QnaListComponent() {
             }
             setLoading(false);
         };
-        fetchWaitingQnas();
-    }, [waitingPage, pageSize, searchKeyword, searchType]);
+        if (activeTab === "답변대기") {
+            fetchWaitingQnas();
+        }
+    }, [waitingPage, pageSize, searchKeyword, searchType, activeTab]);
 
     // "답변완료" 목록 데이터 불러오기 (검색어 반영)
     useEffect(() => {
@@ -73,8 +75,10 @@ function QnaListComponent() {
             }
             setLoading(false);
         };
-        fetchAnsweredQnas();
-    }, [answeredPage, pageSize, searchKeyword, searchType]);
+        if (activeTab === "답변완료") {
+            fetchAnsweredQnas();
+        }
+    }, [answeredPage, pageSize, searchKeyword, searchType, activeTab]);
 
     const handleQnaClick = (qna) => {
         setSelectedQna(qna);
@@ -319,7 +323,7 @@ function QnaListComponent() {
                             <h3 className="text-xl font-semibold text-gray-800 mb-2">{hide ? '비공개 게시글입니다.' : qna.qnaTitle}</h3>
                             <p className="text-sm text-gray-500 mb-4">
                                 작성자: {showNickname ? (qna.userNickname || qna.userId?.nickname || "알 수 없음") : '익명'}
-                                <span className="ml-4">답변자: {qna.answerUserId?.nickname || "알 수 없음"}</span>
+                                <span className="ml-4">답변자: {qna.answerUserNickname || "알 수 없음"}</span>
                             </p>
                             <p className="text-gray-600 leading-relaxed mb-6">
                                 {hide ? <i>비공개</i> : qna.qnaContents.substring(0, 100) + '…'}
