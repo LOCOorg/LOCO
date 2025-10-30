@@ -72,12 +72,31 @@ const useNotificationStore = create((set, get) => ({
     })(),
 
     async toggleFriendReq() {
-        const next = !get().friendReqEnabled;
+        const previous = get().friendReqEnabled;  // ⭐ 이전 값 저장
+        const next = !previous;
+
         set({ friendReqEnabled: next });
         setEncryptedItem('friendReqEnabled', next);
 
         const userId = useAuthStore.getState().user?._id;
-        if (userId) await updateUserPrefs(userId, { friendReqEnabled: next });
+        if (userId) {
+            try {
+                await updateUserPrefs(userId, { friendReqEnabled: next });
+                // ✅ 성공: 아무 것도 안 함
+            } catch (error) {
+                // ✅ 실패: 롤백
+                console.error('친구 요청 설정 업데이트 실패:', error);
+                set({ friendReqEnabled: previous });
+                setEncryptedItem('friendReqEnabled', previous);
+
+                // 선택사항: 사용자에게 알림
+                 get().addNotification({
+                     id: Date.now(),
+                     message: '설정 업데이트에 실패했습니다.',
+                     type: 'error'
+                 });
+            }
+        }
     },
 
     toastEnabled: (() => {
@@ -99,7 +118,9 @@ const useNotificationStore = create((set, get) => ({
     })(),
 
     async toggleChatPreview() {
-        const next = !get().chatPreviewEnabled;
+        const previous = get().chatPreviewEnabled;  // ⭐ 이전 값 저장
+        const next = !previous;
+
         set({ chatPreviewEnabled: next });
         setEncryptedItem('chatPreviewEnabled', next);
 
@@ -131,8 +152,10 @@ const useNotificationStore = create((set, get) => ({
             console.warn('만 19세 이상만 설정할 수 있습니다.');
             return;
         }
-        
-        const next = !get().wordFilterEnabled;
+
+        const previous = get().wordFilterEnabled;  // ⭐ 이전 값 저장
+        const next = !previous;
+
         set({ wordFilterEnabled: next });
         setEncryptedItem('wordFilterEnabled', next);
 

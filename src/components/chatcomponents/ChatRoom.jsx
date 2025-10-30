@@ -11,6 +11,7 @@ import LeagueRecordSection from "./LeagueRecordSection.jsx";
 import useNotificationStore from '../../stores/notificationStore.js';
 import { filterProfanity } from "../../utils/profanityFilter.js";
 import MessageReportModal from "./MessageReportModal.jsx";
+import { retryWithBackoff } from "../../utils/retryUtils.js";  // 🔄 재시도 유틸리티
 
 const ChatRoom = ({roomId, userId}) => {
     const [messages, setMessages] = useState([]);
@@ -129,13 +130,13 @@ const ChatRoom = ({roomId, userId}) => {
     const confirmLeaveRoom = async () => {
         try {
             /* 0) 현재 방 상태 재조회 ― 활성화됐는지 확인 */
-            const roomInfo = await getChatRoomInfo(roomId);     // 🗝️[1]
+            const roomInfo = await getChatRoomInfo(roomId);
             const isChatActive =
-                roomInfo?.isActive ||                  // 스키마의 isActive 필드[6]
-                roomInfo?.status === "active" ||       // 백엔드에서 관리하는 status
-                (roomInfo?.activeUsers?.length ?? 0) >= roomInfo?.capacity; // 예비용
+                roomInfo?.isActive ||
+                roomInfo?.status === "active" ||
+                (roomInfo?.activeUsers?.length ?? 0) >= roomInfo?.capacity;
 
-            /* 1) 매너 평가(채팅이 실제로 진행된 경우에만 의미가 있으므로 isChatActive 검사) */
+            /* 1) 매너 평가(채팅이 실제로 진행된 경우에만) */
             if (isChatActive) {
                 await Promise.all(
                     Object.keys(ratings).map(async (participantId) => {
@@ -146,23 +147,55 @@ const ChatRoom = ({roomId, userId}) => {
                 );
             }
 
-            /* 2) 방 나가기 */
-            const response = await leaveChatRoom(roomId, userId);
-            if (response.success) {
-                /* 3) 🔻 채팅 횟수 차감은 ‘진짜’ 채팅이 시작된 방만 */
-                if (isChatActive) {
-                    await decrementChatCount(userId);    // ✅ 필요할 때만 호출
-                }
+            /* 2) 방 나가기 + 채팅 횟수 차감 (재시도 메커니즘 적용) */
+            const promises = [leaveChatRoom(roomId, userId)];
 
-                /* 4) 소켓 정리 */
+            if (isChatActive) {
+                // 🔄 재시도 메커니즘 적용: 최대 3번, 1-2-3초 대기
+                promises.push(
+                    retryWithBackoff(
+                        () => decrementChatCount(userId),
+                        {
+                            maxRetries: 3,
+                            delayMs: 1000,
+                            exponentialBackoff: true,
+                            onRetry: ({ attempt, maxRetries, delay, error }) => {
+                                console.warn(
+                                    `🔄 채팅 횟수 차감 재시도 중... ` +
+                                    `(${attempt}/${maxRetries}) ` +
+                                    `다음 재시도: ${delay}ms 후`
+                                );
+                            }
+                        }
+                    )
+                );
+            }
+
+            const [leaveResponse] = await Promise.all(promises);
+
+            if (leaveResponse.success) {
                 if (socket) socket.emit("leaveRoom", { roomId, userId });
-
                 navigate("/chat", { replace: true });
-            } else {
-                console.error("채팅방 나가기 실패:", response.message);
             }
         } catch (error) {
-            console.error("채팅방 나가기 중 오류 발생:", error);
+            console.error("❌ 채팅방 나가기 중 오류 발생:", error);
+            
+            // 사용자에게 명확한 피드백 제공
+            let errorMessage = "채팅방 나가기 중 오류가 발생했습니다.";
+            
+            if (error.message?.includes('decrementChatCount') || 
+                error.message?.includes('채팅 횟수')) {
+                errorMessage = 
+                    "채팅 횟수 차감에 실패했습니다. \n" +
+                    "네트워크 상태를 확인하고 다시 시도해주세요.";
+            } else if (error.message?.includes('leaveChatRoom')) {
+                errorMessage = 
+                    "채팅방 나가기에 실패했습니다. \n" +
+                    "페이지를 새로고침해주세요.";
+            }
+            
+            // 오류 메시지 표시 (선택적)
+            alert(errorMessage);
         }
         setIsModalOpen(false);
     };
