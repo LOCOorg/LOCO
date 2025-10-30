@@ -1,5 +1,6 @@
 import {useState, useEffect} from "react";
 import {checkNickname, checkChangeAvailability} from "../../api/userAPI";
+import {validateNicknameClient} from "../../utils/nicknameValidator.js";
 
 
 export default function ProfileDetailSection({
@@ -42,6 +43,7 @@ export default function ProfileDetailSection({
 
     // 닉네임 중복 체크 함수 (기존 함수)
     const handleNicknameCheck = async (nicknameValue) => {
+        // 1️⃣ 빈 값 체크
         if (!nicknameValue || nicknameValue.trim() === '') {
             setNicknameStatus({
                 available: false,
@@ -59,6 +61,19 @@ export default function ProfileDetailSection({
                 loading: false
             });
             return;
+        }
+
+        // ⭐⭐⭐ 3️⃣ 클라이언트 validation (새로 추가!)
+        const clientValidation = validateNicknameClient(nicknameValue);
+
+        if (!clientValidation.valid) {
+            // ✅ 클라이언트에서 걸러짐 → API 호출 안 함!
+            setNicknameStatus({
+                available: false,
+                message: clientValidation.message,
+                loading: false
+            });
+            return;  // ⭐ 여기서 종료 (API 호출 생략)
         }
 
         setNicknameStatus(prev => ({ ...prev, loading: true }));

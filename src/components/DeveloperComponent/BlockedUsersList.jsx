@@ -278,12 +278,9 @@ const BlockedUsersList = ({ userId, className = "" }) => {
                                         )}
                                         <div>
                                             <div className="font-medium text-gray-800">{user.nickname}</div>
-                                            <div className="text-sm text-gray-600">{user.name}</div>
+
                                             <div className="text-xs text-gray-500">
                                                 ID: {user._id}
-                                            </div>
-                                            <div className="text-xs text-gray-500">
-                                                가입일: {new Date(user.createdAt).toLocaleDateString('ko-KR')}
                                             </div>
                                         </div>
                                     </div>

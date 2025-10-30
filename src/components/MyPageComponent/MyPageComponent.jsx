@@ -12,6 +12,7 @@ import QnaHistoryComponent from "./QnaHistoryComponent.jsx";
 
 const MyPageContent = ({overrideProfile}) => {
     const authUser = useAuthStore((state) => state.user);
+    const setUser = useAuthStore((state) => state.setUser);  // 🔥 이 줄 추가
     const [profile, setProfile] = useState(overrideProfile || null);
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({});
@@ -172,6 +173,21 @@ const MyPageContent = ({overrideProfile}) => {
         try {
             const updated = await updateUserProfile(authUser._id, formData);
             setProfile(updated);
+
+            // 🔥 여기서부터 추가 (authStore 업데이트)
+            setUser(prev => ({
+                ...prev,
+                nickname: updated.nickname,
+                info: updated.info,
+                gender: updated.gender,
+                lolNickname: updated.lolNickname,
+                suddenNickname: updated.suddenNickname,
+                battleNickname: updated.battleNickname,
+                profilePhoto: updated.profilePhoto,
+                photo: updated.photo
+            }));
+            // 🔥 여기까지 추가
+
             setEditMode(false);
             toast.success('수정이 완료되었습니다.');
         } catch (error) {
