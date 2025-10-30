@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../stores/authStore';
-import { getFriendRequestList } from '../../api/userAPI';
+import { getFriendRequestCount  } from '../../api/userAPI';
 
 const MyPageButton = () => {
     const navigate = useNavigate();
@@ -13,8 +13,8 @@ const MyPageButton = () => {
         const fetchFriendRequests = async () => {
             if (authUser) {
                 try {
-                    const requests = await getFriendRequestList(authUser._id);
-                    setFriendRequestCount(requests.length);
+                    const requests = await getFriendRequestCount (authUser._id);
+                    setFriendRequestCount(requests);
                 } catch (error) {
                     console.error("친구 요청 목록을 불러오는 데 실패했습니다.", error);
                 }

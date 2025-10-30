@@ -1,6 +1,7 @@
 // src/api/userAPI.js
 // import axios from "axios";
 import instance from "./axiosInstance.js"; // axios 모듈 import
+import { debounce } from 'lodash';
 
 
 
@@ -16,6 +17,8 @@ export const getUserInfo = async (userId) => {
 };
 
 //====================================================================================================================
+//=========== 프롬프트 변경=============================================================================
+
 
 // 유저 프로필 업데이트 API 함수 (PATCH 요청)
 // 전체 저장 방식으로, 수정된 모든 필드를 한 번에 전송합니다.
@@ -28,6 +31,9 @@ export const updateUserProfile = async (userId, updatedData) => {
         throw error;
     }
 };
+
+//=========== 프롬프트 변경=============================================================================
+
 
 
 // 유저 별점 업데이트 API 함수 (fetch 사용)
@@ -53,6 +59,8 @@ export const rateUser = async (userId, rating) => {
     }
 };
 
+//=========== 프롬프트 변경=========캐싱추가====================================================================
+
 // 별칭(nickname)으로 사용자 조회 API 함수
 export const getUserByNickname = async (nickname) => {
     try {
@@ -77,18 +85,18 @@ export const getUserByNickname = async (nickname) => {
     }
 };
 
-//===================================================================================================================
+//=========== 프롬프트 변경=========캐싱추가====================================================================
 
 export const decrementChatCount = async (userId) => {
     try {
         const response = await instance.post(
             `/api/user/${userId}/decrementChatCount`,
-            { userId },
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            }
+            // { userId },
+            // {
+            //     headers: {
+            //         "Content-Type": "application/json",
+            //     },
+            // }
         );
         return response.data;
     } catch (error) {
@@ -97,10 +105,11 @@ export const decrementChatCount = async (userId) => {
     }
 };
 
-//===================================================================================================================
+//=========== 프롬프트 변경=========캐싱추가====================================================================
+
 
 // 친구 요청 보내기 API 함수
-export const sendFriendRequest = async (senderId, receiverId) => {
+export const sendFriendRequest = debounce( async (senderId, receiverId) => {
     try {
         // senderId를 URL 경로에 추가 (라우터: "/:userId/friend-request")
         const response = await instance.post(`/api/user/${senderId}/friend-request`, { senderId, receiverId });
@@ -108,21 +117,26 @@ export const sendFriendRequest = async (senderId, receiverId) => {
     } catch (error) {
         throw new Error(error.response?.data.message || error.message);
     }
-};
-//===================================================================================================================
+    },
+    300,  // 300ms 딜레이
+    { leading: true, trailing: false }
+);
+//=========== 프롬프트 변경=========캐싱추가====================================================================
+
 
 // 친구 요청 수락 API 함수
 export const acceptFriendRequest = async (userId, requestId) => {
     try {
         // userId(친구 요청을 수락하는 사용자)를 URL 경로에 추가 (라우터: "/:userId/friend-request/accept")
         const response = await instance.post(`/api/user/${userId}/friend-request/accept`, { requestId });
-        return response.data.data;
+        return response.data;
     } catch (error) {
         throw new Error(error.response?.data.message || error.message);
     }
 };
 
-//===================================================================================================================
+//=========== 프롬프트 변경=========캐싱추가====================================================================
+
 
 // 친구 요청 목록 조회 API 함수
 export const getFriendRequestList = async (userId) => {
@@ -134,6 +148,27 @@ export const getFriendRequestList = async (userId) => {
         throw new Error(error.response?.data.message || error.message);
     }
 };
+
+
+/**
+ * 친구 요청 개수만 조회 (최적화)
+ * 전체 데이터 대신 개수만 받아서 네트워크 트래픽 99% 감소
+ * @param {string} userId - 사용자 ID
+ * @returns {Promise<number>} 친구 요청 개수
+ */
+export const getFriendRequestCount = async (userId) => {
+    try {
+        console.log(`📊 [API] 친구 요청 개수 조회: ${userId}`);
+        const response = await instance.get(`/api/user/${userId}/friend-requests/count`);
+        console.log(`✅ [API] 친구 요청 개수: ${response.data.count}개`);
+        return response.data.count;  // ✅ count만 반환
+    } catch (error) {
+        console.error(`❌ [API] 친구 요청 개수 조회 실패:`, error);
+        throw new Error(error.response?.data.message || error.message);
+    }
+};
+
+
 
 //===================================================================================================================
 
@@ -204,6 +239,8 @@ export const getBlockedUsers = async (userId) => {
     }
 };
 
+//===================================================================================================================
+
 /**
  * Riot ID(gameName, tagLine)로 PUUID 기반 전적 조회
  * @param {string} gameName – Riot ID의 게임명 부분
@@ -238,6 +275,13 @@ export const getFriendsPage = async (userId, offset = 0, limit = 20, online) => 
     }
 };
 
+//===================================================================================================================
+
+
+
+
+
+//=========== 프롬프트 변경=============================================================================
 export const updateUserPrefs = async (userId, prefs) => {
     try {
         // PATCH /api/user/:userId/prefs
@@ -247,7 +291,7 @@ export const updateUserPrefs = async (userId, prefs) => {
         throw new Error(error.response?.data.message || error.message);
     }
 };
-
+//=========== 프롬프트 변경=============================================================================
 
 // 닉네임 중복 체크
 export const checkNickname = async (nickname, userId = null) => {
@@ -260,6 +304,9 @@ export const checkNickname = async (nickname, userId = null) => {
         throw error;
     }
 };
+
+
+//=========== 프롬프트 변경=============================================================================
 
 // 닉네임/성별 변경 가능 여부 확인
 export const checkChangeAvailability = async (userId) => {

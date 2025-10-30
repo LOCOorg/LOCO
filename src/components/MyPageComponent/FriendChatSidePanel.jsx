@@ -456,34 +456,42 @@ const FriendChatSidePanel = () => {
         }
 
         try {
-            // ✅ 1. acceptFriendRequest 호출 - 응답 데이터 받기
+            // 1) 백엔드 API 호출
             console.log('📡 [친구수락] acceptFriendRequest 호출...');
             const result = await acceptFriendRequest(user._id, reqId);
-            console.log('✅ [친구수락] 백엔드 수락 완료, 응답:', result);
 
-            // ✅ 2. 응답에서 친구 정보 바로 추출 (추가 API 호출 불필요!)
-            const friendInfo = result.friend;
-
-            if (!friendInfo) {
-                console.error('❌ [친구수락] 응답에 friend 정보 없음');
-                alert('친구 정보를 받아오지 못했습니다. 다시 시도해주세요.');
-                return;
+            // ✅ 응답 데이터 검증 강화
+            if (!result) {
+                throw new Error('응답 데이터가 없습니다.');
             }
+            console.log('✅ [친구수락] 백엔드 수락 완료');
 
-            console.log('✅ [친구수락] 친구 정보 확인:', friendInfo);
-
-            // ✅ 3. UI 업데이트 (요청 목록에서 제거, 알림 제거)
+            // 2) UI 업데이트
             afterHandled(reqId, notiIdx);
             console.log('✅ [친구수락] UI 요청 제거 완료');
 
-            // ✅ 4. 전역 상태 업데이트
-            console.log('📝 [친구수락] 전역 상태 업데이트 시작');
+            // 3) 친구 정보 가져오기
+            const accepted = friendRequests.find((r) => r?._id === reqId);
+            console.log('🔍 [친구수락] 수락한 요청:', accepted);
 
-            // Zustand 친구 목록 스토어에 추가
+            if (!accepted?.sender?._id) {
+                throw new Error('친구 요청을 찾을 수 없습니다.');
+            }
+
+            console.log('📡 [친구수락] 친구 정보 조회 시작:', accepted.sender._id);
+            const friendInfo = await getUserFriendProfile(accepted.sender._id);
+
+            // ✅ 친구 정보 검증
+            if (!friendInfo?._id || !friendInfo?.nickname) {
+                throw new Error('친구 정보가 올바르지 않습니다.');
+            }
+            console.log('✅ [친구수락] 친구 정보 조회 완료:', friendInfo);
+
+            // 4) 전역 상태 업데이트
+            console.log('📝 [친구수락] 전역 상태 업데이트 시작');
             addFriend(friendInfo);
             console.log('✅ [친구수락] addFriend 완료');
 
-            // Auth 스토어 업데이트 (friends 배열에 ID 추가)
             setAuthUser((prevUser) => {
                 const updated = {
                     ...prevUser,
@@ -493,20 +501,28 @@ const FriendChatSidePanel = () => {
                 return updated;
             });
 
-            console.log('🎉 [친구수락] 모든 처리 완료!');
+            console.log(`🎉 [친구수락 성공] ${friendInfo.nickname}님과 친구가 되었습니다.`);
 
         } catch (e) {
-            console.error('❌ [친구수락] 실패:', e);
+            console.error('❌ [친구수락 실패]', e);
             console.error('❌ [친구수락] 에러 상세:', e.message);
-            alert(e.message || '친구 요청 수락 중 오류가 발생했습니다.');
 
-            // 에러 메시지를 사용자에게 표시 (선택사항)
-            // alert(`친구 요청 수락 실패: ${e.message}`);
+            // ✅ 에러 종류별 처리
+            let userMessage = '친구 요청 수락 중 오류가 발생했습니다.';
 
-            if (e.stack) {
-                console.error('❌ [친구수락] 에러 스택:', e.stack);
-
+            if (e.message?.includes('찾을 수 없습니다')) {
+                userMessage = '친구 요청을 찾을 수 없습니다. 이미 처리되었거나 취소되었을 수 있습니다.';
+            } else if (e.message?.includes('이미 처리된')) {
+                userMessage = '이미 처리된 친구 요청입니다.';
+            } else if (e.message?.includes('네트워크') || e.code === 'ERR_NETWORK') {
+                userMessage = '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
+            } else if (e.message?.includes('응답 데이터가 없습니다')) {
+                userMessage = '서버 응답이 올바르지 않습니다. 잠시 후 다시 시도해주세요.';
+            } else if (e.message?.includes('친구 정보가 올바르지 않습니다')) {
+                userMessage = '친구 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.';
             }
+
+            alert(userMessage);
         }
     };
 

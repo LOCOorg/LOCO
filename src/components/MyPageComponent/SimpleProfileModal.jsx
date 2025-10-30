@@ -141,8 +141,8 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
             useFriendListStore.getState().removeFriend(profile._id);   // 전역 리스트 동기화
 
             /* 2) 열려 있던 친구 채팅창 닫기 */
-            const friendChats = useFriendChatStore.getState().friendChats;
-            const targetChat = friendChats.find(c => c.friend._id === profile._id);
+            const friendRooms = useFriendChatStore.getState().friendRooms || [];
+            const targetChat = friendRooms.find(c => c.friend._id === profile._id);
             if (targetChat) {
                 await closeFriendChat(targetChat.roomId);   // ⬅ 핵심
             }
@@ -180,8 +180,8 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
             useFriendListStore.getState().removeFriend(profile._id);
 
             // 5️⃣ 열려있는 친구 채팅창 닫기
-            const friendChats = useFriendChatStore.getState().friendChats;
-            const targetChat = friendChats.find(c => c.friend._id === profile._id);
+            const friendRooms = useFriendChatStore.getState().friendRooms || [];
+            const targetChat = friendRooms.find(c => c.friend._id === profile._id);
             if (targetChat) {
                 await closeFriendChat(targetChat.roomId);
             }
