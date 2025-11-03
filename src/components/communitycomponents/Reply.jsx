@@ -1,6 +1,8 @@
 // src/components/communitycomponents/Reply.jsx
+import { useState, useEffect } from 'react';
 import ProfileButton from '../MyPageComponent/ProfileButton.jsx';
 import SubReply from './SubReply.jsx';
+import { fetchSubRepliesByReplyId } from '../../api/communityApi.js';
 
 const Reply = ({
                    reply,
@@ -24,8 +26,31 @@ const Reply = ({
                    handleSubReplyReport,
                    API_HOST
                }) => {
+    const [subReplies, setSubReplies] = useState([]);
+    const [subReplyPage, setSubReplyPage] = useState(1);
+    const [hasMoreSubReplies, setHasMoreSubReplies] = useState(false);
+
+    useEffect(() => {
+        if (reply.subReplies) {
+            setSubReplies(reply.subReplies);
+            setHasMoreSubReplies(reply.subReplies.length < reply.totalSubReplies);
+        }
+    }, [reply.subReplies]);
+
+    const loadMoreSubReplies = async () => {
+        const nextPage = subReplyPage + 1;
+        try {
+            const response = await fetchSubRepliesByReplyId(reply._id, nextPage);
+            setSubReplies(prevSubReplies => [...prevSubReplies, ...response.subReplies]);
+            setSubReplyPage(nextPage);
+            setHasMoreSubReplies(response.subReplies.length > 0 && response.subReplies.length % 5 === 0);
+        } catch (error) {
+            console.error("Error loading more sub-replies:", error);
+        }
+    };
+
     const isReplyDeleted = reply.isDeleted;
-    const hasActiveSubReplies = reply.subReplies && reply.subReplies.some(sub => !sub.isDeleted);
+    const hasActiveSubReplies = subReplies && subReplies.some(sub => !sub.isDeleted);
 
     if (isReplyDeleted && !hasActiveSubReplies) {
         return null;
@@ -165,9 +190,9 @@ const Reply = ({
                 )}
 
                 {/* 대대댓글 목록 */}
-                {reply.subReplies && reply.subReplies.length > 0 && (
+                {subReplies && subReplies.length > 0 && (
                     <ul className="mt-2 space-y-2 border-l-2 border-gray-100 pl-3">
-                        {reply.subReplies.map((subReply) => (
+                        {subReplies.map((subReply) => (
                             <SubReply
                                 key={subReply._id}
                                 subReply={subReply}
@@ -179,12 +204,17 @@ const Reply = ({
                                 isAdmin={isAdmin}
                                 getDisplayNickname={getDisplayNickname}
                                 formatRelativeTime={formatRelativeTime}
-
+                                setSubReplies={setSubReplies}
                                 openSubReplyDeleteModal={openSubReplyDeleteModal}
                                 handleSubReplyReport={handleSubReplyReport}
                                 API_HOST={API_HOST}
                             />
                         ))}
+                        {hasMoreSubReplies && (
+                            <button onClick={loadMoreSubReplies} className="text-blue-500 text-xs mt-2 hover:underline">
+                                답글 더보기
+                            </button>
+                        )}
                     </ul>
                 )}
             </div>
