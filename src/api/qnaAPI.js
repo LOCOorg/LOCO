@@ -2,21 +2,6 @@
 
 import instance from './axiosInstance';
 
-
-
-/**
- * 백엔드에서 모든 QnA 목록을 가져옵니다.
- * @returns {Promise<Array>} QnA 목록
- */
-export async function getQnas() {
-    try {
-        const response = await instance.get('/api/qna');
-        return response.data;
-    } catch (error) {
-        throw new Error('Failed to fetch QnAs');
-    }
-}
-
 /**
  * 페이지네이션을 적용하여 qnaStatus에 따른 QnA 목록을 가져옵니다.
  * @param {number} page - 요청할 페이지 번호
@@ -49,20 +34,6 @@ export async function createQna(qnaData) {
         return response.data;
     } catch (error) {
         throw new Error('Failed to create QnA');
-    }
-}
-
-/**
- * 주어진 QnA ID에 해당하는 QnA의 상세 정보를 가져옵니다.
- * @param {string} id - QnA ID
- * @returns {Promise<Object>} QnA 상세 정보
- */
-export async function getQnaById(id) {
-    try {
-        const response = await instance.get(`/api/qna/${id}`);
-        return response.data;
-    } catch (error) {
-        throw new Error('Failed to fetch QnA details');
     }
 }
 
