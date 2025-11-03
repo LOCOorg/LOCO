@@ -1,7 +1,9 @@
 // src/components/communitycomponents/Comment.jsx
+import { useState, useEffect } from 'react';
 import ProfileButton from '../MyPageComponent/ProfileButton.jsx';
 import CommentPollManager from "./CommentPollManager.jsx";
 import Reply from './Reply.jsx';
+import { fetchRepliesByCommentId } from '../../api/communityApi.js';
 
 const Comment = ({
                      comment,
@@ -33,8 +35,31 @@ const Comment = ({
                      openSubReplyDeleteModal,
                      handleSubReplyReport
                  }) => {
+    const [replies, setReplies] = useState([]);
+    const [replyPage, setReplyPage] = useState(1);
+    const [hasMoreReplies, setHasMoreReplies] = useState(false);
+
+    useEffect(() => {
+        if (comment.replies) {
+            setReplies(comment.replies);
+            setHasMoreReplies(comment.replies.length < comment.totalReplies);
+        }
+    }, [comment.replies]);
+
+    const loadMoreReplies = async () => {
+        const nextPage = replyPage + 1;
+        try {
+            const response = await fetchRepliesByCommentId(comment._id, nextPage);
+            setReplies(prevReplies => [...prevReplies, ...response.replies]);
+            setReplyPage(nextPage);
+            setHasMoreReplies(response.replies.length > 0 && response.replies.length % 5 === 0);
+        } catch (error) {
+            console.error("Error loading more replies:", error);
+        }
+    };
+
     const isCommentDeleted = comment.isDeleted;
-    const hasActiveReplies = comment.replies && comment.replies.some(reply =>
+    const hasActiveReplies = replies && replies.some(reply =>
         !reply.isDeleted || (reply.subReplies && reply.subReplies.some(sub => !sub.isDeleted))
     );
 
@@ -185,9 +210,9 @@ const Comment = ({
                 )}
 
                 {/* 대댓글 목록 */}
-                {comment.replies && comment.replies.length > 0 && (
+                {replies && replies.length > 0 && (
                     <ul className="mt-3 space-y-2 border-l-2 border-gray-200 pl-4">
-                        {comment.replies.map((reply) => (
+                        {replies.map((reply) => (
                             <Reply
                                 key={reply._id}
                                 reply={reply}
@@ -198,7 +223,7 @@ const Comment = ({
                                 isAdmin={isAdmin}
                                 getDisplayNickname={getDisplayNickname}
                                 formatRelativeTime={formatRelativeTime}
-
+                                setReplies={setReplies}
                                 subReplyState={subReplyState}
                                 subReplyIsAnonymous={subReplyIsAnonymous}
                                 setSubReplyIsAnonymous={setSubReplyIsAnonymous}
@@ -213,6 +238,11 @@ const Comment = ({
                                 API_HOST={API_HOST}
                             />
                         ))}
+                        {hasMoreReplies && (
+                            <button onClick={loadMoreReplies} className="text-blue-500 text-xs mt-2 hover:underline">
+                                답글 더보기
+                            </button>
+                        )}
                     </ul>
                 )}
             </div>

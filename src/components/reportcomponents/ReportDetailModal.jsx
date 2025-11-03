@@ -1,30 +1,43 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { replyToReport, fetchReportChatLog, fetchReportedMessagePlaintext  } from '../../api/reportAPI.js';
+import { replyToReport, fetchReportChatLog, fetchReportedMessagePlaintext, fetchReportById } from '../../api/reportAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import useAuthStore from '../../stores/authStore.js';
 import {useNavigate} from "react-router-dom";
 
 // eslint-disable-next-line react/prop-types
-const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
+const ReportDetailModal = ({ reportId, onClose, onUpdateReport }) => {
     const { user } = useAuthStore();
     const [replyContent, setReplyContent] = useState('');
     const [suspensionDays, setSuspensionDays] = useState('');
     const [selectedStopDetail, setSelectedStopDetail] = useState('');
     const [isEditing, setIsEditing] = useState(false);
-    const [localReport, setLocalReport] = useState(report);
+    const [localReport, setLocalReport] = useState(null);
     const [modalInfo, setModalInfo] = useState({ isOpen: false, title: '', message: '' });
-
     const [chatMessages, setChatMessages] = useState([]);
     const [showChatModal, setShowChatModal] = useState(false);
-    
-    // ✅ 평문 내용 state 추가
     const [plaintextData, setPlaintextData] = useState(null);
     const [showPlaintextModal, setShowPlaintextModal] = useState(false);
-
+    const [chatData, setChatData] = useState({ messages: [], roomType: '', totalMessages: 0, mode: 'admin' });
     const navigate = useNavigate();
 
-    const [chatData, setChatData] = useState({ messages: [], roomType: '', totalMessages: 0, mode: 'admin' });
+    useEffect(() => {
+        if (reportId) {
+            fetchReportById(reportId)
+                .then(data => {
+                    setLocalReport(data);
+                    setReplyContent(data?.reportAnswer || '');
+                    setSelectedStopDetail(data?.stopDetail || '');
+                })
+                .catch(err => {
+                    setModalInfo({
+                        isOpen: true,
+                        title: '오류',
+                        message: `신고 정보를 불러오는 데 실패했습니다: ${err.message}`
+                    });
+                });
+        }
+    }, [reportId]);
 
     // ✅ 평문 내용 조회 (관리자용)
     const loadPlaintextMessage = async () => {
@@ -82,12 +95,6 @@ const ReportDetailModal = ({ report, onClose, onUpdateReport }) => {
         navigate(`/community/${parentId}#${type}-${targetId}`);
         onClose();
     };
-
-    useEffect(() => {
-        setLocalReport(report);
-        setReplyContent(report?.reportAnswer || '');
-        setSelectedStopDetail(report?.stopDetail || '');
-    }, [report]);
 
     if (!localReport) return null;
 

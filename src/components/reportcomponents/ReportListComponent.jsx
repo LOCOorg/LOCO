@@ -8,7 +8,10 @@ import useAuthStore from "../../stores/authStore.js";
 const ReportListComponent = () => {
     const [pageData, setPageData] = useState(null);
     const [error, setError] = useState(null);
-    const [selectedReport, setSelectedReport] = useState(null);
+    const [selectedReportId, setSelectedReportId] = useState(null);
+
+    const handleOpenDetail = (reportId) => setSelectedReportId(reportId);
+    const handleCloseDetail = () => setSelectedReportId(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [reportToDelete, setReportToDelete] = useState(null);
@@ -82,9 +85,6 @@ const ReportListComponent = () => {
             setPageData({ ...pageData, dtoList: updatedDtoList });
         }
     };
-
-    const handleOpenDetail = (report) => setSelectedReport(report);
-    const handleCloseDetail = () => setSelectedReport(null);
 
     // 신고 구역 필터 버튼 클릭 시 실행
     const handleAreaFilterChange = (area) => {
@@ -333,7 +333,7 @@ const ReportListComponent = () => {
                                 )}
                                 <div className="flex justify-end space-x-2 mt-2">
                                     <button
-                                        onClick={() => handleOpenDetail(report)}
+                                        onClick={() => handleOpenDetail(report._id)} // ID만 전달
                                         className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded"
                                     >
                                         상세 보기
@@ -373,9 +373,9 @@ const ReportListComponent = () => {
                     </div>
                 </>
             )}
-            {selectedReport && (
+            {selectedReportId && (
                 <ReportDetailModal
-                    report={selectedReport}
+                    reportId={selectedReportId} // report 객체 대신 ID 전달
                     onClose={handleCloseDetail}
                     onUpdateReport={handleReportUpdated}
                 />

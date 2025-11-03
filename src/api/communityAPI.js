@@ -56,6 +56,26 @@ export const fetchCommentsByPostId = async (postId, page = 1, size = 20) => {
     }
 };
 
+export const fetchRepliesByCommentId = async (commentId, page = 1, size = 5) => {
+    try {
+        const response = await instance.get(`/api/communities/comments/${commentId}/replies?page=${page}&size=${size}`);
+        return response.data;
+    } catch (error) {
+        console.error("fetchRepliesByCommentId error:", error);
+        throw error;
+    }
+};
+
+export const fetchSubRepliesByReplyId = async (replyId, page = 1, size = 5) => {
+    try {
+        const response = await instance.get(`/api/communities/replies/${replyId}/subreplies?page=${page}&size=${size}`);
+        return response.data;
+    } catch (error) {
+        console.error("fetchSubRepliesByReplyId error:", error);
+        throw error;
+    }
+};
+
 export const createCommunity = async (communityData) => {
     try {
         const response = await instance.post('/api/communities', communityData, {
