@@ -23,6 +23,20 @@ export const fetchReports = async (page = 1, size = 10, filters = {}, orderByDat
     }
 };
 
+/**
+ * ID로 특정 신고 정보를 가져오는 함수
+ * @param {string} reportId - 조회할 신고의 ID
+ * @returns {Promise<Object>} 신고 상세 정보 객체
+ */
+export const fetchReportById = async (reportId) => {
+    try {
+        const response = await instance.get(`/api/report/reports/${reportId}`);
+        return response.data;
+    } catch (error) {
+        throw new Error('신고 상세 정보를 불러오지 못했습니다.');
+    }
+};
+
 
 /**
  * 새로운 신고를 생성하는 함수
