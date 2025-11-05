@@ -109,7 +109,7 @@ const ReportDetailModal = ({ reportId, onClose, onUpdateReport }) => {
                     <div className="mb-2"><span className="font-semibold">신고 구역:</span> {localReport.reportArea}</div>
                     <div className="mb-2"><span className="font-semibold">신고 카테고리:</span> {localReport.reportCategory}</div>
                     <div className="mb-2"><span className="font-semibold">신고 내용:</span> {localReport.reportContants}</div>
-                    <div className="mb-2"><span className="font-semibold">신고일:</span> {new Date(localReport.reportDate).toLocaleString()}</div>
+                    <div className="mb-2"><span className="font-semibold">신고일:</span> {new Date(localReport.createdAt).toLocaleString()}</div>
                     <div className="mb-2"><span className="font-semibold">신고자:</span> {localReport.reportErId?.nickname || localReport.reportErId}</div>
                     <div className="mb-2"><span className="font-semibold">가해자:</span> {localReport.offenderId?.nickname || localReport.offenderId}</div>
                     {localReport.adminId?.nickname && <div className="mb-2"><span className="font-semibold">처리 관리자:</span> {localReport.adminId.nickname}</div>}
