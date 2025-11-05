@@ -62,10 +62,7 @@ export const createReport = async (reportData) => {
  */
 export const deleteReport = async (reportId) => {
     try {
-        const response = await instance.delete(`/api/report/reports/${reportId}`, {
-
-        });
-        return response.data;
+        await instance.delete(`/api/report/reports/${reportId}`);
     } catch (error) {
         throw new Error('신고 삭제에 실패했습니다.');
     }

@@ -102,7 +102,6 @@ const ReportDetailModal = ({ reportId, onClose, onUpdateReport }) => {
         try {
             const updatedReport = await replyToReport(localReport._id, {
                 reportAnswer: replyContent,
-                adminId: user?._id,
                 suspensionDays: suspensionDays ? parseInt(suspensionDays) : 0,
                 stopDetail: selectedStopDetail,
             });
@@ -355,7 +354,7 @@ const ReportDetailModal = ({ reportId, onClose, onUpdateReport }) => {
                                     <span className="ml-auto text-xs text-gray-500">시간순 정렬</span>
                                 </div>
 
-                                {plaintextData.allReportedMessages && plaintextData.allReportedMessages.length > 0 ? (
+                                {plaintextData.allReportedMessages && plaintextData.allReportedMessages.length > 0 && (
                                     plaintextData.allReportedMessages.map((msg, idx) => {
                                         const date = new Date(msg.createdAt);
                                         const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
@@ -402,39 +401,23 @@ const ReportDetailModal = ({ reportId, onClose, onUpdateReport }) => {
                                             </div>
                                         );
                                     })
-                                ) : (
-                                    /* 단일 메시지 표시 */
-                                    <div className="bg-white border-2 border-gray-300 rounded-lg p-5">
-                                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
-                                            <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                                      d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4-4.03 7-9 7a9.77 9.77 0 01-4-.8l-4 1 1.1-3.5A6.8 6.8 0 013 12c0-4 4.03-7 9-7s9 3 9 7z" />
-                                            </svg>
-                                            <h4 className="font-bold text-gray-800">메시지 내용</h4>
-                                        </div>
-                                        <div className="bg-gray-50 p-4 rounded border border-gray-200 min-h-[100px]">
-                                            <p className="whitespace-pre-wrap break-words text-gray-900 text-base leading-relaxed">
-                                                {plaintextData.data.plaintextContent}
-                                            </p>
-                                        </div>
-                                    </div>
                                 )}
-                            </div>
+                                </div>
 
                             {/* 추가 정보 */}
                             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                                 <div className="text-xs text-gray-600 space-y-1">
                                     <div className="flex justify-between">
                                         <span>신고 일시:</span>
-                                        <span className="font-mono">{new Date(plaintextData.data.reportedAt).toLocaleString('ko-KR')}</span>
+                                        <span className="font-mono">{new Date(plaintextData.allReportedMessages.find(m => m.isCurrentReport)?.reportedAt || Date.now()).toLocaleString('ko-KR')}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span>신고 횟수:</span>
-                                        <span className="font-semibold text-red-600">{plaintextData.data.reportersCount}명</span>
+                                        <span className="font-semibold text-red-600">{plaintextData.allReportedMessages.find(m => m.isCurrentReport)?.reportersCount || 0}명</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span>보관 기한:</span>
-                                        <span className="font-mono">{new Date(plaintextData.data.retentionUntil).toLocaleDateString('ko-KR')}까지</span>
+                                        <span className="font-mono">{new Date(plaintextData.allReportedMessages.find(m => m.isCurrentReport)?.retentionUntil || Date.now()).toLocaleDateString('ko-KR')}까지</span>
                                     </div>
                                 </div>
                             </div>
