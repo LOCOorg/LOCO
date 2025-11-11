@@ -365,33 +365,33 @@ const ChatRoom = ({roomId, userId}) => {
 
         participantsRef.current = true;
 
-        const otherIds = participants
-            .map(u => (typeof u === "object" ? u._id : u))
-            .filter(id => id !== userId);
+        const otherParticipants = participants.filter(p => p._id !== userId);
 
         setRecordsLoading(true);
         setRecordsError(null);
 
         Promise.all(
-            otherIds.map(async participantId => {
+            otherParticipants.map(async participant => {
+                const participantId = participant._id;
+                const userInfo = { nickname: participant.nickname }; // 참가자 정보에서 닉네임 사용
+
                 try {
+                    const riotInfo = await getUserRiotInfo(participantId);
 
-                    // const userInfo = await getUserInfo(participantId);
+                    if (riotInfo && riotInfo.riotGameName && riotInfo.riotTagLine) {
+                        const { riotGameName, riotTagLine } = riotInfo;
+                        // 전적 섹션에 표시할 Riot ID 정보 추가
+                        userInfo.riotGameName = riotGameName;
+                        userInfo.riotTagLine = riotTagLine;
 
-                    // const { riotGameName, riotTagLine } = userInfo;
-
-                    const { riotGameName, riotTagLine } = await getUserRiotInfo(participantId);
-
-                    if (!riotGameName || !riotTagLine) {
-                        throw new Error("Riot ID 정보가 없습니다.");
+                        const leagueRecord = await getLeagueRecord(riotGameName, riotTagLine);
+                        return { participantId, userInfo, leagueRecord, error: null };
+                    } else {
+                        return { participantId, userInfo, leagueRecord: null, error: "Riot ID가 연동되지 않은 유저입니다." };
                     }
-
-                    const leagueRecord = await getLeagueRecord(riotGameName, riotTagLine);
-
-                    return { participantId,  leagueRecord, error: null };
                 } catch (err) {
                     console.error('전적 조회 오류:', err);
-                    return { participantId, userInfo: null, leagueRecord: null, error: err.message };
+                    return { participantId, userInfo, leagueRecord: null, error: err.message };
                 }
             })
         )
