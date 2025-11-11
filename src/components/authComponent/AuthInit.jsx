@@ -25,42 +25,32 @@ const AuthInit = () => {
 
         (async () => {
             try {
-                // 1) Silent refresh (쿠키에 담긴 리프레시 토큰으로 액세스 토큰 발급)
-                // await refresh();
-
-                // 2) /api/auth/me 호출하여 현재 사용자 정보 및 추가 토큰을 받아옴
+                // 1) Get user
                 const { user } = await fetchCurrentUser();
-                setUser(user);
 
-                console.log('✅ [AuthInit] 인증 완료:', user._id);
-                // // 3) fetchCurrentUser()가 추가 새로운 액세스 토큰을  내려줄 경우, 스토어 갱신
-                // if (maybeNew) {
-                //     setAccessToken(maybeNew);
-                // }
-
-                getUserFriendIds(user._id)
-                    .then(({ friendIds }) => {
-                        // authStore에 friends 추가
-                        setUser({
-                            ...useAuthStore.getState().user,
-                            friends: friendIds
-                        });
-                        console.log(`✅ [AuthInit] 친구 ID 로드 완료: ${friendIds.length}명`);
-                    })
-                    .catch(err => {
+                // 2) Get friends and blocked users in parallel
+                const [friendData, blockedList] = await Promise.all([
+                    getUserFriendIds(user._id).catch(err => {
                         console.error('❌ [AuthInit] 친구 ID 로드 실패:', err);
-                    });
-
-                getBlockedUsers(user._id)
-                    .then((blockedList) => {
-                        setBlockedUsers(blockedList);
-                        console.log(`✅ [AuthInit] 차단 목록 로드 완료: ${blockedList.length}명`);
-                    })
-                    .catch(err => {
+                        return { friendIds: [] }; // Return empty on failure
+                    }),
+                    getBlockedUsers(user._id).catch(err => {
                         console.error('❌ [AuthInit] 차단 목록 로드 실패:', err);
-                    });
+                        return []; // Return empty on failure
+                    })
+                ]);
 
+                // 3) Combine all data into one user object
+                const finalUser = {
+                    ...user,
+                    friends: friendData.friendIds
+                };
 
+                // 4) Set state ONCE
+                setUser(finalUser);
+                setBlockedUsers(blockedList);
+
+                console.log('✅ [AuthInit] 인증 및 추가 정보 로드 완료:', user._id);
 
             } catch (err) {
                 // 리프레시나 사용자 조회 단계에서 오류(401 등) 발생 시, 완전 로그아웃 상태로 전환
@@ -68,7 +58,7 @@ const AuthInit = () => {
                 logout();
             }
         })();
-    }, [setUser, logout]);
+    }, [setUser, logout, setBlockedUsers]);
 
     // 🔧 사용자 로그인 완료 후 소켓 등록
     useEffect(() => {

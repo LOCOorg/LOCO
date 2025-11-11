@@ -321,7 +321,7 @@ const ReportListComponent = () => {
                                     <span className="font-semibold">내용:</span> {report.reportContants}
                                 </p>
                                 <p className="mb-1">
-                                    <span className="font-semibold">신고일:</span> {new Date(report.reportDate).toLocaleString()}
+                                    <span className="font-semibold">신고일:</span> {new Date(report.createdAt).toLocaleString()}
                                 </p>
                                 <p className="mb-1">
                                     <span className="font-semibold">가해자:</span> {report.offenderId?.nickname}

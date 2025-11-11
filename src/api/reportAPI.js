@@ -62,10 +62,7 @@ export const createReport = async (reportData) => {
  */
 export const deleteReport = async (reportId) => {
     try {
-        const response = await instance.delete(`/api/report/reports/${reportId}`, {
-
-        });
-        return response.data;
+        await instance.delete(`/api/report/reports/${reportId}`);
     } catch (error) {
         throw new Error('신고 삭제에 실패했습니다.');
     }
@@ -110,13 +107,31 @@ export const replyToReport = async (reportId, replyData) => {
  */
 export const fetchReportedMessagePlaintext = async (reportId) => {
     try {
-        const response = await instance.get(`/api/report/reports/${reportId}/plaintext`, {
+        const response = await instance.get(`/api/report/reports/${reportId}/plaintext/all`, {
 
         });
         return response.data;
     } catch (error) {
         console.error('평문 메시지 조회 실패:', error);
         throw new Error(error.response?.data?.message || '신고 내용을 불러오지 못했습니다.');
+    }
+};
+
+/**
+ * 🔒 단일 신고 메시지 평문 내용 조회 (관리자용)
+ * ReportDetailModal에서 특정 신고 1건에 대한 내용만 볼 때 사용
+ * @param {string} messageId - 원본 메시지 ID
+ * @returns {Promise<Object>} 단일 평문 메시지 데이터
+ */
+export const fetchSingleReportedMessage = async (messageId) => {
+    try {
+        const response = await instance.get(`/api/report/reports/message/${messageId}/plaintext`, {
+
+        });
+        return response.data;
+    } catch (error) {
+        console.error('단일 평문 메시지 조회 실패:', error);
+        throw new Error(error.response?.data?.message || '단일 신고 내용을 불러오지 못했습니다.');
     }
 };
 
