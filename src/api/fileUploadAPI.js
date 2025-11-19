@@ -11,7 +11,7 @@ export const uploadFile = async (file, sourcePage) => {
         const response = await API.post('/api/upload', formData, {
             headers: { "Content-Type": "multipart/form-data" }
         });
-        return response.data.upload.url;
+        return response.data.url;
     } catch (error) {
         console.error("파일 업로드 실패:", error.response?.data || error.message);
         throw error;
