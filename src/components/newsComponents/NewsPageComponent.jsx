@@ -196,10 +196,10 @@ const NewsPageComponent = () => {
                                     </div>
                                 </div>
                                 
-                                {item.images && item.images.length > 0 && (
+                                { (item.contentThumbnailUrl || (item.images && item.images.length > 0)) && (
                                     <div className="ml-4">
                                         <img
-                                            src={`${import.meta.env.VITE_API_HOST}/${item.images[0].path}`}
+                                            src={item.contentThumbnailUrl ? item.contentThumbnailUrl : `${import.meta.env.VITE_API_HOST}/${item.images[0].path}`}
                                             alt="썸네일"
                                             className="w-16 h-16 object-cover rounded"
                                         />
