@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import {useParams, Link, useNavigate} from 'react-router-dom';
 import { newsService } from '../../api/newsAPI.js';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../stores/authStore.js';
@@ -12,6 +12,7 @@ const NewsDetailComponent = () => {
     const [news, setNews] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         loadNewsDetail();
@@ -177,7 +178,7 @@ const NewsDetailComponent = () => {
             {/* 뒤로가기 버튼 */}
             <div className="mt-8 pt-6 border-t">
                 <button
-                    onClick={() => window.history.back()}
+                    onClick={() => navigate('/news')}
                     className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                 >
                     목록으로 돌아가기
