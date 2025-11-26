@@ -7,8 +7,8 @@ import {
 } from "../../api/userAPI";
 import { getUserChatStatus } from '../../api/userProfileLightAPI.js';
 import {
-    createChatRoom,
-    joinChatRoom,
+    //createChatRoom,
+    //joinChatRoom,
     fetchChatRooms,
     fetchUserLeftRooms, leaveChatRoom, findOrCreateChatRoom
 } from "../../api/chatAPI";
@@ -284,6 +284,13 @@ const RandomChatComponent = () => {
                         try {
                             setModalOpen(false);
 
+                            const myGender = userInfo?.gender;
+
+                            if (!myGender || myGender === 'select') {
+                                alert('성별 정보가 필요합니다. 마이페이지에서 성별을 선택해주세요.');
+                                return;
+                            }
+
                             // 3️⃣ 백엔드 API 한 번만 호출! (핵심 개선)
                             const result = await findOrCreateChatRoom({
                                 userId: userId,
@@ -291,7 +298,8 @@ const RandomChatComponent = () => {
                                 capacity: capacity,
                                 matchedGender: matchedGender,
                                 ageGroup: userInfo.ageGroup,
-                                selectedGender: matchedGender
+                                userGender: myGender,              // 본인 성별
+                                selectedPreference: matchedGender  // 선택한 매칭 조건
                             });
 
                             if (result.success) {
