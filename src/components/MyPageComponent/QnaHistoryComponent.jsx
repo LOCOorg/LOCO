@@ -103,7 +103,7 @@ const QnaHistoryComponent = ({ profile }) => {
                                                     {qna.qnaStatus}
                                                 </span>
                                                 <span className="text-xs text-gray-400">
-                                                    {new Date(qna.qnaRegdate).toLocaleDateString('ko-KR', {
+                                                    {new Date(qna.createdAt).toLocaleDateString('ko-KR', {
                                                         year: 'numeric',
                                                         month: 'short',
                                                         day: 'numeric'

@@ -75,26 +75,18 @@ const MainBannerComponent = () => {
         }
     };
 
-    const handleBannerClick = async (banner) => {
+    const handleBannerClick = (banner) => {
         if (banner.linkUrl) {
-            try {
-                // 조회수 증가
-                await bannerService.incrementViews(banner._id);
-                
-                // 외부 링크인지 확인
-                if (banner.linkUrl.startsWith('http')) {
-                    window.open(banner.linkUrl, '_blank', 'noopener,noreferrer');
-                } else {
-                    window.location.href = banner.linkUrl;
-                }
-            } catch (error) {
-                console.error('배너 클릭 처리 오류:', error);
-                // 에러가 있어도 링크는 이동
-                if (banner.linkUrl.startsWith('http')) {
-                    window.open(banner.linkUrl, '_blank', 'noopener,noreferrer');
-                } else {
-                    window.location.href = banner.linkUrl;
-                }
+            // 조회수 증가는 응답을 기다리지 않음 (Fire and Forget)
+            bannerService.incrementViews(banner._id).catch(error => {
+                console.error('배너 조회수 증가 실패 (백그라운드):', error);
+            });
+
+            // 링크는 즉시 이동
+            if (banner.linkUrl.startsWith('http')) {
+                window.open(banner.linkUrl, '_blank', 'noopener,noreferrer');
+            } else {
+                window.location.href = banner.linkUrl;
             }
         }
     };
