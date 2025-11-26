@@ -162,8 +162,22 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
             // ✅ minimal API 사용
             const response = await blockUserMinimal(authUser._id, profile._id);
 
-            // ✅ 수정: API에서 받은 blockedUser 사용
-            addBlockedUser(response.blockedUser);
+            // ✅ API에서 받은 blockedUser 사용
+           // addBlockedUser(response.blockedUser);
+
+            // ✅✅✅ 변경됨: profile prop을 직접 활용!
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // 💡 이미 가진 데이터(profile)를 재사용
+            // 💡 네트워크 트래픽 불필요
+            // 💡 Backend 변경에 독립적
+            addBlockedUser({
+                _id: profile._id,
+                nickname: profile.nickname,
+                profilePhoto: profile.profilePhoto,
+                name: profile.name,
+                createdAt: profile.createdAt
+            });
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
             // ⭐ 핵심: 로컬 상태를 즉시 false로 설정
             setLocalIsFriend(false);

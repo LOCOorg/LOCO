@@ -39,7 +39,7 @@ export default function ProfileDetailSection({
                     console.error('변경 가능 여부 확인 실패:', error);
                 });
         }
-    }, [profile._id, isOwnProfile]);
+    }, [profile._id]); //[profile._id, isOwnProfile]);
 
     // 닉네임 중복 체크 함수 (기존 함수)
     const handleNicknameCheck = async (nicknameValue) => {

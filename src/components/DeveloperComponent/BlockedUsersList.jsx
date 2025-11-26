@@ -19,8 +19,12 @@ const BlockedUsersList = ({ userId, className = "" }) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await instance.get(`/api/user/${userId}/blocked`);
+            const response = await instance.get(`/api/developer/user/${userId}/blocked`);
             setBlockedUsers(response.data.blockedUsers || []);
+
+            if (response.data.metadata) {
+                console.log('📊 차단 목록 조회 메타데이터:', response.data.metadata);
+            }
         } catch (err) {
             console.error('차단목록 조회 실패:', err);
             setError('차단목록을 불러오는데 실패했습니다.');
@@ -64,8 +68,10 @@ const BlockedUsersList = ({ userId, className = "" }) => {
     // 사용자 차단
     const blockUser = async (targetUserId) => {
         try {
-            await instance.post(`/api/user/${userId}/block/${targetUserId}`);
-            
+            await instance.post(`/api/developer/user/${userId}/block/${targetUserId}/minimal`);
+
+
+
             // 차단 성공 시 목록 새로고침
             await fetchBlockedUsers();
             
@@ -106,8 +112,10 @@ const BlockedUsersList = ({ userId, className = "" }) => {
 
         setIsDirectBlocking(true);
         try {
-            await instance.post(`/api/user/${userId}/block/${directBlockId.trim()}`);
-            
+            await instance.post(`/api/developer/user/${userId}/block/${directBlockId.trim()}/minimal`);
+
+
+
             // 차단 성공 시 목록 새로고침
             await fetchBlockedUsers();
             
@@ -130,7 +138,8 @@ const BlockedUsersList = ({ userId, className = "" }) => {
     // 사용자 차단 해제
     const unblockUser = async (targetUserId) => {
         try {
-            await instance.delete(`/api/user/${userId}/block/${targetUserId}`);
+            await instance.delete(`/api/developer/user/${userId}/block/${targetUserId}/minimal`);
+
             
             // 차단 해제 성공 시 목록에서 제거
             setBlockedUsers(prev => prev.filter(user => user._id !== targetUserId));
