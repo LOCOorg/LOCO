@@ -105,13 +105,24 @@ const useNotificationStore = create((set, get) => ({
     })(),
 
     async toggleToast() {
-        const next = !get().toastEnabled;
+        const previous = get().toastEnabled;
+        const next = !previous;
+
         set({ toastEnabled: next });
         setEncryptedItem('toastEnabled', next);
 
         const userId = useAuthStore.getState().user?._id;
-        if (userId) await updateUserPrefs(userId, { toastEnabled: next });
+        if (userId) {
+            try {
+                await updateUserPrefs(userId, { toastEnabled: next });
+            } catch (error) {
+                console.error('토스트 설정 업데이트 실패:', error);
+                set({ toastEnabled: previous });
+                setEncryptedItem('toastEnabled', previous);
+            }
+        }
     },
+
     chatPreviewEnabled: (() => {
         const stored = getDecryptedItem('chatPreviewEnabled');
         return stored !== null ? stored : true;
@@ -130,8 +141,8 @@ const useNotificationStore = create((set, get) => ({
                 await updateUserPrefs(userId, { chatPreviewEnabled: next });
             } catch (error) {
                 // 서버 업데이트 실패 시 로컬 상태 롤백
-                set({ chatPreviewEnabled: !next });
-                setEncryptedItem('chatPreviewEnabled', !next);
+                set({ chatPreviewEnabled: previous });
+                setEncryptedItem('chatPreviewEnabled', previous);
                 console.error('채팅 미리보기 설정 업데이트 실패:', error);
             }
         }
@@ -164,8 +175,8 @@ const useNotificationStore = create((set, get) => ({
                 await updateUserPrefs(userId, { wordFilterEnabled: next });
             } catch (error) {
                 // 서버 업데이트 실패 시 로컬 상태 롤백
-                set({ wordFilterEnabled: !next });
-                setEncryptedItem('wordFilterEnabled', !next);
+                set({ wordFilterEnabled: previous });
+                setEncryptedItem('wordFilterEnabled', previous );
                 console.error('욕설 필터 설정 업데이트 실패:', error);
             }
         }
