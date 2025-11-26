@@ -1,9 +1,9 @@
-
+//LOCO/src/api/chatAPI.js
 import instance from "./axiosInstance.js";  // ✅ instance 사용
 
 
-
-// 채팅방 생성
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
+// 채팅방 생성 (사용안함)
 export const createChatRoom = async (roomType, capacity, matchedGender, ageGroup) => {
     try {
         const response = await instance.post(`/api/chat/rooms`, { roomType, capacity, matchedGender, ageGroup });
@@ -13,6 +13,7 @@ export const createChatRoom = async (roomType, capacity, matchedGender, ageGroup
         throw error;     // ← 반드시 던져서 호출 측에서 잡을 수 있도록
     }
 };
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
 
 /**
  * 🎯 방 찾기 또는 생성 (통합 API)
@@ -35,17 +36,38 @@ export const findOrCreateChatRoom = async (params) => {
         throw error;
     }
 };
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
+// 친구와 채팅방 생성 (상위 호환)
+export const findOrCreateFriendRoom = async (userId, friendId) => {
+    try {
+        console.log('🎯 [API] 친구방 찾기/생성 요청:', { userId, friendId });
 
+        const response = await instance.post('/api/chat/friend/rooms/find-or-create', {
+            userId,
+            friendId
+        });
 
-// 친구와 채팅방 생성
+        console.log('✅ [API] 성공:', response.data);
+
+        return response.data;
+    } catch (error) {
+        console.error('❌ [API] 실패:', error);
+        throw error;
+    }
+};
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
+// 친구와 채팅방 생성 (기존 - 하위 호환성 유지)
 export const createFriendRoom = async (roomType, capacity) => {
     try {
         const response = await instance.post(`/api/chat/friend/rooms`, { roomType, capacity });
         return response.data;
     } catch (error) {
         console.log("친구와 채팅방 생성 중 오류 발생", error);
+        throw error;
     }
 };
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
+
 
 // 채팅 리스트
 export const fetchChatRooms = async (params = {}) => {
@@ -58,6 +80,7 @@ export const fetchChatRooms = async (params = {}) => {
         throw error; // ❌ 빈 배열 대신 에러 던지기
     }
 };
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
 
 
 // 특정 채팅방 정보 가져오기
@@ -70,6 +93,8 @@ export const getChatRoomInfo = async (roomId) => {
         return [];
     }
 };
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
+
 
 // 채팅 메세지 불러오기 (사용자 인증 포함)
 export const fetchMessages = async (roomId, page = 1, limit = 20, userId = null) => {
@@ -163,6 +188,7 @@ export const fetchUserLeftRooms = async (userId) => {
 export const toggleFriendRoomActive = async (roomId, active) =>
     instance.patch(`/api/chat/rooms/${roomId}/active`, { active })
         .then(res => res.data);
+
 
 export const fetchChatRoomHistory = async (params = {}) => {
     try {

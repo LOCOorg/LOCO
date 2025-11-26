@@ -74,11 +74,17 @@ const MyPageContent = ({overrideProfile}) => {
             const url = await uploadFile(file, window.location.pathname);
             // 0번으로 삽입 + 이전 0번 제거
             setFormData(prev => ({...prev, profilePhoto: url}));
+
             const updated = await updateUserProfile(authUser._id, {
-                ...formData,
-                profilePhoto: url
+                profilePhoto: url     // ← 이것만 전송!
             });
             setProfile(updated);
+
+            setUser(prev => ({
+                ...prev,
+                profilePhoto: updated.profilePhoto
+            }));
+
         } catch (err) {
             console.error('프로필 사진 업로드 중 에러:', err);
             setAlertModalMessage("프로필 사진 업로드에 실패했습니다.");
@@ -124,10 +130,15 @@ const MyPageContent = ({overrideProfile}) => {
 
             // 3) updateUserProfile() 호출 → 서버에 profile.photo 필드가 갱신된다.
             const updatedProfile = await updateUserProfile(authUser._id, {
-                ...formData,
-                photo: updatedPhotos,
+                photo: updatedPhotos  // ← 이것만 전송!
             });
+
             setProfile(updatedProfile);
+
+            setUser(prev => ({
+                ...prev,
+                photo: updatedProfile.photo
+            }));
         } catch (err) {
             console.error('사진 업로드 중 에러 발생:', err);
             setAlertModalMessage("사진 업로드 중 오류가 발생했습니다.");
@@ -144,11 +155,20 @@ const MyPageContent = ({overrideProfile}) => {
         setFormData((prev) => ({...prev, photo: filteredPhotos}));
 
         try {
+            // const updatedProfile = await updateUserProfile(authUser._id, {
+            //     ...formData,
+            //     photo: filteredPhotos
+            // }); 현재 컴포넌트의 이 로직을 아래로 다 바꿈
             const updatedProfile = await updateUserProfile(authUser._id, {
-                ...formData,
-                photo: filteredPhotos
+                photo: filteredPhotos  // ← 이것만 전송!
             });
+
             setProfile(updatedProfile);
+
+            setUser(prev => ({
+                ...prev,
+                photo: updatedProfile.photo
+            }));
         } catch (error) {
             console.error('사진 삭제 중 에러 발생:', error);
             setAlertModalMessage("사진 삭제 중 오류가 발생했습니다.");
@@ -162,6 +182,11 @@ const MyPageContent = ({overrideProfile}) => {
             const updated = await updateUserProfile(authUser._id, {profilePhoto: ''});
             setProfile(updated);
             setFormData(prev => ({...prev, profilePhoto: ''}));
+
+            setUser(prev => ({
+                ...prev,
+                profilePhoto: ''
+            }));
         } catch (err) {
             console.error('프로필 사진 삭제 중 에러:', err);
             setAlertModalMessage("프로필 사진 삭제에 실패했습니다.");

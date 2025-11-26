@@ -1,97 +1,186 @@
-프로필 버튼 api별도로 만들기
+약관 관리 페이지
 
-userAPI 사용처
-
-getUserInfo             /api/user/${userId}
-
-updateUserProfile       /api/user/${userId}
-
-- 서든, 배그, 코인 빼기 프론트와 스키마, userController-updatedUser-select
-
-rateUser                /api/user/${userId}/rate
-
-getUserByNickname
-
-decrementChatCount
-
-sendFriendRequest
-
-acceptFriendRequest
-
-getFriendRequestList
-
-declineFriendRequest
-
-deleteFriend
-
-blockUser
-
-unblockUser
-
-getBlockedUsers
-
-getLeagueRecord
-
-getFriendsPage
-
-updateUserPrefs
-
-checkNickname
-
-checkChangeAvailability
+약관은 관리할 수 있는 페이지
+- 회원가입시 체크할 약관의 내용을 수정, 추가하는 페이지 구축
+- 약관을 변경한다면 기존약관에 동의한 유저들이 로그인 했을때 새로운 약관 동의 모달창을 만듬
+- 약관에 동의 하지 않는다면 다음버튼 또는 플렛폼을 이용할 수 없도록 조치
 
 
+약관을 저장하는 데이터베이스 구축
+term_id (PK): 약관 고유 ID
+type: 약관 종류 (예: 'TERMS', 'PRIVACY', 'MARKETING')
+version: 버전 (예: '1.0', '1.1', '20251105')
+content: 약관 내용 전문 (Full Text)
+effective_date: 이 버전의 시행일
 
 
-
-"{API_이름}"을 다음 기준으로 분석해줘:
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. 기본 구조 분석
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- API가 전송/반환하는 모든 필드 목록
-- 각 필드의 데이터 크기 (bytes)
-- Request/Response 총 크기
-- 이 API를 사용하는 모든 컴포넌트/파일 목록
-- 각 사용처에서 실제로 사용하는 필드만 추출
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-2. 호출 패턴 분석
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- 동일 페이지에서 중복 호출 여부
-- 컴포넌트 렌더링마다 재호출 여부
-- 부모-자식 간 중복 요청 여부
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-3. 캐싱 분석
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- 데이터 변경 빈도 (실시간/자주/가끔/거의없음)
-- 캐싱 가능 여부 및 권장 TTL
-- 현재 캐싱 전략 (있다면)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-4. DB 쿼리 분석
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- populate/join 사용 여부 및 필요성
-- select 절로 필드 제한 여부
-- 인덱스 사용 여부 (explain 필요 시)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-5. 최적화 방안 (우선순위별)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- 1순위부터 우선순위 매겨서 제시
-- 각 방안의 예상 절감 효과 (%)
-- Before/After 코드 예시
-
-프로젝트 경로:
-- 프론트: C:/Users/wjdtj/WebstormProjects/LOCO
-- 백엔드: C:/Users/wjdtj/WebstormProjects/LOCOAPI
+사용자 동의 기록 테이블
+consent_id (PK)
+user_id (FK, users 테이블 참조)
+term_id (FK, terms_of_service 테이블 참조)
+agreed_at: 동의한 시각 (Timestamp)
+ip_address: 동의 당시 IP 주소 (법적 증거력 강화)
 
 
 
 
 
 
+
+
+// src/models/AccessLog.js 로그인 기록 스키마
+import mongoose from 'mongoose';
+const { Schema, model } = mongoose;
+
+const accessLogSchema = new Schema({
+    // 1. 누가 (Who)
+    user: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        index: true // 유저별 접속 기록 조회용 인덱스
+    },
+
+    // 2. 어디서 (Where - IP)
+    ip: {
+        type: String,
+        required: true
+    },
+
+    // 3. 무엇을 (What - Action) ⭐ [추가됨]
+    action: {
+        type: String,
+        enum: [
+            'login',             // 로그인 성공
+            'logout',            // 로그아웃
+            'socket_connect',    // 소켓 연결 (채팅방 입장 등)
+            'socket_reconnect',  // 소켓 재연결 (새로고침, 네트워크 변경)
+            'withdraw'           // 회원 탈퇴
+        ],
+        required: true
+    },
+
+    // 4. 어떤 기기로 (Device) ⭐ [추가됨]
+    userAgent: {
+        type: String,
+        required: false // 가끔 헤더에 없을 수도 있음
+    },
+
+    // 5. 어떤 계정으로 (Provider) - 소셜 로그인 구분용 (선택사항)
+    provider: {
+        type: String,
+        enum: ['kakao', 'naver', 'google', 'local'],
+        default: 'local'
+    },
+
+    // 6. 상태 (Status) - 로그인 실패/성공 여부 (선택사항)
+    status: {
+        type: String,
+        enum: ['success', 'fail'],
+        default: 'success'
+    },
+
+    // 7. 언제 (When)
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+// ✅ 법적 의무 자동화: 3개월(90일) 뒤 자동 삭제 (TTL 인덱스)
+accessLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7776000 });
+
+// ✅ 관리자 페이지용 검색 인덱스 (IP 추적, 날짜별 조회)
+accessLogSchema.index({ ip: 1 });
+accessLogSchema.index({ user: 1, createdAt: -1 });
+
+export const AccessLog = model('AccessLog', accessLogSchema);
+
+
+
+새로고침을 할 때마다 무조건 Insert를 해버리면,
+ 유저가 F5를 연타하거나 네트워크가 불안정할 때 불필요한 로그가 폭발적으로 쌓여 DB가 낭비됩니다.
+
+따라서 "스마트 로깅(Smart Logging)" 전략이 필요합니다. 핵심은 **"마지막으로 기록된 로그와 비교해서,
+ 변동 사항이 있을 때만 남긴다"**입니다.
+
+
+1. 로그를 남기는 기준 (Filter Logic)새로고침이나 소켓 재연결 요청이 들어왔을 때, DB에 바로 저장하지 말고 **먼저 조회(Check)**를 한번 해야 합니다.상황기존 마지막 로그와 비교저장 여부이유새로고침 (F5)IP가 동일함❌ 저장 안 함1초 전 기록과 똑같은데 굳이 남길 필요 없음와이파이 → LTEIP가 다름⭕ 저장함네트워크가 바뀌었으므로 추적을 위해 기록 필수1시간 뒤 접속IP는 같지만 시간 차이가 큼⭕ 저장함"아직 활동 중"이라는 생존 신고용 (세션 연장)리프레시 토큰IP가 동일함❌ 저장 안 함내부적인 토큰 갱신일 뿐, 유저의 위치 변화 없음2. 구현 코드: "중복 로그 방지" 미들웨어이 함수를 만들어두고 로그인, 소켓 연결, 토큰 재발급 로직에서 공통으로 사용하세요.핵심 로직:이 유저의 가장 최신 로그를 하나 가져온다.지금 접속한 IP와 비교한다.IP가 다르거나, 마지막 로그로부터 1시간 이상 지났으면 새로 저장한다.그렇지 않으면 무시한다.JavaScript// src/utils/logUtils.js
+
+import { AccessLog } from '../models/AccessLog.js';
+
+/**
+ * 스마트 로그 저장 함수
+ * - IP가 변경되었거나, 마지막 로그 이후 일정 시간이 지났을 때만 저장
+ */
+export const checkAndLogAccess = async (userId, currentIp, action, userAgent) => {
+    try {
+        // 1. 해당 유저의 가장 최근 로그 1개 조회
+        const lastLog = await AccessLog.findOne({ user: userId })
+                                       .sort({ createdAt: -1 });
+
+        // 2. 저장 여부 판단
+        let shouldSave = false;
+
+        if (!lastLog) {
+            // 로그가 하나도 없으면 무조건 저장 (첫 접속)
+            shouldSave = true;
+        } else {
+            const isIpChanged = lastLog.ip !== currentIp;
+
+            // 마지막 로그로부터 지난 시간 (단위: 분)
+            const timeDiff = (Date.now() - new Date(lastLog.createdAt).getTime()) / 1000 / 60;
+            const isTimeExpired = timeDiff > 60; // 60분(1시간) 지났으면 다시 기록
+
+            if (isIpChanged || isTimeExpired) {
+                shouldSave = true;
+            }
+        }
+
+        // 3. 조건 충족 시에만 DB 저장
+        if (shouldSave) {
+            await AccessLog.create({
+                user: userId,
+                ip: currentIp,
+                action: action, // 'login', 'socket_reconnect', 'token_refresh' 등
+                userAgent: userAgent
+            });
+            // console.log(`📝 [Log Saved] User: ${userId}, IP: ${currentIp}, Action: ${action}`);
+        } else {
+            // console.log(`🚫 [Log Skipped] 중복된 접속 또는 짧은 시간 내 재접속`);
+        }
+
+    } catch (error) {
+        console.error('로그 저장 중 오류 발생 (무시됨):', error);
+        // 로그 저장이 실패했다고 메인 로직이 멈추면 안 되므로 에러는 찍고 넘어감
+    }
+};
+3. 적용 예시① 소켓 연결 (Socket.io)새로고침을 하면 소켓이 끊겼다 다시 붙는데, 이때 위 함수를 쓰면 IP가 같을 경우 무시되므로 DB 부하가 없습니다.JavaScript// socket.js
+io.on('connection', async (socket) => {
+    const userId = socket.user._id;
+    const userIp = socket.handshake.address; // 혹은 헤더에서 추출
+    const userAgent = socket.handshake.headers['user-agent'];
+
+    // 스마트 로깅 함수 호출 (await 안 걸어도 됨 - 비동기 처리)
+    checkAndLogAccess(userId, userIp, 'socket_connect', userAgent);
+
+    // ... 채팅 로직 ...
+});
+② 리프레시 토큰 갱신 (API)액세스 토큰이 만료되어 클라이언트가 /refresh API를 호출할 때도 똑같이 적용합니다.JavaScript// authController.js (리프레시 토큰 처리 함수)
+export const refreshToken = async (req, res) => {
+    // ... 토큰 검증 및 재발급 로직 ...
+
+    const userIp = req.ip;
+    const userAgent = req.headers['user-agent'];
+
+    // 여기서도 호출! (IP가 안 바뀌었으면 저장 안 함)
+    checkAndLogAccess(user._id, userIp, 'token_refresh', userAgent);
+
+    res.json({ accessToken: newAccessToken });
+};
+🎯 요약새로고침 때마다 저장? → NO. (비효율적)리프레시 토큰 때마다 저장?
+ → NO. (비효율적)언제 저장? → "IP가 바뀌었거나" 또는 **"마지막 기록 후 1시간이 지났을 때"**만 저장하세요.
+ 방법: 위에 짜드린 checkAndLogAccess 함수를 미들웨어처럼 사용하시면 DB 용량도 아끼고 법적 증거 능력도 챙길 수 있습니다.
 
 
 

@@ -8,6 +8,7 @@ import {
     acceptFriendRequest,
     declineFriendRequest,
     getFriendRequestList,
+    getFriendRequestCount,
 } from '../../api/userAPI';
 import { getUserFriendProfile } from '../../api/userLightAPI.js';
 import useFriendListStore from '../../stores/useFriendListStore';
@@ -53,10 +54,12 @@ const FriendChatSidePanel = () => {
 
     const [showPanel, setShowPanel] = useState(false);
     const [friendRequests, setFriendRequests] = useState([]);
+    const [friendRequestCount, setFriendRequestCount] = useState(0);  // ✅ 추가
     const [activeTab, setActiveTab] = useState('friendlist');
     const [activeRightTab, setActiveRightTabLocal] = useState('chatlist');
     const [selectedRoom, setSelectedRoom] = useState(null);
     const panelRef = useRef(null);
+
 
     // ✅ 총 안읽은 메시지 개수 계산 (메모이제이션으로 성능 최적화)
     const totalUnreadCount = useMemo(() => {
@@ -69,9 +72,8 @@ const FriendChatSidePanel = () => {
 
     // ✅ 전체 배지 개수 계산 (친구 요청 + 안읽은 메시지)
     const badgeCnt = useMemo(() => {
-        const friendRequestCount = friendRequests?.length || 0;
-        return friendRequestCount + totalUnreadCount;
-    }, [friendRequests?.length, totalUnreadCount]);
+        return friendRequestCount + totalUnreadCount;  // state 직접 사용
+    }, [friendRequestCount, totalUnreadCount]);
 
     // 날짜/시간 포맷팅 함수
     const formatDateTime = useCallback((timestamp) => {
@@ -195,17 +197,63 @@ const FriendChatSidePanel = () => {
         }
     }, [user?._id, setFriendRooms]);
 
+    // ✅ 친구 요청 개수만 조회 (경량)
+    const loadFriendRequestCount = useCallback(async () => {
+        if (!user?._id) return;
+        try {
+            console.log('📊 [개수 조회] 친구 요청 개수만 조회');
+            const count = await getFriendRequestCount(user._id);  // ~20 bytes
+            setFriendRequestCount(count);
+            console.log(`✅ [개수 조회] ${count}개`);
+        } catch (error) {
+            console.error('❌ [개수 조회] 실패:', error);
+            setFriendRequestCount(0);
+        }
+    }, [user?._id]);
+
     // 친구 요청 로드
     const loadFriendReqFromServer = useCallback(async () => {
         if (!user?._id) return;
+
+
         try {
+            console.log('📋 [전체 목록] 친구 요청 전체 목록 조회');
             const list = await getFriendRequestList(user._id);
+
             if (!list || !Array.isArray(list)) {
-                setFriendRequests([]);
-                return;
+                // ⚠️ 서버에서 빈 목록이 왔어도 소켓 알림은 유지
+                console.log('⚠️ [서버 목록] 비어있음 - 소켓 알림 유지');
+                return;  // ✅ 빈 배열로 덮어쓰지 않음!
             }
 
-            setFriendRequests(list);
+            // ✅ 1. notifications에서 친구 요청 추출
+            const notificationRequests = notifications
+                .filter((n) => n?.type === 'FRIEND_REQUEST' && n?.requestId)
+                .map((n) => ({
+                    _id: n.requestId,
+                    sender: {
+                        _id: n.senderId || n.sender?._id,
+                        nickname: n.senderNickname || n.sender?.nickname || '알 수 없음',
+                    },
+                }))
+                .filter(req => req?._id && req?.sender?._id);
+
+            // ✅ 2. 서버 목록과 알림 목록 병합 (중복 제거)
+            const existingIds = new Set(list.map(r => r._id.toString()));
+            const mergedList = [...list];
+
+            notificationRequests.forEach((notifReq) => {
+                if (!existingIds.has(notifReq._id.toString())) {
+                    mergedList.unshift(notifReq);  // 알림은 맨 위에 추가
+                    console.log('🆕 [병합] 소켓 알림 추가:', notifReq.sender.nickname);
+                }
+            });
+
+            setFriendRequests(mergedList);
+            setFriendRequestCount(mergedList.length);
+            console.log(`✅ [전체 목록] 서버: ${list.length}개, 알림: ${notificationRequests.length}개, 총: ${mergedList.length}개`);
+
+            // ✅ 3. 서버에 있는 요청은 알림에서 제거
             list.forEach((r) => {
                 if (!r?._id) return;
                 const idx = notifications.findIndex(
@@ -214,10 +262,10 @@ const FriendChatSidePanel = () => {
                 if (idx !== -1) removeNotification(idx);
             });
         } catch (e) {
-            console.error('친구 요청 목록 조회 실패', e);
-            setFriendRequests([]);
+            console.error('❌ [전체 목록] 조회 실패:', e);
+            // ⚠️ 에러 발생 시에도 덮어쓰지 않음
         }
-    }, [user?._id, notifications, removeNotification]);
+    }, [user?._id, activeTab, notifications, removeNotification]);
 
     // 메시지 전송 시 콜백
     const handleMessageSent = useCallback((roomId) => {
@@ -227,6 +275,8 @@ const FriendChatSidePanel = () => {
             updateRoomSummary(roomId);
         }, 100);
     }, [updateRoomSummary]);
+
+
 
     useEffect(() => {
         if (!socket) return;
@@ -399,8 +449,14 @@ const FriendChatSidePanel = () => {
         return () => document.removeEventListener('pointerdown', handlePointerDown);
     }, [showPanel]);
 
+    // ✅ After
     useEffect(() => { loadRooms(); }, [loadRooms]);
-    useEffect(() => { loadFriendReqFromServer(); }, [loadFriendReqFromServer]);
+    useEffect(() => { loadFriendRequestCount(); }, [loadFriendRequestCount]);  // ✅ 마운트 시 개수만
+    useEffect(() => {
+        if (activeTab === 'requests') {  // ✅ 요청 탭 클릭 시에만 전체 목록
+            loadFriendReqFromServer();
+        }
+    }, [activeTab, loadFriendReqFromServer]);
     useEffect(() => { loadRoomSummaries(); }, [loadRoomSummaries]);
 
     // 친구 요청 알림 처리
@@ -419,14 +475,17 @@ const FriendChatSidePanel = () => {
             }))
             .filter(req => req?._id && req?.sender?._id);
 
-        setFriendRequests((prev) => {
-            const ids = new Set((prev || []).map((r) => r?._id).filter(Boolean));
-            const merged = [...(prev || [])];
-            incoming.forEach((r) => {
-                if (r?._id && !ids.has(r._id)) merged.unshift(r);
+        if (incoming.length > 0) {
+            setFriendRequestCount(prev => prev + incoming.length);  // ✅ 개수 증가
+            setFriendRequests((prev) => {
+                const ids = new Set((prev || []).map((r) => r?._id).filter(Boolean));
+                const merged = [...(prev || [])];
+                incoming.forEach((r) => {
+                    if (r?._id && !ids.has(r._id)) merged.unshift(r);
+                });
+                return merged;
             });
-            return merged;
-        });
+        }
     }, [notifications]);
 
     // ✅ 조건부 렌더링을 모든 hooks 호출 후에 수행
@@ -468,6 +527,9 @@ const FriendChatSidePanel = () => {
 
             // 2) UI 업데이트
             afterHandled(reqId, notiIdx);
+            console.log('✅ [친구수락] UI 요청 제거 완료');
+
+            setFriendRequestCount(prev => Math.max(0, prev - 1));  // ✅ 개수 감소
             console.log('✅ [친구수락] UI 요청 제거 완료');
 
             // 3) 친구 정보 가져오기
@@ -529,11 +591,27 @@ const FriendChatSidePanel = () => {
     const handleDecline = async (reqId, notiIdx) => {
         if (!user?._id || !reqId) return;
 
+        // ✅ 1. 롤백용 데이터 저장
+        const targetRequest = friendRequests.find(r => r._id === reqId);
+
+        // ✅ 2. 즉시 UI 업데이트 (낙관적)
+        afterHandled(reqId, notiIdx);
+        setFriendRequestCount(prev => Math.max(0, prev - 1));
+
         try {
             await declineFriendRequest(user._id, reqId);
-            afterHandled(reqId, notiIdx);
+            console.log('✅ 친구 요청 거절 완료');
         } catch (e) {
-            console.error('친구 요청 거절 실패', e);
+            console.error('❌ 친구 요청 거절 실패', e);
+
+            // ✅ 4. 실패 시 UI 롤백
+            if (targetRequest) {
+                setFriendRequests(prev => [targetRequest, ...prev]);
+                setFriendRequestCount(prev => prev + 1);
+            }
+
+            // ✅ 5. 사용자 피드백
+            alert('친구 요청 거절에 실패했습니다. 네트워크를 확인하고 다시 시도해주세요.');
         }
     };
 
@@ -561,8 +639,8 @@ const FriendChatSidePanel = () => {
         setActiveRightTabLocal('chatlist');
     };
 
-    // ✅ 친구 요청과 채팅 안읽은 메시지를 구분해서 계산
-    const friendRequestCount = friendRequests?.length || 0;
+
+
 
     return (
         <>
