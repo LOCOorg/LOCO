@@ -19,7 +19,7 @@ const LoginHandler = () => {
         (async () => {
             try {
                 const data = await loginWithKakao(code);
-                if (data.status === 'noUser') {
+                if (data.status === 'noUser' || data.status === 'new_registration_required') {
                     // 서버 세션에 소셜 데이터가 저장되므로 바로 이동
                     navigate('/signupPage');
                 } else if (data.status === 'success') {
