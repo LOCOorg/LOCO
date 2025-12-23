@@ -1,5 +1,5 @@
 // src/utils/SocketContext.jsx
-import { createContext, useContext, useEffect, useState } from 'react';
+import {createContext, useContext, useEffect, useRef, useState} from 'react';
 import { io } from 'socket.io-client';
 import useFriendListStore from '../stores/useFriendListStore';
 import authStore from '../stores/authStore';
@@ -8,14 +8,33 @@ import { setSocket as registerSocket } from '../../socket.js';
 
 const SocketContext = createContext(null);
 
-export const useSocket = () => {    //hook파일에서 별도로 사용중 통합 권장 여기로 이사와야할듯
+export const useSocketContext = () => {
     return useContext(SocketContext);
 };
+
 
 export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const { addFriend, removeFriend } = useFriendListStore();
     const { user, setUser } = authStore();
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🆕 연결 상태 추가
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const [connectionState, setConnectionState] = useState({
+        isConnected: false,
+        isReallyConnected: false,  // Heartbeat 기반
+        isReconnecting: false,
+        reconnectAttempts: 0,
+        lastError: null,
+        lastHeartbeat: null
+    });
+
+    const heartbeatIntervalRef = useRef(null);
+    const lastHeartbeatRef = useRef(Date.now());
+
+
 
     useEffect(() => {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -25,9 +44,11 @@ export const SocketProvider = ({ children }) => {
         const newSocket = io(SOCKET_URL, {
             transports: ['websocket', 'polling'],
             reconnection: true,
-            reconnectionAttempts: 5,
+            reconnectionAttempts: 20,       // 재시도 횟수
             reconnectionDelay: 1000,
             withCredentials: true,
+            reconnectionDelayMax: 5000,
+            randomizationFactor: 0.5
         });
 
         console.log('🔌 [Socket] 연결 시도 중...', SOCKET_URL);
@@ -36,14 +57,121 @@ export const SocketProvider = ({ children }) => {
         // 2️⃣ 연결 성공
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         newSocket.on('connect', () => {
-            console.log('✅ [Socket] 연결 성공:', newSocket.id);
+            console.log('✅ [SocketContext] 연결 성공:', newSocket.id);
+
+            // 🆕 상태 업데이트
+            setConnectionState(prev => ({
+                ...prev,
+                isConnected: true,
+                isReallyConnected: true,
+                isReconnecting: false,
+                reconnectAttempts: 0,
+                lastError: null
+            }));
 
             // 사용자가 로그인되어 있으면 등록
             if (user?._id) {
                 newSocket.emit('register', user._id);
-                console.log(`📝 [Socket] 사용자 등록: ${user._id}`);
+                console.log(`📝 [SocketContext] 사용자 등록: ${user._id}`);
+            }
+
+            // 🆕 Heartbeat 시작
+            lastHeartbeatRef.current = Date.now();
+
+            if (heartbeatIntervalRef.current) {
+                clearInterval(heartbeatIntervalRef.current);
+            }
+
+            heartbeatIntervalRef.current = setInterval(() => {
+                const now = Date.now();
+                const timeSinceLastBeat = now - lastHeartbeatRef.current;
+
+                if (timeSinceLastBeat > 60000) {
+                    // 60초 이상 응답 없음
+                    console.error('💔 [SocketContext] Heartbeat 타임아웃');
+
+                    setConnectionState(prev => ({
+                        ...prev,
+                        isReallyConnected: false
+                    }));
+
+                    // 재연결 시도
+                    newSocket.disconnect();
+                    newSocket.connect();
+                } else {
+                    // 정상 - Ping 전송
+                    newSocket.emit('ping');
+                }
+            }, 30000);  // 30초마다
+        });
+
+        // 🆕 Pong 수신
+        newSocket.on('pong', () => {
+            lastHeartbeatRef.current = Date.now();
+
+            setConnectionState(prev => ({
+                ...prev,
+                lastHeartbeat: new Date(lastHeartbeatRef.current).toLocaleString('ko-KR')
+            }));
+
+            console.log('💓 [SocketContext] Heartbeat 정상');
+        });
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 3️⃣ 연결 해제
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        newSocket.on('disconnect', (reason) => {
+            console.warn('⚠️ [SocketContext] 연결 끊김:', reason);
+
+            // 🆕 상태 업데이트
+            setConnectionState(prev => ({
+                ...prev,
+                isConnected: false,
+                isReallyConnected: false
+            }));
+
+            // Heartbeat 중지
+            if (heartbeatIntervalRef.current) {
+                clearInterval(heartbeatIntervalRef.current);
+                heartbeatIntervalRef.current = null;
             }
         });
+
+        // 🆕 재연결 시도
+        newSocket.on('reconnect_attempt', (attempt) => {
+            console.log(`🔄 [SocketContext] 재연결 시도: ${attempt}번째`);
+
+            setConnectionState(prev => ({
+                ...prev,
+                isReconnecting: true,
+                reconnectAttempts: attempt
+            }));
+        });
+
+        // 🆕 재연결 성공
+        newSocket.on('reconnect', (attempt) => {
+            console.log(`✅ [SocketContext] 재연결 성공 (${attempt}번 시도)`);
+
+            setConnectionState(prev => ({
+                ...prev,
+                isConnected: true,
+                isReallyConnected: true,
+                isReconnecting: false,
+                reconnectAttempts: 0
+            }));
+        });
+
+        // 🆕 연결 오류
+        newSocket.on('connect_error', (error) => {
+            console.error('❌ [SocketContext] 연결 오류:', error.message);
+
+            setConnectionState(prev => ({
+                ...prev,
+                lastError: error.message
+            }));
+        });
+
+
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // 3️⃣ 친구 추가 이벤트
@@ -139,28 +267,22 @@ export const SocketProvider = ({ children }) => {
         newSocket.on('friendBlocked', handleFriendBlocked);
         newSocket.on('friendUnblocked', handleFriendUnblocked);
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 8️⃣ 연결 오류 처리
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        newSocket.on('connect_error', (error) => {
-            console.error('❌ [Socket] 연결 오류:', error.message);
-        });
-
-        newSocket.on('disconnect', (reason) => {
-            console.warn('⚠️ [Socket] 연결 끊김:', reason);
-        });
-
         setSocket(newSocket);
-
-        // 🆕 socket.js에 소켓 등록 (통합)
         registerSocket(newSocket);
-        console.log('✅ [SocketContext] socket.js에 소켓 등록 완료');
+        console.log('✅ [SocketContext] socket.js에 등록 완료');
+
+
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // 9️⃣ Cleanup
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         return () => {
             console.log('🔌 [Socket] 연결 해제 중...');
+
+            if (heartbeatIntervalRef.current) {
+                clearInterval(heartbeatIntervalRef.current);
+                heartbeatIntervalRef.current = null;
+            }
 
             newSocket.off('friendAdded', handleFriendAdded);
             newSocket.off('friendDeleted', handleFriendDeleted);
@@ -175,8 +297,32 @@ export const SocketProvider = ({ children }) => {
         };
     }, [user?._id]); // user가 변경되면 재연결
 
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 6️⃣ Context Value (확장)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const value = {
+        socket,
+        ...connectionState,
+
+        // 디버깅 헬퍼
+        getConnectionInfo: () => {
+            const now = Date.now();
+            const timeSinceLastBeat = now - lastHeartbeatRef.current;
+
+            return {
+                socketId: socket?.id,
+                connected: socket?.connected,
+                ...connectionState,
+                timeSinceLastBeat: `${Math.floor(timeSinceLastBeat / 1000)}초 전`,
+                heartbeatHealthy: timeSinceLastBeat < 60000
+            };
+        }
+    };
+
+
     return (
-        <SocketContext.Provider value={socket}>
+        <SocketContext.Provider value={value}>
             {children}
         </SocketContext.Provider>
     );

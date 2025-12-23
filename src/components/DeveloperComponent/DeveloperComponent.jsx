@@ -1,4 +1,5 @@
 // File: src/components/DeveloperComponent/DeveloperComponent.jsx
+// 관리자 페이지
 import React, {useState, useEffect} from "react";
 import {useDeveloperSearch} from "../../hooks/useDeveloperSearch.js";
 import SearchPanel from "./SearchPanel.jsx";
@@ -61,7 +62,8 @@ const DeveloperComponent = () => {
         rooms,
         selectedRoom,
         setSelectedRoom,
-        messages
+        messages,
+        genderSelections
     } = useChatConversation(chatUser, mode);
 
     // 🚨 선택된 방의 신고 메시지 가져오기 - ✅ 수정됨
@@ -217,6 +219,7 @@ const DeveloperComponent = () => {
                         rooms={rooms}
                         selectedRoom={selectedRoom}
                         setSelectedRoom={setSelectedRoom}
+                        genderSelections={genderSelections}
                     />
 
                     {/* 🆕 contextMessageIds 추가 전달 , 메세지 뷰*/}

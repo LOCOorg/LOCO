@@ -1,6 +1,7 @@
 // src/components/DeveloperComponent/chatcomponents/ChatRoomListPanel.jsx
+//관리자 페이지
 import {useState, useMemo, useEffect} from 'react';
-import {fetchChatRoomHistory} from "../../../api/chatAPI.js";
+//import {fetchChatRoomHistory} from "../../../api/chatAPI.js";
 
 const ChatRoomListPanel = ({
                                rooms,
@@ -11,7 +12,8 @@ const ChatRoomListPanel = ({
                                setPage,
                                selectedRoom,
                                setSelectedRoom,
-                               reportedRooms = []  // 신고된 채팅방 목록 추가
+                               reportedRooms = [],
+                               genderSelections = {}// 신고된 채팅방 목록 추가
                            }) => {
 
     // 1) 현재 선택된 필터 타입 상태
@@ -20,27 +22,27 @@ const ChatRoomListPanel = ({
     // 신고된 채팅방 ID 집합 생성
     const reportedRoomIds = new Set(reportedRooms.map(r => r.anchor?.roomId || r.roomId));
 
-    // 🔧 히스토리 데이터만 추가
-    const [historyData, setHistoryData] = useState({});
-
-    // 🔧 히스토리 데이터 로드 (한 번만)
-    useEffect(() => {
-        const loadHistoryData = async () => {
-            try {
-                const histories = await fetchChatRoomHistory({});
-                const historyMap = {};
-                histories.forEach(h => {
-                    if (h.chatRoomId && h.meta?.genderSelections) {
-                        historyMap[h.chatRoomId] = h.meta.genderSelections;
-                    }
-                });
-                setHistoryData(historyMap);
-            } catch (err) {
-                console.error('히스토리 로드 실패:', err);
-            }
-        };
-        loadHistoryData();
-    }, []);
+    // // 🔧 히스토리 데이터만 추가
+    // const [historyData, setHistoryData] = useState({});
+    //
+    // // 🔧 히스토리 데이터 로드 (한 번만)
+    // useEffect(() => {
+    //     const loadHistoryData = async () => {
+    //         try {
+    //             const histories = await fetchChatRoomHistory({});
+    //             const historyMap = {};
+    //             histories.forEach(h => {
+    //                 if (h.chatRoomId && h.meta?.genderSelections) {
+    //                     historyMap[h.chatRoomId] = h.meta.genderSelections;
+    //                 }
+    //             });
+    //             setHistoryData(historyMap);
+    //         } catch (err) {
+    //             console.error('히스토리 로드 실패:', err);
+    //         }
+    //     };
+    //     loadHistoryData();
+    // }, []);
 
     // 2) 유니크한 타입 목록 뽑기
     const typeOptions = useMemo(() => {
@@ -119,14 +121,14 @@ const ChatRoomListPanel = ({
                     </div>
                     {/* 참여자 닉네임 목록 (성별 선택 정보 포함) */}
                     {/* 🔧 성별 선택 정보만 수정된 부분 */}
-                    {Array.isArray(room.chatUsersWithGender || room.chatUsers) &&
-                        (room.chatUsersWithGender || room.chatUsers).length > 0 && (
+                    {Array.isArray(room.chatUsers) &&
+                        room.chatUsers.length > 0 && (
                             <div>
                                 참여자:{" "}
-                                {(room.chatUsersWithGender || room.chatUsers)
+                                {room.chatUsers
                                     .map(u => {
                                         // 🔧 ChatRoomHistory의 genderSelections를 우선 사용
-                                        const historyGender = historyData[room._id]?.[u._id.toString()];
+                                        const historyGender = genderSelections[room._id]?.[u._id.toString()];
                                         const userGender = historyGender || u.selectedGender || room.matchedGender || 'any';
 
                                         // 1-1. 플랫폼 성별

@@ -11,6 +11,7 @@ import axios from 'axios';
  */
 export function useChatConversation(chatUser, mode) {
     const [rooms, setRooms]               = useState([]);
+    const [genderSelections, setGenderSelections] = useState({});
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [messages, setMessages]         = useState([]);
 
@@ -38,6 +39,16 @@ export function useChatConversation(chatUser, mode) {
                         }
                     });
                     const historyList = histRes.data.dtoList || [];
+
+                    // 🆕 genderSelections 추출
+                    const selections = {};
+                    historyList.forEach(h => {
+                        if (h.chatRoomId && h.meta?.genderSelections) {
+                            selections[h.chatRoomId] = h.meta.genderSelections;
+                        }
+                    });
+                    setGenderSelections(selections);
+
                     const historyRooms = historyList.map(h => ({
                         _id:           h.chatRoomId,
                         chatUsers:     h.meta.chatUsers,
@@ -66,6 +77,7 @@ export function useChatConversation(chatUser, mode) {
             setRooms([]);
             setSelectedRoom(null);
             setMessages([]);
+            setGenderSelections({});
         }
     }, [mode, chatUser]);
 
@@ -87,5 +99,5 @@ export function useChatConversation(chatUser, mode) {
         }
     }, [mode, selectedRoom]);
 
-    return { rooms, selectedRoom, setSelectedRoom, messages };
+    return { rooms, selectedRoom, setSelectedRoom, messages, genderSelections  };
 }

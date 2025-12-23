@@ -119,6 +119,9 @@ export const fetchMessages = async (roomId, page = 1, limit = 20, userId = null)
     }
 };
 
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
+
+
 // 채팅 메세지 전송
 export const sendMessage = async (roomId, sender, text) => {
     try {
@@ -132,6 +135,7 @@ export const sendMessage = async (roomId, sender, text) => {
         console.error("메시지를 전송하는 중 오류 발생:", error);
     }
 };
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
 
 // 채팅 삭제
 export const deleteMessage = async (messageId) => {
@@ -143,6 +147,8 @@ export const deleteMessage = async (messageId) => {
         throw error; // 오류가 발생하면 throw하여 catch로 넘어가도록 함
     }
 };
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
+
 
 // 사용자 참가 (성별 선택 정보 포함)
 export const joinChatRoom = async (roomId, userId, selectedGender = null) => {
@@ -162,6 +168,7 @@ export const joinChatRoom = async (roomId, userId, selectedGender = null) => {
         throw error;
     }
 };
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
 
 // 채팅방 나가기 시 참여자에서 제거
 export const leaveChatRoom = async (roomId, userId) => {
@@ -173,23 +180,29 @@ export const leaveChatRoom = async (roomId, userId) => {
         throw error;
     }
 };
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
 
 // 사용자가 종료한 채팅방 ID 목록을 가져오는 함수
-export const fetchUserLeftRooms = async (userId) => {
-    try {
-        const response = await instance.get(`/api/chat/leftRooms/${userId}`);
-        return response.data.leftRooms; // 예를 들어, [roomId1, roomId2, ...]
-    } catch (error) {
-        console.error("사용자 종료 채팅방 목록 불러오는 중 오류 발생:", error);
-        throw error;
-    }
-};
+// export const fetchUserLeftRooms = async (userId) => {
+//     try {
+//         const response = await instance.get(`/api/chat/leftRooms/${userId}`);
+//         return response.data.leftRooms; // 예를 들어, [roomId1, roomId2, ...]
+//     } catch (error) {
+//         console.error("사용자 종료 채팅방 목록 불러오는 중 오류 발생:", error);
+//         throw error;
+//     }
+// };
+
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
+
 
 export const toggleFriendRoomActive = async (roomId, active) =>
     instance.patch(`/api/chat/rooms/${roomId}/active`, { active })
         .then(res => res.data);
 
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
 
+// 사용 x
 export const fetchChatRoomHistory = async (params = {}) => {
     try {
         const response = await instance.get(`/api/chat/search/chat-room-history`, { params });
@@ -199,6 +212,8 @@ export const fetchChatRoomHistory = async (params = {}) => {
         return [];
     }
 };
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
+
 
 // 1. 메시지 읽음 처리
 export const markRoomAsRead = async (roomId, userId) => {
@@ -217,6 +232,8 @@ export const markRoomAsRead = async (roomId, userId) => {
         throw error;
     }
 };
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
+
 
 // 2. 안읽은 메시지 개수 조회
 export const getUnreadCount = async (roomId, userId) => {
@@ -233,17 +250,67 @@ export const getUnreadCount = async (roomId, userId) => {
         return { unreadCount: 0 };
     }
 };
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
 
+/**
+ * 🆕 여러 채팅방의 안읽은 메시지 개수 일괄 조회 (N+1 문제 해결)
+ * @param {string[]} roomIds - 조회할 채팅방 ID 배열 (최대 100개)
+ * @param {string} userId - 사용자 ID
+ * @returns {Promise<Object>} { roomId: unreadCount } 형태의 객체
+ */
+// 새로 추가한 함수
+export const getUnreadCountsBatch = async (roomIds, userId) => {
+    try {
+        // 입력 검증
+        if (!Array.isArray(roomIds) || roomIds.length === 0) {
+            console.warn('getUnreadCountsBatch: roomIds가 유효하지 않음');
+            return {};
+        }
+
+        if (roomIds.length > 100) {
+            console.warn('getUnreadCountsBatch: 최대 100개까지만 조회 가능');
+            return {};
+        }
+
+        console.log(`📊 [배치조회] ${roomIds.length}개 채팅방 안읽은 개수 조회`);
+
+        // POST 요청으로 배열 데이터 전송
+        const response = await instance.post('/api/chat/rooms/unread-batch', {
+            roomIds: roomIds,
+            userId: userId
+        });
+
+        console.log(`✅ [배치조회] 성공`);
+
+        return response.data.counts || {};
+
+    } catch (error) {
+        console.error('❌ [배치조회] 실패:', error);
+
+        // 에러 발생 시 빈 객체 반환 (UI 깨짐 방지)
+        return {};
+    }
+};
+//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
+
+/**
+ * ⚠️ DEPRECATED: Socket enterRoom 사용 권장
+ *
+ * 채팅방 입장 시간 기록 (Fallback용)
+ * - 주용도: Socket 연결 실패 시 대체 수단
+ * - 성능: HTTP 2번 호출 (~100ms)
+ * - 권장: socket.emit('enterRoom') 사용 (~5ms)
+ */
 // 3. 채팅방 입장 시간 기록
 export const recordRoomEntry = async (roomId, userId) => {
     try {
         const response = await instance.post(`/api/chat/rooms/${roomId}/entry`, {
             userId: userId,
-            entryTime: new Date().toISOString()
+            // entryTime: new Date().toISOString()
         });
 
-        // 입장과 동시에 읽음 처리
-        await markRoomAsRead(roomId, userId);
+        // // 입장과 동시에 읽음 처리
+        // await markRoomAsRead(roomId, userId);
 
         return {
             success: true,
@@ -255,3 +322,45 @@ export const recordRoomEntry = async (roomId, userId) => {
     }
 };
 
+
+//=============새로만든 api함수==============================
+/**
+ * 🆕 여러 채팅방의 마지막 메시지 일괄 조회
+ * N+1 쿼리 문제 해결: 한 번의 API 호출로 여러 채팅방 조회
+ *
+ * @param {string[]} roomIds - 조회할 채팅방 ID 배열 (최대 100개)
+ * @returns {Promise<{ messages: Array }>} 마지막 메시지 배열
+ */
+export const fetchLastMessagesBatch = async (roomIds) => {
+    try {
+        // 입력 검증
+        if (!Array.isArray(roomIds) || roomIds.length === 0) {
+            console.warn('fetchLastMessagesBatch: roomIds가 유효하지 않음');
+            return { messages: [] };
+        }
+
+        // 최대 100개 제한
+        if (roomIds.length > 100) {
+            console.warn('fetchLastMessagesBatch: 최대 100개까지만 조회 가능');
+            return { messages: [] };
+        }
+
+        console.log(`📦 [배치조회] ${roomIds.length}개 채팅방 마지막 메시지 조회`);
+
+        // POST 요청으로 배열 데이터 전송
+        const response = await instance.post('/api/chat/messages/batch-last', {
+            roomIds: roomIds
+        });
+
+        console.log(`✅ [배치조회] 성공: ${response.data.messages.length}개 메시지`);
+
+        return {
+            messages: response.data.messages || []
+        };
+
+    } catch (error) {
+        console.error('❌ [배치조회] 실패:', error);
+        // 에러 발생 시 빈 배열 반환 (UI 깨짐 방지)
+        return { messages: [] };
+    }
+};
