@@ -10,7 +10,8 @@ import {
     //createChatRoom,
     //joinChatRoom,
     fetchChatRooms,
-    fetchUserLeftRooms, leaveChatRoom, findOrCreateChatRoom
+    //fetchUserLeftRooms,
+    leaveChatRoom, findOrCreateChatRoom
 } from "../../api/chatAPI";
 import CommonModal from "../../common/CommonModal";
 import SimpleProfileModal from "../MyPageComponent/SimpleProfileModal.jsx";
@@ -99,14 +100,14 @@ const RandomChatComponent = () => {
 
             try {
                 const rooms = await fetchChatRooms({ roomType: "random", userId });
-                const leftRooms = await fetchUserLeftRooms(userId);
+                // const leftRooms = await fetchUserLeftRooms(userId);
                 const blockedIds = (blockedUsers || []).map((u) => u._id);
 
                 const existingRoom = rooms.find(
                     (room) =>
                         room.status !== 'closed' &&
                         room.chatUsers.some((u) => u._id === userId) &&
-                        !leftRooms.includes(room._id) &&
+                        // !leftRooms.includes(room._id) &&
                         !room.chatUsers.some((u) => blockedIds.includes(u._id))
                 );
 

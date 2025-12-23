@@ -1,16 +1,17 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo  } from "react";
 import { useSocket } from "../../hooks/useSocket.js";
-import { fetchMessages, recordRoomEntry } from "../../api/chatAPI.js";
+import {fetchMessages, markRoomAsRead, recordRoomEntry} from "../../api/chatAPI.js";
 import useAuthStore from "../../stores/authStore.js";
 import ProfileButton from "../MyPageComponent/ProfileButton.jsx";
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
 import useNotificationStore from '../../stores/notificationStore.js';
 import { filterProfanity } from '../../utils/profanityFilter.js';
 import MessageReportModal from "./MessageReportModal.jsx";
+import { debounce } from 'lodash';
 
 // eslint-disable-next-line react/prop-types
 function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
-    const [messages, setMessages] = useState([]);
+    const [messagesMap, setMessagesMap] = useState(new Map());
     const [pagination, setPagination] = useState({ currentPage: 1, hasNextPage: false });
     const [loadingMore, setLoadingMore] = useState(false);
     const [newMessage, setNewMessage] = useState("");
@@ -25,6 +26,116 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
     // 메시지 신고 모달 관련 상태
     const [showMessageReportModal, setShowMessageReportModal] = useState(false);
     const [reportTargetMessage, setReportTargetMessage] = useState(null);
+
+    const messages = useMemo(() =>
+            Array.from(messagesMap.values())
+                .sort((a, b) => new Date(a.textTime) - new Date(b.textTime)),
+        [messagesMap]
+    );
+
+    //  Debounce 함수 추가 (messages useMemo 바로 다음)
+    const debouncedMarkAsRead = useRef(
+        debounce((roomId, userId) => {
+            if (socket && socket.connected) {
+                // Socket 우선 사용
+                socket.emit('markAsRead', { roomId, userId }, (response) => {
+                    if (response.success) {
+                        console.log(`✅ [ChatOverlay-Debounce] ${response.readCount}개 읽음`);
+                    }
+                });
+            } else {
+                // Fallback: HTTP
+                markRoomAsRead(roomId, userId).catch(console.error);
+            }
+        }, 1000)  // 1초 대기
+    ).current;
+
+    //  cleanup 함수 추가
+    useEffect(() => {
+        return () => {
+            debouncedMarkAsRead.cancel();
+        };
+    }, []);
+
+    // Debounced enterRoom 함수 (탭 전환용)
+    const debouncedEnterRoom = useRef(
+        debounce((roomId, userId, socket, onMessageSent) => {
+            console.log(`🔔 [Debounce-EnterRoom] 실행 시작`);
+            console.log(`  - roomId: ${roomId}`);
+            console.log(`  - userId: ${userId}`);
+            console.log(`  - socket.connected: ${socket?.connected}`);
+
+            // Socket 연결 상태 확인
+            if (socket && socket.connected) {
+                console.log(`📡 [Debounce-EnterRoom] Socket으로 전송`);
+
+                socket.emit('enterRoom',
+                    { roomId, userId },
+                    (response) => {
+                        if (response && response.success) {
+                            console.log(`✅ [Debounce-EnterRoom] Socket 성공`);
+                            console.log(`  - 읽음 처리: ${response.readCount}개`);
+                            console.log(`  - 입장 시간: ${response.entryTime}`);
+
+                            // onMessageSent 콜백 실행
+                            if (onMessageSent) {
+                                onMessageSent(roomId);
+                            }
+                        } else {
+                            // Socket 요청은 성공했지만 서버에서 실패
+                            console.error(`❌ [Debounce-EnterRoom] Socket 응답 실패`);
+                            console.error(`  - error: ${response?.error || '알 수 없음'}`);
+                            console.log(`🔄 [Debounce-EnterRoom] HTTP Fallback 시도`);
+
+                            // HTTP Fallback
+                            Promise.all([
+                                recordRoomEntry(roomId, userId),
+                                markRoomAsRead(roomId, userId)
+                            ])
+                                .then(() => {
+                                    console.log(`✅ [Debounce-EnterRoom] HTTP Fallback 성공`);
+                                    if (onMessageSent) {
+                                        onMessageSent(roomId);
+                                    }
+                                })
+                                .catch((error) => {
+                                    console.error(`❌ [Debounce-EnterRoom] HTTP Fallback 실패:`, error);
+                                });
+                        }
+                    }
+                );
+            } else {
+                // Socket 연결 끊김
+                console.warn(`⚠️ [Debounce-EnterRoom] Socket 연결 안됨`);
+                console.warn(`  - socket: ${socket ? 'exists' : 'null'}`);
+                console.warn(`  - socket.connected: ${socket?.connected}`);
+                console.log(`🔄 [Debounce-EnterRoom] HTTP Fallback 사용`);
+
+                // HTTP Fallback
+                Promise.all([
+                    recordRoomEntry(roomId, userId),
+                    markRoomAsRead(roomId, userId)
+                ])
+                    .then(() => {
+                        console.log(`✅ [Debounce-EnterRoom] HTTP 성공`);
+                        if (onMessageSent) {
+                            onMessageSent(roomId);
+                        }
+                    })
+                    .catch((error) => {
+                        console.error(`❌ [Debounce-EnterRoom] HTTP 실패:`, error);
+                    });
+            }
+        },  500, { leading: true, trailing: false })
+    ).current;
+
+    // ✅ Cleanup 함수 추가
+    useEffect(() => {
+        return () => {
+            console.log('🧹 [Debounce-EnterRoom] Cleanup - 취소됨');
+            debouncedEnterRoom.cancel();
+        };
+    }, []);
 
     useEffect(() => {
         if (roomId) {
@@ -62,9 +173,19 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
             const data = await fetchMessages(roomId, page, 20);
             if (data && data.messages) {
                 if (page === 1) {
-                    setMessages(data.messages);
+                    // ✅ 첫 페이지: Map 초기화
+                    const newMap = new Map();
+                    data.messages.forEach(msg => newMap.set(msg._id, msg));
+                    setMessagesMap(newMap);
                 } else {
-                    setMessages(prev => [...data.messages, ...prev]);
+                    // ✅ 추가 페이지: 기존 Map에 추가
+                    setMessagesMap(prev => {
+                        const newMap = new Map(prev);
+                        data.messages.forEach(msg => {
+                            newMap.set(msg._id, msg);
+                        });
+                        return newMap;
+                    });
                 }
                 setPagination(data.pagination);
             }
@@ -87,25 +208,19 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
                 if (message.chatRoom !== roomId) return;
                 const normalizedMessage = {
                     ...message,
-                    sender: message.sender.id ? { _id: message.sender.id, name: message.sender.name, nickname: message.sender.nickname } : message.sender,
+                    sender: message.sender.id
+                        ? { _id: message.sender.id, name: message.sender.name, nickname: message.sender.nickname }
+                        : message.sender,
                 };
-                setMessages((prevMessages) => {
-                    const messageSet = new Set(prevMessages.map((msg) => msg._id));
-                    if (!messageSet.has(normalizedMessage._id)) {
-                        return [...prevMessages, normalizedMessage];
-                    }
-                    return prevMessages;
-                });
+                // ✅ 다른 사용자의 메시지만 추가 (Map은 자동 중복 제거)
+                if (normalizedMessage.sender._id !== senderId) {
+                    setMessagesMap(prev => new Map(prev).set(normalizedMessage._id, normalizedMessage));
+                }
+
                 const isFromOther = message.sender?._id !== senderId || message.sender?.id !== senderId;
                 if (isFromOther && document.hasFocus()) {
-                    setTimeout(async () => {
-                        try {
-                            await recordRoomEntry(roomId, senderId);
-                            if (onMessageSent) onMessageSent(roomId);
-                        } catch (error) {
-                            console.error('메시지 수신 후 읽음 처리 실패:', error);
-                        }
-                    }, 100);
+                    // Debounced 읽음 처리 (1초에 1번만)
+                    debouncedMarkAsRead(roomId, senderId);
                 }
                 if (onMessageSent) onMessageSent(roomId);
             };
@@ -113,25 +228,32 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
             socket.on("receiveMessage", handleReceiveMessage);
             return () => socket.off("receiveMessage", handleReceiveMessage);
         }
-    }, [socket, roomId, onMessageSent, senderId]);
+    }, [socket, roomId, onMessageSent, senderId, debouncedMarkAsRead]);
 
     useEffect(() => {
         const handleFocus = () => {
             if (roomId && senderId) {
-                recordRoomEntry(roomId, senderId).catch(console.error);
-                if (onMessageSent) onMessageSent(roomId);
+                console.log('👁️ [Focus] 탭 포커스 감지 - Debounce 시작');
+                debouncedEnterRoom(roomId, senderId, socket, onMessageSent);
+            } else {
+                console.warn('⚠️ [Focus] roomId 또는 senderId 없음');
             }
         };
+
         const handleVisibilityChange = () => {
-            if (!document.hidden && roomId && senderId) handleFocus();
+            if (!document.hidden) {
+                console.log('👁️ [Visibility] 탭 보임 감지');
+                handleFocus();
+            }
         };
+
         window.addEventListener('focus', handleFocus);
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => {
             window.removeEventListener('focus', handleFocus);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [roomId, senderId, onMessageSent]);
+    }, [roomId, senderId, socket, onMessageSent, debouncedEnterRoom]);
 
     useEffect(() => {
         const container = messagesContainerRef.current;
@@ -162,15 +284,13 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
                     if (response.success) {
                         const normalizedMessage = {
                             ...response.message,
-                            sender: response.message.sender.id ? { _id: response.message.sender.id, name: response.message.sender.name } : response.message.sender,
+                            sender: response.message.sender.id
+                                ? { _id: response.message.sender.id, name: response.message.sender.name }
+                                : response.message.sender,
                         };
-                        setMessages((prevMessages) => {
-                            const messageSet = new Set(prevMessages.map((msg) => msg._id));
-                            if (!messageSet.has(normalizedMessage._id)) {
-                                return [...prevMessages, normalizedMessage];
-                            }
-                            return prevMessages;
-                        });
+                        // ✅ Map에 추가 (내 메시지)
+                        setMessagesMap(prev => new Map(prev).set(normalizedMessage._id, normalizedMessage));
+
                         if (onMessageSent) onMessageSent(roomId);
                     } else {
                         console.error("메시지 전송 실패:", response.error);

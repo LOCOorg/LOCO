@@ -1,4 +1,4 @@
-import {useEffect, useState, useRef} from "react";
+import {useEffect, useState, useRef, useMemo} from "react";
 import {useSocket} from "../../hooks/useSocket.js";
 import {fetchMessages, deleteMessage, leaveChatRoom, getChatRoomInfo} from "../../api/chatAPI.js";
 import PropTypes from "prop-types";
@@ -14,8 +14,7 @@ import MessageReportModal from "./MessageReportModal.jsx";
 import { retryWithBackoff } from "../../utils/retryUtils.js";  // 🔄 재시도 유틸리티
 
 const ChatRoom = ({roomId, userId}) => {
-    const [messages, setMessages] = useState([]);
-    const [messageIds, setMessageIds] = useState(new Set());
+    const [messagesMap, setMessagesMap] = useState(new Map());
     const [text, setText] = useState("");
     const [userName, setUserName] = useState("");
     const socket = useSocket();
@@ -25,6 +24,8 @@ const ChatRoom = ({roomId, userId}) => {
     const [participants, setParticipants] = useState([]);
     const [capacity, setCapacity] = useState(0);
     const [evaluationUsers,  setEvaluationUsers]= useState([]);  // 매너평가 대상
+
+    const [roomInfo, setRoomInfo] = useState(null);
 
     const messagesContainerRef = useRef(null);
 
@@ -44,6 +45,14 @@ const ChatRoom = ({roomId, userId}) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const { removeNotificationsByRoom } = useNotificationStore();
     const wordFilterEnabled = useNotificationStore(state => state.wordFilterEnabled);
+
+    // ✅ 렌더링용 배열 (useMemo로 최적화)
+    const messages = useMemo(() =>
+            Array.from(messagesMap.values())
+                .sort((a, b) => new Date(a.textTime) - new Date(b.textTime)),
+        [messagesMap]
+    );
+
 
     useEffect(() => {
         if (roomId) {
@@ -90,16 +99,16 @@ const ChatRoom = ({roomId, userId}) => {
             }
         }
 
-        if (!messageIds.has(message._id)) {
-            setMessages((prevMessages) => [...prevMessages, message]);
-            setMessageIds((prevIds) => new Set(prevIds.add(message._id)));
+        // ✅ 다른 사용자의 메시지만 추가 (Map은 자동 중복 제거)
+        if (message.sender._id !== userId) {
+            setMessagesMap(prev => new Map(prev).set(message._id, message));
         }
     };
 
     // 채팅 종료 버튼 클릭 시 채팅방 정보를 불러와 참가자와 초기 따봉 상태(0)를 세팅
     const handleLeaveRoom = async () => {
         try {
-            const roomInfo = await getChatRoomInfo(roomId);  // DB에서 전체 인원 재조회
+
             if (roomInfo && roomInfo.chatUsers) {
                 setEvaluationUsers(roomInfo.chatUsers);        // UI-리스트는 그대로 두고
                 const init = {};
@@ -130,7 +139,6 @@ const ChatRoom = ({roomId, userId}) => {
     const confirmLeaveRoom = async () => {
         try {
             /* 0) 현재 방 상태 재조회 ― 활성화됐는지 확인 */
-            const roomInfo = await getChatRoomInfo(roomId);
             const isChatActive =
                 roomInfo?.isActive ||
                 roomInfo?.status === "active" ||
@@ -148,7 +156,24 @@ const ChatRoom = ({roomId, userId}) => {
             }
 
             /* 2) 방 나가기 + 채팅 횟수 차감 (재시도 메커니즘 적용) */
-            const promises = [leaveChatRoom(roomId, userId)];
+            // ✅ leaveChatRoom에도 재시도 로직 추가
+            const leaveRoomPromise = retryWithBackoff(
+                () => leaveChatRoom(roomId, userId),
+                {
+                    maxRetries: 3,
+                    delayMs: 1000,
+                    exponentialBackoff: true,
+                    onRetry: ({ attempt, maxRetries, delay }) => {
+                        console.warn(
+                            `🔄 방 나가기 재시도 중... ` +
+                            `(${attempt}/${maxRetries}) ` +
+                            `다음 재시도: ${delay}ms 후`
+                        );
+                    }
+                }
+            );
+
+            const promises = [leaveRoomPromise];
 
             if (isChatActive) {
                 // 🔄 재시도 메커니즘 적용: 최대 3번, 1-2-3초 대기
@@ -163,7 +188,8 @@ const ChatRoom = ({roomId, userId}) => {
                                 console.warn(
                                     `🔄 채팅 횟수 차감 재시도 중... ` +
                                     `(${attempt}/${maxRetries}) ` +
-                                    `다음 재시도: ${delay}ms 후`
+                                    `다음 재시도: ${delay}ms 후`+
+                                    `❌ 오류 원인: ${error.response?.data?.message || error.message || '알 수 없는 오류'}` // 이 로직 한줄 추가한거임 문제생기면 삭제
                                 );
                             }
                         }
@@ -178,24 +204,90 @@ const ChatRoom = ({roomId, userId}) => {
                 navigate("/chat", { replace: true });
             }
         } catch (error) {
-            console.error("❌ 채팅방 나가기 중 오류 발생:", error);
-            
-            // 사용자에게 명확한 피드백 제공
-            let errorMessage = "채팅방 나가기 중 오류가 발생했습니다.";
-            
-            if (error.message?.includes('decrementChatCount') || 
-                error.message?.includes('채팅 횟수')) {
-                errorMessage = 
-                    "채팅 횟수 차감에 실패했습니다. \n" +
-                    "네트워크 상태를 확인하고 다시 시도해주세요.";
-            } else if (error.message?.includes('leaveChatRoom')) {
-                errorMessage = 
-                    "채팅방 나가기에 실패했습니다. \n" +
-                    "페이지를 새로고침해주세요.";
+            // ✅ 이 시점에 도달했다는 건 이미 3번 재시도 후 최종 실패!
+            console.error("❌ [최종 실패] 채팅방 나가기 실패:", error);
+
+            const errorCode = error.response?.data?.errorCode;
+            const errorMessage = error.response?.data?.message;
+
+            // ✅ errorCode로 에러 타입 구분
+            switch (errorCode) {
+                // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                // 4xx 에러 (재시도 불가능)
+                // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                case 'ROOM_NOT_FOUND':
+                case 'USER_NOT_FOUND':
+                    // ❌ 리소스를 찾을 수 없음 - 재시도 불가
+                    alert('채팅방을 찾을 수 없습니다.\n페이지를 새로고침해주세요.');
+                    break;
+
+                case 'INVALID_ID':
+                case 'INVALID_OBJECT_ID':
+                case 'BAD_REQUEST':
+                case 'MISSING_USER_ID':
+                    // ❌ 잘못된 요청 - 재시도 불가
+                    alert('잘못된 요청입니다.\n페이지를 새로고침해주세요.');
+                    break;
+
+                case 'ALREADY_LEFT':
+                    // ✅ 이미 퇴장 - 성공으로 간주 (재시도 불필요)
+                    console.log('✅ [이미 퇴장] 성공으로 간주');
+                    if (socket) socket.emit("leaveRoom", { roomId, userId });
+                    navigate("/chat", { replace: true });
+                    return;
+
+                case 'NOT_A_MEMBER':
+                case 'FORBIDDEN':
+                    // ❌ 권한 없음 - 재시도 불가
+                    alert('이 채팅방에 접근할 권한이 없습니다.');
+                    break;
+
+                // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                // 5xx 에러 (재시도 가능 - 이미 3번 재시도함)
+                // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                case 'INTERNAL_ERROR':
+                case 'SERVICE_UNAVAILABLE':
+                    // ✅ 서버 오류 - 이미 3번 재시도했으므로 최종 실패 안내
+                    alert(
+                        '서버 오류가 발생했습니다.\n' +
+                        '(자동으로 3번 재시도했으나 실패)\n\n' +
+                        '잠시 후 다시 시도해주세요.'
+                    );
+                    break;
+
+                case 'TOO_MANY_REQUESTS':
+                    // ✅ 요청 과다 - 이미 3번 재시도했으므로 최종 실패 안내
+                    alert(
+                        '요청이 너무 많습니다.\n' +
+                        '(자동으로 3번 재시도했으나 실패)\n\n' +
+                        '잠시 후 다시 시도해주세요.'
+                    );
+                    break;
+
+                // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                // 기타 에러
+                // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                default:
+                    // 네트워크 오류 체크
+                    if (error.message?.includes('Network') ||
+                        error.code === 'ECONNABORTED' ||
+                        error.code === 'ECONNRESET' ||
+                        error.code === 'ETIMEDOUT') {
+                        // ✅ 네트워크 오류 - 이미 3번 재시도
+                        alert(
+                            '네트워크 오류가 발생했습니다.\n' +
+                            '(자동으로 3번 재시도했으나 실패)\n\n' +
+                            '인터넷 연결을 확인하고\n' +
+                            '다시 시도해주세요.'
+                        );
+                    } else {
+                        // 기타 알 수 없는 오류
+                        alert(errorMessage || '채팅방 나가기 중 오류가 발생했습니다.');
+                    }
             }
-            
-            // 오류 메시지 표시 (선택적)
-            alert(errorMessage);
         }
         setIsModalOpen(false);
     };
@@ -221,8 +313,7 @@ const ChatRoom = ({roomId, userId}) => {
                     ...response.message,
                     sender: { _id: userId, nickname: userName } // sender 정보를 프론트엔드 형식에 맞게 재구성
                 };
-                setMessages(prev =>
-                    [...prev.filter(m => m._id !== receivedMessage._id), receivedMessage]);
+                setMessagesMap(prev => new Map(prev).set(receivedMessage._id, receivedMessage));
                 setText("");
             } else {
                 console.error("메시지 전송 실패", response);
@@ -240,19 +331,35 @@ const ChatRoom = ({roomId, userId}) => {
     const confirmDelete = async () => {
         try {
             await deleteMessage(deleteTargetId);
-            setMessages((prev) =>
-                prev.map((msg) =>
-                    msg._id === deleteTargetId ? { ...msg, isDeleted: true } : msg
-                )
-            );
+            // Map에서 메시지 업데이트
+            setMessagesMap((prev) => {
+                const newMap = new Map(prev);
+                const message = newMap.get(deleteTargetId);
+                if (message) {
+                    newMap.set(deleteTargetId, { ...message, isDeleted: true });
+                }
+                return newMap;
+            });
+
             if (socket) {
                 socket.emit("deleteMessage", { messageId: deleteTargetId, roomId });
             }
         } catch (error) {
             console.error("메시지 삭제 중 오류 발생:", error);
+
+            // 사용자 친화적 에러 메시지
+            if (error.response?.status === 404) {
+                alert('이미 삭제된 메시지입니다.');
+            } else if (error.response?.status === 400) {
+                alert('잘못된 요청입니다.');
+            } else {
+                alert('메시지 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            }
+        } finally {
+            setShowDeleteModal(false);
+            setDeleteTargetId(null);
         }
-        setShowDeleteModal(false);
-        setDeleteTargetId(null);
+
     };
 
 // 모달에서 “취소” 클릭 시 닫기
@@ -278,18 +385,19 @@ const ChatRoom = ({roomId, userId}) => {
     };
 
 
-    const getChatRoomDetails = async () => {
-        try {
-            const roomInfo = await getChatRoomInfo(roomId);
-            if (roomInfo && roomInfo.chatUsers) {
-                // ① participants 상태에 저장
-                setParticipants(roomInfo.activeUsers);
-                setCapacity(roomInfo.capacity);
-            }
-        } catch (error) {
-            console.error("채팅방 정보 가져오기 오류:", error);
-        }
-    };
+    // const getChatRoomDetails = async () => {
+    //     try {
+    //         const info  = await getChatRoomInfo(roomId);
+    //         if (info  && info .chatUsers) {
+    //             setRoomInfo(info);
+    //             // ① participants 상태에 저장
+    //             setParticipants(info .activeUsers);
+    //             setCapacity(info .capacity);
+    //         }
+    //     } catch (error) {
+    //         console.error("채팅방 정보 가져오기 오류:", error);
+    //     }
+    // };
 
 
     const handleUserLeft = ({ userId: leftId }) => {
@@ -301,25 +409,49 @@ const ChatRoom = ({roomId, userId}) => {
     };
 
     const handleSystemMessage = (msg) => {
-        setMessages(prev => [...prev, msg]);
+        setMessagesMap(prev => new Map(prev).set(msg._id, msg));
     };
 
 
     useEffect(() => {
         fetchMessages(roomId).then((data) => {
             if (data && data.messages) {
-                setMessages(data.messages);
+                const newMap = new Map();
+                data.messages.forEach(msg => {
+                    newMap.set(msg._id, msg);
+                });
+                setMessagesMap(newMap);
             }
         });
-
-        getChatRoomDetails();
 
         if (socket) {
             socket.emit("joinRoom", roomId, "random");
             // 참가자 입장 시: ID → { _id, nickname } 형태로 변환
-            socket.on("roomJoined", async ({ roomId: eventRoomId, activeUsers, capacity }) => {
+            socket.on("roomJoined", async ({
+                                               roomId: eventRoomId,  // ✅ roomId를 eventRoomId로 rename
+                                               chatUsers,
+                                               activeUsers,
+                                               capacity,
+                                               isActive,
+                                               status
+                                           }) => {
+
                 try {
-                    if (eventRoomId !== roomId) return; // ✅ roomId 검증
+                    if (eventRoomId !== roomId)  {
+                        console.log("⚠️ 다른 방의 이벤트 무시:", eventRoomId);
+                        return;
+                    } // ✅ roomId 검증
+
+                    console.log("✅ roomJoined 이벤트 수신:", {
+                        chatUsers: chatUsers?.length,
+                        activeUsers: activeUsers?.length,
+                        capacity,
+                        isActive,
+                        status
+                    });
+
+                    setRoomInfo({ chatUsers, activeUsers, capacity, isActive, status });
+
                     const participantsWithNames = await Promise.all(
                         activeUsers.map(async u => {
                             const id = typeof u === "object" ? u._id : u;
@@ -337,9 +469,14 @@ const ChatRoom = ({roomId, userId}) => {
             socket.on("userLeft", handleUserLeft);
             socket.on("systemMessage", handleSystemMessage);
             socket.on("messageDeleted", ({messageId}) => {
-                setMessages((prevMessages) =>
-                    prevMessages.map((msg) => (msg._id === messageId ? {...msg, isDeleted: true} : msg))
-                );
+                setMessagesMap((prev) => {
+                    const newMap = new Map(prev);
+                    const message = newMap.get(messageId);
+                    if (message) {
+                        newMap.set(messageId, { ...message, isDeleted: true });
+                    }
+                    return newMap;
+                });
             });
 
             return () => {
@@ -439,6 +576,9 @@ const ChatRoom = ({roomId, userId}) => {
                                         </div>
                                     );
                                 }
+                                // ✅ isDeleted가 없으면 false로 처리
+                                const isDeleted = msg.isDeleted ?? false;
+
                                 const isMe = msg.sender._id === userId;
                                 return (
                                     <div
@@ -469,7 +609,7 @@ const ChatRoom = ({roomId, userId}) => {
                                                     className={`relative max-w-full p-3 rounded-lg shadow ${isMe ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'}`}
                                                 >
                                                     <p className="whitespace-pre-wrap break-all">
-                                                        {msg.isDeleted ? '삭제된 메시지입니다.' : (wordFilterEnabled ? filterProfanity(msg.text) : msg.text)}
+                                                        {isDeleted ? '삭제된 메시지입니다.' : (wordFilterEnabled ? filterProfanity(msg.text) : msg.text)}
                                                     </p>
                                                     
                                                     {/* 상대방 메시지에 신고 버튼 추가 */}
