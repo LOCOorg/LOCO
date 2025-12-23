@@ -20,7 +20,7 @@ const NaverLoginHandler = () => {
         (async () => {
             try {
                 const data = await loginWithNaver(code, state);
-                if (data.status === 'noUser') {
+                if (data.status === 'noUser' || data.status === 'new_registration_required') {
                     navigate('/signupPage');
                 } else if (data.status === 'success') {
                     setUser(data.user);
