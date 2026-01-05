@@ -6,10 +6,11 @@ import {
     unblockUserMinimal
 } from "../../api/userAPI";
 import { getUserChatStatus } from '../../api/userProfileLightAPI.js';
+import { useChatRooms } from "../../hooks/queries/useChatQueries";
 import {
     //createChatRoom,
     //joinChatRoom,
-    fetchChatRooms,
+    // fetchChatRooms,
     //fetchUserLeftRooms,
     leaveChatRoom, findOrCreateChatRoom
 } from "../../api/chatAPI";
@@ -48,6 +49,17 @@ const RandomChatComponent = () => {
     const authUser = useAuthStore((state) => state.user);
     const userId = authUser?._id;
 
+    // ========== 3. React Query Hook 추가 ==========
+    const {
+        data: chatRooms = [],
+        isLoading: roomsLoading,
+        error: roomsError,
+    } = useChatRooms({
+        roomType: "random",
+        userId
+    });
+
+    // ========== 4. 일반 변수/상수 선언 (Hook 아님) ==========
     const genderLabels = {
         any: "상관없음",
         same: "동성",
@@ -92,14 +104,15 @@ const RandomChatComponent = () => {
     }, [userInfo?.nextRefillAt, userId]);
 
     useEffect(() => {
-        const checkForActiveRandomChat = async () => {
-            if (!userInfo || initialCheckComplete) {
+        const checkForActiveRandomChat =  () => {
+            if (!userInfo || initialCheckComplete || roomsLoading) {
                 return;
             }
             setInitialCheckComplete(true);
 
             try {
-                const rooms = await fetchChatRooms({ roomType: "random", userId });
+                // const rooms = await fetchChatRooms({ roomType: "random", userId });
+                const rooms = chatRooms;
                 // const leftRooms = await fetchUserLeftRooms(userId);
                 const blockedIds = (blockedUsers || []).map((u) => u._id);
 
@@ -120,7 +133,7 @@ const RandomChatComponent = () => {
         };
 
         checkForActiveRandomChat();
-    }, [userInfo, userId, navigate, blockedUsers, initialCheckComplete]);
+    }, [userInfo, userId, navigate, blockedUsers, initialCheckComplete, chatRooms, roomsLoading]);
 
     // 소켓 이벤트 리스너 설정
     useEffect(() => {
