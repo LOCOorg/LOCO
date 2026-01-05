@@ -1,7 +1,8 @@
 // src/components/communitycomponents/CommunityList.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { fetchCommunities, fetchTopViewed, fetchTopCommented } from '../../api/communityApi.js';
+import { fetchCommunities } from '../../api/communityApi.js';
+import useSidebarData from '../../hooks/useSidebarData.js';
 import PageComponent from '../../common/pageComponent.jsx';
 import CommunityLayout from '../../layout/CommunityLayout/CommunityLayout.jsx';
 import LeftSidebar from '../../layout/CommunityLayout/LeftSidebar.jsx';
@@ -47,10 +48,12 @@ const CommunityList = () => {
     const [searchType, setSearchType] = useState('title+content');
     const [selectedPeriod, setSelectedPeriod] = useState('전체');
 
-    // 사이드바 상태
-    const [topViewed, setTopViewed] = useState([]);
-    const [topCommented, setTopCommented] = useState([]);
-    const [sideTab, setSideTab] = useState('viewed');
+    // // 사이드바 상태
+    // const [topViewed, setTopViewed] = useState([]);
+    // const [topCommented, setTopCommented] = useState([]);
+    // const [sideTab, setSideTab] = useState('viewed');
+    // ✅ useSidebarData Hook 사용
+    const { sideTab, setSideTab, topViewed, topCommented } = useSidebarData();
 
     // 시간 범위 옵션 정의
     const periodOptions = [
@@ -117,24 +120,24 @@ const CommunityList = () => {
         setCurrentPage(page);
     };
 
-    // Effects
-    useEffect(() => {
-        const fetchGlobalTop = async () => {
-            try {
-                const [topViewedData, topCommentedData] = await Promise.all([
-                    fetchTopViewed(),
-                    fetchTopCommented()
-                ]);
-                setTopViewed(topViewedData);
-                setTopCommented(topCommentedData);
-            } catch (error) {
-                console.error('사이드바 데이터 로드 실패:', error);
-                setTopViewed([]);
-                setTopCommented([]);
-            }
-        };
-        fetchGlobalTop();
-    }, []);
+    // // Effects
+    // useEffect(() => {
+    //     const fetchGlobalTop = async () => {
+    //         try {
+    //             const [topViewedData, topCommentedData] = await Promise.all([
+    //                 fetchTopViewed(),
+    //                 fetchTopCommented()
+    //             ]);
+    //             setTopViewed(topViewedData);
+    //             setTopCommented(topCommentedData);
+    //         } catch (error) {
+    //             console.error('사이드바 데이터 로드 실패:', error);
+    //             setTopViewed([]);
+    //             setTopCommented([]);
+    //         }
+    //     };
+    //     fetchGlobalTop();
+    // }, []);
 
     useEffect(() => {
         if ((selectedCategory === '내 글' || selectedCategory === '내 댓글') && !currentUserId) {

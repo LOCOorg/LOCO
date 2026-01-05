@@ -448,6 +448,55 @@ const FriendChatSidePanel = () => {
     //     }, 100);
     // }, [updateRoomSummary]);
 
+    // ✅ handleSelectChat을 useEffect들보다 먼저 정의 (호이스팅 문제 해결)
+    const handleSelectChat = useCallback(async (room) => {
+        if (!room || !room.roomId || !user?._id) return;
+
+        setSelectedRoom(room);
+        setActiveRightTabLocal('chat');
+
+        try {
+            // ✅ 1번 Socket 호출 (최적화)
+            if (socket && socket.connected) {
+                socket.emit('enterRoom', {
+                    roomId: room.roomId,
+                    userId: user._id
+                }, (response) => {
+                    if (response && response.success) {
+                        console.log(`✅ [Socket] 입장 완료: ${response.readCount}개 읽음`);
+                        markRoomAsReadStore(room.roomId);
+                    } else {
+                        console.error('❌ [Socket] 입장 실패:', response?.error || '알 수 없는 오류');
+
+                        // HTTP Fallback
+                        Promise.all([
+                            recordRoomEntry(room.roomId, user._id),
+                            markRoomAsRead(room.roomId, user._id)
+                        ])
+                            .then(() => {
+                                console.log('✅ [Fallback] 입장 성공');
+                                markRoomAsReadStore(room.roomId);
+                            })
+                            .catch((error) => {
+                                console.error('❌ [Fallback] HTTP 실패:', error);
+                            });
+                    }
+                });
+            } else {
+                // ⚠️ Fallback: Socket 없으면 HTTP 사용
+                console.warn('⚠️ [Fallback] Socket 없음 - HTTP 사용');
+                await Promise.all([
+                    recordRoomEntry(room.roomId, user._id),
+                    markRoomAsRead(room.roomId, user._id)
+                ]);
+                console.log('✅ [HTTP] 입장 + 읽음 처리 완료');
+                markRoomAsReadStore(room.roomId);
+            }
+        } catch (error) {
+            console.error('채팅방 입장 처리 실패:', error);
+        }
+    }, [user?._id, socket, markRoomAsReadStore]);
+
     //  cleanup 추가
     useEffect(() => {
         return () => {
@@ -680,7 +729,7 @@ const FriendChatSidePanel = () => {
             }
             clearOpenSignal();
         }
-    }, [shouldOpenPanel, targetRoomId, targetFriendInfo, friendRooms, clearOpenSignal, user._id, socket, markRoomAsReadStore, handleSelectChat]);
+    }, [shouldOpenPanel, targetRoomId, targetFriendInfo, friendRooms, clearOpenSignal, user?._id, socket, markRoomAsReadStore, handleSelectChat]);
 
     // 스토어 상태 동기화
     useEffect(() => setSidePanelOpen(showPanel), [showPanel, setSidePanelOpen]);
@@ -704,15 +753,41 @@ const FriendChatSidePanel = () => {
         return () => document.removeEventListener('pointerdown', handlePointerDown);
     }, [showPanel]);
 
-    // ✅ After
-    useEffect(() => { loadRooms(); }, [loadRooms]);
-    useEffect(() => { loadFriendRequestCount(); }, [loadFriendRequestCount]);  // ✅ 마운트 시 개수만
+    // user 로그인 시 친구 채팅방 목록 자동 로드
+    // user가 로그인되면 자동으로 친구 채팅방 데이터를 가져옴
+    // user 변경 시 채팅방 목록 재로드
     useEffect(() => {
-        if (activeTab === 'requests') {  // ✅ 요청 탭 클릭 시에만 전체 목록
+        if (user?._id) {
+            loadRooms();
+        }
+    }, [user?._id, loadRooms]);
+
+    // user 로그인 시 친구 요청 개수만 조회 (경량 로딩)
+    // 배지에 표시할 개수만 먼저 가져옴 (빠른 응답)
+    // 전체 목록은 사용자가 "친구요청" 탭을 클릭할 때만 로드
+    useEffect(() => {
+        if (user?._id) {
+            loadFriendRequestCount();
+        }
+    }, [user?._id, loadFriendRequestCount]);
+
+    // 친구요청 탭 클릭 시에만 전체 목록 로드 (지연 로딩)
+    // 사용자가 탭을 클릭하기 전까지는 상세 정보를 불러오지 않음
+    // 불필요한 API 호출 방지 → 성능 최적화
+    useEffect(() => {
+        if (user?._id && activeTab === 'requests') {
             loadFriendReqFromServer();
         }
-    }, [activeTab, loadFriendReqFromServer]);
-    useEffect(() => { loadRoomSummaries(); }, [loadRoomSummaries]);
+    }, [user?._id, activeTab, loadFriendReqFromServer]);
+
+    // 채팅방 목록이 준비되면 각 방의 요약 정보 로드
+    // 마지막 메시지, 안읽은 개수 등을 배치로 조회
+    // friendRooms가 로드된 후에 실행되도록 의존성 체인 형성
+    useEffect(() => {
+        if (user?._id) {
+            loadRoomSummaries();
+        }
+    }, [user?._id, loadRoomSummaries]);
 
     // 친구 요청 알림 처리
     useEffect(() => {
@@ -771,65 +846,6 @@ const FriendChatSidePanel = () => {
             socket.off('connect', handleReconnect);
         };
     }, [socket, loadRoomSummaries]);
-
-    const handleSelectChat =  useCallback(async (room) => {
-        if (!room || !room.roomId || !user?._id) return;
-
-        setSelectedRoom(room);
-        setActiveRightTabLocal('chat');
-
-        try {
-            // ✅ 1번 Socket 호출 (최적화)
-            if (socket && socket.connected) {
-                socket.emit('enterRoom', {
-                    roomId: room.roomId,
-                    userId: user._id
-                }, (response) => {
-                    if (response && response.success) {  // ⚠️ response && 추가 (null 체크)
-                        console.log(`✅ [Socket] 입장 완료: ${response.readCount}개 읽음`);
-                        markRoomAsReadStore(room.roomId);
-
-                        // setTimeout(() => {
-                        //     updateRoomSummary(room.roomId);
-                        // }, 100);
-                    } else {
-                        console.error('❌ [Socket] 입장 실패:', response?.error || '알 수 없는 오류');
-
-                        // HTTP Fallback
-                        // ✅ 수정: 두 API를 명시적으로 병렬 호출
-                        Promise.all([
-                            recordRoomEntry(room.roomId, user._id),
-                            markRoomAsRead(room.roomId, user._id)
-                        ])
-                            .then(() => {
-                                console.log('✅ [Fallback] 입장 성공');
-                                markRoomAsReadStore(room.roomId);
-                            })
-                            .catch((error) => {
-                                console.error('❌ [Fallback] HTTP 실패:', error);
-                            });
-                        // ✅ 수정된 부분 끝
-                    }
-                });
-            } else {
-                // ⚠️ Fallback: Socket 없으면 HTTP 사용
-                console.warn('⚠️ [Fallback] Socket 없음 - HTTP 사용');
-                // ✅ 수정: 두 API를 명시적으로 병렬 호출
-                await Promise.all([
-                    recordRoomEntry(room.roomId, user._id),
-                    markRoomAsRead(room.roomId, user._id)
-                ]);
-                console.log('✅ [HTTP] 입장 + 읽음 처리 완료');
-                markRoomAsReadStore(room.roomId);
-
-                // setTimeout(() => {
-                //     updateRoomSummary(room.roomId);
-                // }, 100);
-            }
-        } catch (error) {
-            console.error('채팅방 입장 처리 실패:', error);
-        }
-    }, [user?._id, socket, markRoomAsReadStore]);   // 배열에서 updateRoomSummary 제거함
 
     // ✅ 조건부 렌더링을 모든 hooks 호출 후에 수행
     if (!user || !user._id) {
