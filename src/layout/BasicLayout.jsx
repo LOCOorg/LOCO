@@ -12,6 +12,7 @@ import MyMenuDrop from "./layoutMyMenus/MyMenuDrop.jsx";
 import DropdownTransition from './css/DropdownTransition.jsx';
 import NotificationToggleButton from "./setting/NotificationToggleButton.jsx";
 import ReactivationModal from '../components/authComponent/ReactivationModal.jsx';
+import TermConsentModal from "../components/common/TermConsentModal.jsx";
 
 
 const BasicLayout = ({ children }) => {
@@ -73,6 +74,10 @@ const BasicLayout = ({ children }) => {
                         )}
 
                         {user && user.userLv >= 3 && (
+                            <li ><Link to="/admin/terms" className="hover:text-gray-300">약관관리</Link></li>
+                        )}
+
+                        {user && user.userLv >= 3 && (
                             <li ><Link to="/developer" className="hover:text-gray-300">개발자</Link></li>
                         )}
                     </ul>
@@ -118,6 +123,9 @@ const BasicLayout = ({ children }) => {
                                     <li><Link to="/admin/banners" className="block px-4 py-2 hover:bg-gray-100">배너관리</Link></li>
                                 )}
                                 {user && user.userLv >= 3 && (
+                                    <li ><Link to="/admin/terms" className="hover:text-gray-300">약관관리</Link></li>
+                                )}
+                                {user && user.userLv >= 3 && (
                                     <>
                                         <li><Link to="/developer" className="block px-4 py-2 hover:bg-gray-100">개발자</Link></li>
                                     </>
@@ -156,6 +164,7 @@ const BasicLayout = ({ children }) => {
                 onClose={() => setLoginModalOpen(false)} 
             />
             <ReactivationModal />
+            <TermConsentModal />
         </div>
     );
 };
