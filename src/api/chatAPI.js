@@ -73,7 +73,7 @@ export const createFriendRoom = async (roomType, capacity) => {
 export const fetchChatRooms = async (params = {}) => {
     try {
         const response = await instance.get(`/api/chat/rooms`, { params });
-        console.log(`🏛️ [방목록] 조회 성공: ${response.data.length}개`);
+        console.log(`🏛️ [방목록] 조회 성공: ${response.data.rooms?.length || 0}개`);
         return response.data;
     } catch (error) {
         console.error("채팅방 목록을 불러오는 중 오류 발생:", error);
