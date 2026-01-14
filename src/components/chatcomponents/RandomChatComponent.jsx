@@ -51,7 +51,7 @@ const RandomChatComponent = () => {
 
     // ========== 3. React Query Hook 추가 ==========
     const {
-        data: chatRooms = [],
+        data: chatRoomsData = { rooms: [] },
         isLoading: roomsLoading,
         error: roomsError,
     } = useChatRooms({
@@ -112,7 +112,7 @@ const RandomChatComponent = () => {
 
             try {
                 // const rooms = await fetchChatRooms({ roomType: "random", userId });
-                const rooms = chatRooms;
+                const rooms = chatRoomsData?.rooms || [];
                 // const leftRooms = await fetchUserLeftRooms(userId);
                 const blockedIds = (blockedUsers || []).map((u) => u._id);
 
@@ -133,7 +133,7 @@ const RandomChatComponent = () => {
         };
 
         checkForActiveRandomChat();
-    }, [userInfo, userId, navigate, blockedUsers, initialCheckComplete, chatRooms, roomsLoading]);
+    }, [userInfo, userId, navigate, blockedUsers, initialCheckComplete, chatRoomsData, roomsLoading]);
 
     // 소켓 이벤트 리스너 설정
     useEffect(() => {
