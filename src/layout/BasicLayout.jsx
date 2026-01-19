@@ -13,7 +13,6 @@ import DropdownTransition from './css/DropdownTransition.jsx';
 import NotificationToggleButton from "./setting/NotificationToggleButton.jsx";
 import ReactivationModal from '../components/authComponent/ReactivationModal.jsx';
 import TermConsentModal from "../components/common/TermConsentModal.jsx";
-import Footer from "../components/common/Footer.jsx";
 
 
 const BasicLayout = ({ children }) => {
@@ -157,7 +156,6 @@ const BasicLayout = ({ children }) => {
                 <Outlet />
             </main>
 
-            <Footer />
 
 
             {/* 로그인 모달 */}

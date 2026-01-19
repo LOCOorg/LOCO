@@ -6,6 +6,7 @@ import RightSidebar from '../layout/CommunityLayout/RightSidebar.jsx';
 import useSidebarData from '../hooks/useSidebarData.js';
 import { Link } from 'react-router-dom';
 import { ChatBubbleLeftRightIcon, TrophyIcon } from '@heroicons/react/24/solid';
+import Footer from "../components/common/Footer.jsx";
 
 function MainComponent() {
 
@@ -68,6 +69,7 @@ function MainComponent() {
                     </div>
                 </div>
             </div>
+            <Footer />
         </>
     );
 }
