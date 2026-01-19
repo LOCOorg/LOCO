@@ -1,6 +1,34 @@
+import { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 export default function LeagueRecordSection({ partnerRecords, loading, error }) {
+    const scrollRefs = useRef([]);
+
+    useEffect(() => {
+        const handleWheel = (e) => {
+            const el = e.currentTarget;
+            // 스크롤이 가능한 상태일 때만 동작
+            if (el.scrollWidth > el.clientWidth && e.deltaY !== 0) {
+                e.preventDefault();
+                el.scrollLeft += e.deltaY;
+            }
+        };
+
+        const refs = scrollRefs.current;
+        refs.forEach((el) => {
+            if (el) {
+                el.addEventListener('wheel', handleWheel, { passive: false });
+            }
+        });
+
+        return () => {
+            refs.forEach((el) => {
+                if (el) {
+                    el.removeEventListener('wheel', handleWheel);
+                }
+            });
+        };
+    }, [partnerRecords]);
 
     if (loading) {
         return (
@@ -92,16 +120,17 @@ export default function LeagueRecordSection({ partnerRecords, loading, error }) 
                                     최근 솔로 랭크전 {record.leagueRecord.recentRanked.length}판
                                 </h4>
 
-                                {/* Flex 레이아웃으로 변경하여 전체 너비 활용 */}
-                                <div className="flex flex-wrap gap-2 justify-start">
+                                {/* 가로 스크롤 가능하도록 변경 및 마우스 휠 이벤트 추가 */}
+                                <div
+                                    className="flex overflow-x-auto gap-2 justify-start pb-2 custom-scrollbar"
+                                    ref={(el) => (scrollRefs.current[index] = el)}
+                                >
                                     {record.leagueRecord.recentRanked.map((match, matchIndex) => (
                                         <div
                                             key={match.matchId || matchIndex}
-                                            className={`flex flex-col items-center p-2.5 ransition-transform duration-200 hover:-translate-y-0.5 flex-shrink-0`}
+                                            className={`flex flex-col items-center p-2.5 transition-transform duration-200 hover:-translate-y-0.5 flex-shrink-0`}
                                             style={{
-                                                width: `calc((100% - ${(record.leagueRecord.recentRanked.length - 1) * 8}px) / ${record.leagueRecord.recentRanked.length})`,
-                                                minWidth: '65px',
-                                                maxWidth: '100px'
+                                                width: '80px'
                                             }}
                                         >
                                             {/* 챔피언 이미지 */}
