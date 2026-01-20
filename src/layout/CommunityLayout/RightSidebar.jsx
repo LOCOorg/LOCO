@@ -6,36 +6,36 @@ const RightSidebar = ({ sideTab, setSideTab, topViewed, topCommented }) => {
     const location = useLocation();
     const isCommunityPage = location.pathname.startsWith('/community');
 
-    const listContainerClasses = isCommunityPage
-        ? "space-y-2 max-h-[350px] overflow-y-auto custom-scrollbar"
-        : "grid grid-cols-2 gap-x-2 gap-y-2 max-h-[350px] overflow-y-auto custom-scrollbar";
+    const listContainerClasses = "space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-1";
 
-    const listItemClasses = `flex items-start justify-between w-full hover:bg-gray-50 rounded-lg cursor-pointer border border-gray-100 transition-colors ${isCommunityPage ? 'p-3' : 'p-2'}`;
+    const listItemClasses = `flex items-start justify-between w-full hover:bg-blue-50 rounded-lg cursor-pointer border border-gray-100 transition-all p-3 active:scale-[0.98]`;
 
 
     // ✅ 카테고리별 색상 지정
     const getCategoryColor = (category) => {
         const colors = {
-            '자유': 'bg-blue-100 text-blue-800',
-            '유머': 'bg-yellow-100 text-yellow-800',
-            '질문': 'bg-green-100 text-green-800',
-            '사건사고': 'bg-red-100 text-red-800',
-            '전적인증': 'bg-purple-100 text-purple-800',
-            '개발요청': 'bg-gray-100 text-gray-800'
+            '자유': 'bg-blue-50 text-blue-600 border-blue-100',
+            '유머': 'bg-yellow-50 text-yellow-600 border-yellow-100',
+            '질문': 'bg-green-50 text-green-600 border-green-100',
+            '사건사고': 'bg-red-50 text-red-600 border-red-100',
+            '전적인증': 'bg-purple-50 text-purple-600 border-purple-100',
+            '개발요청': 'bg-gray-50 text-gray-600 border-gray-100'
         };
-        return colors[category] || 'bg-gray-100 text-gray-800';
+        return colors[category] || 'bg-gray-50 text-gray-600 border-gray-100';
     };
 
 
     return (
-        <div className="w-auto bg-white shadow-lg rounded-lg p-4">
+        <div className="w-full bg-white shadow-md rounded-xl p-4 lg:sticky lg:top-24">
             {/* 헤더 */}
-            <div className="mb-4">
-                <div className="flex items-baseline gap-3 justify-between">
-                    <p className="text-xl text-black font-semibold">커뮤니티</p>
-                    <p className="text-xs text-gray-400 ">최근 7일 기준</p>
+            <div className="mb-4 flex items-center justify-between">
+                <div>
+                    <h2 className="text-lg font-bold text-gray-900">커뮤니티 인기글</h2>
+                    <p className="text-[10px] text-gray-400">최근 7일 기준 • 24시간 업데이트</p>
                 </div>
-                <p className="text-xs text-gray-500 mt-1 text-end">24시간마다 업데이트</p>
+                <div className="bg-blue-100 text-blue-600 p-1.5 rounded-lg">
+                    🔥
+                </div>
             </div>
             {/* 탭 버튼 */}
             <div className="flex mb-4 bg-gray-100 rounded-lg p-1">

@@ -546,7 +546,7 @@ const ChatRoom = ({roomId, userId}) => {
 
     return (
         <div
-            className="max-w-6xl mx-auto h-screen flex flex-col md:flex-row p-6 space-y-6 md:space-y-0 md:space-x-8 bg-gradient-to-br from-indigo-50 to-purple-50">
+            className="max-w-6xl mx-auto h-[calc(100vh-80px)] flex flex-col md:flex-row p-4 space-y-4 md:space-y-0 md:space-x-8 bg-gradient-to-br from-indigo-50 to-purple-50">
             {/* ─── 채팅 섹션 ─── */}
             <section className="flex-1 flex flex-col bg-white shadow-2xl rounded-xl overflow-hidden">
                 <header className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6">
@@ -562,6 +562,13 @@ const ChatRoom = ({roomId, userId}) => {
                     </div>
 
                 </header>
+
+                {/* ─── 공지사항 배너 ─── */}
+                <div className="bg-yellow-50 border-b border-yellow-100 px-6 py-3 text-center">
+                    <p className="text-xs text-yellow-700 font-medium break-keep">
+                        ⚠️ 개인정보 노출(실명, 연락처 등) 및 만남 유도 행위는 차단될 수 있습니다.
+                    </p>
+                </div>
 
                         <div
                             ref={messagesContainerRef}

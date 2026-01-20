@@ -462,31 +462,31 @@ const CommentSection = ({
                     rows="4"
                     maxLength={1000}
                 />
-                <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-center space-x-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-3 gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                         <input
                             type="file"
                             accept="image/*"
                             onChange={(e) => setCommentFile(e.target.files[0])}
-                            className="text-sm"
+                            className="text-sm w-full sm:w-auto"
                         />
                         {commentFile && (
-                            <span className="text-sm text-gray-600">{commentFile.name}</span>
+                            <span className="text-sm text-gray-600 truncate max-w-xs">{commentFile.name}</span>
                         )}
                     </div>
-                    <div className="flex items-center space-x-3">
-                        <label className="flex items-center text-sm">
+                    <div className="flex items-center justify-end space-x-3 w-full sm:w-auto">
+                        <label className="flex items-center text-sm cursor-pointer select-none">
                             <input
                                 type="checkbox"
                                 checked={commentIsAnonymous}
                                 onChange={(e) => setCommentIsAnonymous(e.target.checked)}
-                                className="mr-1"
+                                className="mr-1 w-4 h-4"
                             />
                             익명
                         </label>
                         <button
                             onClick={onAddComment}
-                            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors whitespace-nowrap"
                         >
                             등록
                         </button>
