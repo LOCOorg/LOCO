@@ -19,6 +19,7 @@ const PRPageComponent = () => {
     const [loading, setLoading] = useState(false);
     const [selectedProfile, setSelectedProfile] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
 
     // 🔧 실시간 온라인 상태 추적 (백엔드에서 온 데이터의 실시간 업데이트를 위해)
     const allUserIds = [...topUsers, ...allUsers].map(user => user._id).filter(Boolean);
@@ -71,10 +72,9 @@ const PRPageComponent = () => {
 
 
     return (
-        <div className="pl-64 lg:pl-64">
-            {/* ─── 좌측 필터 사이드바 ─── */}
-            <aside className="fixed inset-y-0 left-0 top-20 w-64 overflow-y-auto z-10 bg-white">
-                {/* 내부 패딩 */}
+        <div className="lg:pl-64 min-h-screen relative">
+            {/* ─── 좌측 필터 사이드바 (Desktop) ─── */}
+            <aside className="hidden lg:block fixed inset-y-0 left-0 top-20 w-64 overflow-y-auto z-10 bg-white border-r">
                 <div className="px-4 py-6">
                     <PRFilter
                         sort={sort}
@@ -87,8 +87,53 @@ const PRPageComponent = () => {
                 </div>
             </aside>
 
+             {/* ─── 좌측 필터 사이드바 (Mobile Drawer) ─── */}
+            {isSidebarOpen && (
+                <div className="fixed inset-0 z-50 lg:hidden">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black bg-opacity-50"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                    {/* Sidebar Content */}
+                    <aside className="absolute inset-y-0 left-0 w-64 bg-white overflow-y-auto shadow-xl">
+                        <div className="p-4 flex justify-between items-center border-b">
+                            <h2 className="text-lg font-bold">필터</h2>
+                            <button onClick={() => setIsSidebarOpen(false)} className="text-gray-500">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="px-4 py-6">
+                            <PRFilter
+                                sort={sort}
+                                gender={gender}
+                                tier={tier}
+                                onSortChange={handleSortChange}
+                                onGenderChange={handleGenderChange}
+                                onTierChange={handleTierChange}
+                            />
+                        </div>
+                    </aside>
+                </div>
+            )}
+
             {/* ─── 우측 메인 컨텐츠 ─── */}
-            <main className="bg-[#F5F7FA] px-6 py-4">
+            <main className="bg-[#F5F7FA] px-6 py-4 min-h-screen">
+                {/* ─── Mobile Filter Button ─── */}
+                <div className="lg:hidden mb-4">
+                    <button
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="flex items-center space-x-2 text-gray-700 bg-white border px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                        <span className="font-medium">필터</span>
+                    </button>
+                </div>
+
                 {/* 상단 슬라이더 (전체 폭) */}
 
                 <PRTopSlider 
