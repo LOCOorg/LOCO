@@ -34,6 +34,13 @@ const SignupForm = () => {
     const [modalTitle, setModalTitle] = useState("");
     const [modalContent, setModalContent] = useState(null);
 
+    // 알림 모달 상태 추가
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
+    
+    // 회원가입 성공 모달 상태 추가
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
     useEffect(() => {
         // 약관 목록 불러오기
         getActiveTerms()
@@ -215,12 +222,17 @@ const SignupForm = () => {
                 requestData,
                 { withCredentials: true }
             );
-            navigate("/");
+            setIsSuccessModalOpen(true);
         } catch (error) {
             setErrorMessage(
                 error.response?.data?.message || "회원가입 중 오류가 발생했습니다."
             );
         }
+    };
+
+    const handleSuccessConfirm = () => {
+        setIsSuccessModalOpen(false);
+        navigate("/");
     };
 
     const getNicknameInputStyle = () => {
@@ -365,7 +377,10 @@ const SignupForm = () => {
                     <button
                         type="button"
                         className="w-full px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
-                        onClick={() => alert("PASS 인증 처리 (구현 예정)")}
+                        onClick={() => {
+                            setAlertMessage("PASS 인증 처리 (구현 예정)");
+                            setIsAlertOpen(true);
+                        }}
                     >
                         PASS 인증하기
                     </button>
@@ -387,6 +402,26 @@ const SignupForm = () => {
                 showCancel={false}
             >
                 {modalContent}
+            </CommonModal>
+
+            <CommonModal
+                isOpen={isAlertOpen}
+                onClose={() => setIsAlertOpen(false)}
+                title="알림"
+                onConfirm={() => setIsAlertOpen(false)}
+                showCancel={false}
+            >
+                {alertMessage}
+            </CommonModal>
+
+            <CommonModal
+                isOpen={isSuccessModalOpen}
+                onClose={handleSuccessConfirm}
+                title="알림"
+                onConfirm={handleSuccessConfirm}
+                showCancel={false}
+            >
+                회원가입이 완료되었습니다.
             </CommonModal>
         </div>
     );
