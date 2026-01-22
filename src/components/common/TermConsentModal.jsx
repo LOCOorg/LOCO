@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMissingConsents, submitConsent } from '../../api/termAPI';
 import useAuthStore from '../../stores/authStore';
 import { useNavigate } from 'react-router-dom';
+import CommonModal from '../../common/CommonModal';
 
 const TermConsentModal = () => {
     const { user, logout } = useAuthStore();
@@ -10,6 +11,9 @@ const TermConsentModal = () => {
     const navigate = useNavigate();
     const [selectedTerms, setSelectedTerms] = useState([]);
     const [expandedTermId, setExpandedTermId] = useState(null);
+
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
 
     // 로그인 상태일 때만 체크 (user가 존재할 때)
     const { data: missingTerms, isLoading } = useQuery({
@@ -31,11 +35,13 @@ const TermConsentModal = () => {
             // 전달된 변수(variables) 중 agreed: true가 하나라도 있는 경우만 알림 표시
             const hasAgreedAny = variables.some(v => v.agreed);
             if (hasAgreedAny) {
-                alert('약관에 동의하였습니다.');
+                setAlertMessage('약관에 동의하였습니다.');
+                setIsAlertOpen(true);
             }
         },
         onError: (error) => {
-            alert('동의 처리에 실패했습니다. 다시 시도해주세요.');
+            setAlertMessage('동의 처리에 실패했습니다. 다시 시도해주세요.');
+            setIsAlertOpen(true);
         }
     });
 
@@ -71,7 +77,8 @@ const TermConsentModal = () => {
         const isAllRequiredChecked = requiredIds.every(id => selectedTerms.includes(id));
 
         if (!isAllRequiredChecked) {
-            alert('필수 약관에 모두 동의해야 서비스를 이용할 수 있습니다.');
+            setAlertMessage('필수 약관에 모두 동의해야 서비스를 이용할 수 있습니다.');
+            setIsAlertOpen(true);
             return;
         }
 
@@ -178,6 +185,16 @@ const TermConsentModal = () => {
                     </div>
                 </div>
             </div>
+            <CommonModal
+                isOpen={isAlertOpen}
+                onClose={() => setIsAlertOpen(false)}
+                title="알림"
+                onConfirm={() => setIsAlertOpen(false)}
+                showCancel={false}
+                zIndex={10000}
+            >
+                {alertMessage}
+            </CommonModal>
         </div>
     );
 };

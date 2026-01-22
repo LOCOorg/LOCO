@@ -301,7 +301,10 @@ const RandomChatComponent = () => {
                             const myGender = userInfo?.gender;
 
                             if (!myGender || myGender === 'select') {
-                                alert('성별 정보가 필요합니다. 마이페이지에서 성별을 선택해주세요.');
+                                setModalTitle("알림");
+                                setModalMessage('성별 정보가 필요합니다. 마이페이지에서 성별을 선택해주세요.');
+                                setModalButtons([{ text: "확인", action: () => setModalOpen(false) }]);
+                                setModalOpen(true);
                                 return;
                             }
 

@@ -42,6 +42,10 @@ const ChatRoom = ({roomId, userId}) => {
     const [showMessageReportModal, setShowMessageReportModal] = useState(false);
     const [reportTargetMessage, setReportTargetMessage] = useState(null);
 
+    // 알림 모달 상태 추가
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const { removeNotificationsByRoom } = useNotificationStore();
     const wordFilterEnabled = useNotificationStore(state => state.wordFilterEnabled);
@@ -219,7 +223,8 @@ const ChatRoom = ({roomId, userId}) => {
                 case 'ROOM_NOT_FOUND':
                 case 'USER_NOT_FOUND':
                     // ❌ 리소스를 찾을 수 없음 - 재시도 불가
-                    alert('채팅방을 찾을 수 없습니다.\n페이지를 새로고침해주세요.');
+                    setAlertMessage('채팅방을 찾을 수 없습니다.\n페이지를 새로고침해주세요.');
+                    setIsAlertOpen(true);
                     break;
 
                 case 'INVALID_ID':
@@ -227,7 +232,8 @@ const ChatRoom = ({roomId, userId}) => {
                 case 'BAD_REQUEST':
                 case 'MISSING_USER_ID':
                     // ❌ 잘못된 요청 - 재시도 불가
-                    alert('잘못된 요청입니다.\n페이지를 새로고침해주세요.');
+                    setAlertMessage('잘못된 요청입니다.\n페이지를 새로고침해주세요.');
+                    setIsAlertOpen(true);
                     break;
 
                 case 'ALREADY_LEFT':
@@ -240,7 +246,8 @@ const ChatRoom = ({roomId, userId}) => {
                 case 'NOT_A_MEMBER':
                 case 'FORBIDDEN':
                     // ❌ 권한 없음 - 재시도 불가
-                    alert('이 채팅방에 접근할 권한이 없습니다.');
+                    setAlertMessage('이 채팅방에 접근할 권한이 없습니다.');
+                    setIsAlertOpen(true);
                     break;
 
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -250,20 +257,22 @@ const ChatRoom = ({roomId, userId}) => {
                 case 'INTERNAL_ERROR':
                 case 'SERVICE_UNAVAILABLE':
                     // ✅ 서버 오류 - 이미 3번 재시도했으므로 최종 실패 안내
-                    alert(
+                    setAlertMessage(
                         '서버 오류가 발생했습니다.\n' +
                         '(자동으로 3번 재시도했으나 실패)\n\n' +
                         '잠시 후 다시 시도해주세요.'
                     );
+                    setIsAlertOpen(true);
                     break;
 
                 case 'TOO_MANY_REQUESTS':
                     // ✅ 요청 과다 - 이미 3번 재시도했으므로 최종 실패 안내
-                    alert(
+                    setAlertMessage(
                         '요청이 너무 많습니다.\n' +
                         '(자동으로 3번 재시도했으나 실패)\n\n' +
                         '잠시 후 다시 시도해주세요.'
                     );
+                    setIsAlertOpen(true);
                     break;
 
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -277,15 +286,17 @@ const ChatRoom = ({roomId, userId}) => {
                         error.code === 'ECONNRESET' ||
                         error.code === 'ETIMEDOUT') {
                         // ✅ 네트워크 오류 - 이미 3번 재시도
-                        alert(
+                        setAlertMessage(
                             '네트워크 오류가 발생했습니다.\n' +
                             '(자동으로 3번 재시도했으나 실패)\n\n' +
                             '인터넷 연결을 확인하고\n' +
                             '다시 시도해주세요.'
                         );
+                        setIsAlertOpen(true);
                     } else {
                         // 기타 알 수 없는 오류
-                        alert(errorMessage || '채팅방 나가기 중 오류가 발생했습니다.');
+                        setAlertMessage(errorMessage || '채팅방 나가기 중 오류가 발생했습니다.');
+                        setIsAlertOpen(true);
                     }
             }
         }
@@ -349,11 +360,14 @@ const ChatRoom = ({roomId, userId}) => {
 
             // 사용자 친화적 에러 메시지
             if (error.response?.status === 404) {
-                alert('이미 삭제된 메시지입니다.');
+                setAlertMessage('이미 삭제된 메시지입니다.');
+                setIsAlertOpen(true);
             } else if (error.response?.status === 400) {
-                alert('잘못된 요청입니다.');
+                setAlertMessage('잘못된 요청입니다.');
+                setIsAlertOpen(true);
             } else {
-                alert('메시지 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.');
+                setAlertMessage('메시지 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.');
+                setIsAlertOpen(true);
             }
         } finally {
             setShowDeleteModal(false);
@@ -774,6 +788,15 @@ const ChatRoom = ({roomId, userId}) => {
                 loading={recordsLoading}
                 error={recordsError}
             />
+            <CommonModal
+                isOpen={isAlertOpen}
+                onClose={() => setIsAlertOpen(false)}
+                title="알림"
+                onConfirm={() => setIsAlertOpen(false)}
+                showCancel={false}
+            >
+                {alertMessage}
+            </CommonModal>
         </div>
     );
 };

@@ -1,10 +1,10 @@
 
 // eslint-disable-next-line react/prop-types
-const CommonModal = ({ isOpen, onClose, title, children, onConfirm, showCancel = true }) => {
+const CommonModal = ({ isOpen, onClose, title, children, onConfirm, showCancel = true, zIndex = 1500 }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[1500]">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50" style={{ zIndex }}>
             <div className="bg-white p-6 rounded-lg shadow-lg w-96">
                 <h2 className="text-xl font-semibold mb-4 text-black">{title}</h2>
                 <div className="mb-4 text-black">{children}</div>

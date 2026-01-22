@@ -1,6 +1,7 @@
 import {useState, useEffect} from "react";
 import {checkNickname, checkChangeAvailability} from "../../api/userAPI";
 import {validateNicknameClient} from "../../utils/nicknameValidator.js";
+import CommonModal from "../../common/CommonModal";
 
 
 export default function ProfileDetailSection({
@@ -27,6 +28,10 @@ export default function ProfileDetailSection({
         nickname: { canChange: true, lastChangeTime: null },
         gender: { canChange: true, lastChangeTime: null }
     });
+
+    // 알림 모달 상태 추가
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
 
     // 변경 가능 여부 확인
     useEffect(() => {
@@ -123,7 +128,8 @@ export default function ProfileDetailSection({
             const lastChangeDate = changeAvailability.gender.lastChangeTime 
                 ? new Date(changeAvailability.gender.lastChangeTime).toLocaleDateString('ko-KR')
                 : '알 수 없음';
-            alert(`성별은 하루에 1회만 변경 가능합니다. 마지막 변경일: ${lastChangeDate}`);
+            setAlertMessage(`성별은 하루에 1회만 변경 가능합니다. 마지막 변경일: ${lastChangeDate}`);
+            setIsAlertOpen(true);
             return;
         }
         
@@ -145,7 +151,8 @@ export default function ProfileDetailSection({
     const handleSaveWithNicknameCheck = () => {
         // 닉네임이 수정되었고, 사용 불가능한 경우에만 경고
         if (isNicknameModified && nicknameStatus.available !== true) {
-            alert("닉네임을 확인해주세요.");
+            setAlertMessage("닉네임을 확인해주세요.");
+            setIsAlertOpen(true);
             return;
         }
         handleSave();
@@ -324,6 +331,15 @@ export default function ProfileDetailSection({
                     </button>
                 </div>
             )}
+            <CommonModal
+                isOpen={isAlertOpen}
+                onClose={() => setIsAlertOpen(false)}
+                title="알림"
+                onConfirm={() => setIsAlertOpen(false)}
+                showCancel={false}
+            >
+                {alertMessage}
+            </CommonModal>
         </div>
     );
 }

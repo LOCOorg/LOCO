@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { loginWithNaver } from '../../api/authAPI.js';
 import useAuthStore from "../../stores/authStore.js";
 import useNotificationStore from "../../stores/notificationStore.js";
 import useReactivationStore from '../../stores/useReactivationStore.js';
+import CommonModal from "../../common/CommonModal.jsx";
 
 const NaverLoginHandler = () => {
     const navigate = useNavigate();
@@ -14,6 +15,9 @@ const NaverLoginHandler = () => {
     const { setUser } = useAuthStore();
     const { syncWithUserPrefs } = useNotificationStore();
     const { triggerReactivation } = useReactivationStore();
+
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
 
     useEffect(() => {
         if (!(code && state)) return;
@@ -36,13 +40,31 @@ const NaverLoginHandler = () => {
                 }
             } catch (err) {
                 console.error('네이버 로그인 처리 에러:', err);
-                alert(err.response?.data?.message || err.message);
-                navigate('/');
+                setAlertMessage(err.response?.data?.message || err.message);
+                setIsAlertOpen(true);
             }
         })();
     }, [code, state, navigate, setUser, syncWithUserPrefs, triggerReactivation]);
 
-    return <div>네이버 로그인 처리 중...</div>;
+    const handleAlertClose = () => {
+        setIsAlertOpen(false);
+        navigate('/');
+    };
+
+    return (
+        <div>
+            네이버 로그인 처리 중...
+            <CommonModal
+                isOpen={isAlertOpen}
+                onClose={handleAlertClose}
+                title="알림"
+                onConfirm={handleAlertClose}
+                showCancel={false}
+            >
+                {alertMessage}
+            </CommonModal>
+        </div>
+    );
 };
 
 export default NaverLoginHandler;
