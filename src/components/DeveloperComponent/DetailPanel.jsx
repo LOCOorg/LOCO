@@ -4,6 +4,7 @@
 // 저장 버튼 클릭 시 PATCH 요청을 통해 서버에 수정된 내용을 저장합니다.
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import CommonModal from "../../common/CommonModal";
 
 // 연령대 계산 함수
 const getDetailedAgeGroup = (age) => {
@@ -60,6 +61,10 @@ const DetailPanel = ({ user, view, setView }) => {
     const [formData, setFormData] = useState(user);
     const [productNames, setProductNames] = useState([]);
 
+    // 알림 모달 상태 추가
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+
 
     // 마운트 시에 /api/product/names 호출
     useEffect(() => {
@@ -93,10 +98,12 @@ const DetailPanel = ({ user, view, setView }) => {
         try {
             // PATCH 요청: 선택된 유저의 _id를 경로에 포함
             const response = await axios.patch(`/api/developer/users/${formData._id}`, formData);
-            alert("User info saved successfully!");
+            setAlertMessage("User info saved successfully!");
+            setIsAlertOpen(true);
             // 필요에 따라 response 데이터를 이용해 state를 업데이트할 수 있습니다.
         } catch (err) {
-            alert("Update failed: " + err.message);
+            setAlertMessage("Update failed: " + err.message);
+            setIsAlertOpen(true);
         }
     };
 
@@ -410,6 +417,15 @@ const DetailPanel = ({ user, view, setView }) => {
                     </button>
                 </div>
             </div>
+            <CommonModal
+                isOpen={isAlertOpen}
+                onClose={() => setIsAlertOpen(false)}
+                title="알림"
+                onConfirm={() => setIsAlertOpen(false)}
+                showCancel={false}
+            >
+                {alertMessage}
+            </CommonModal>
         </div>
     );
 };

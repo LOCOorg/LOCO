@@ -1,6 +1,7 @@
 // src/components/DeveloperComponent/BlockedUsersList.jsx
 import React, { useState, useEffect } from 'react';
 import instance from '../../api/axiosInstance';
+import CommonModal from '../../common/CommonModal';
 
 const BlockedUsersList = ({ userId, className = "" }) => {
     const [blockedUsers, setBlockedUsers] = useState([]);
@@ -11,6 +12,10 @@ const BlockedUsersList = ({ userId, className = "" }) => {
     const [isSearching, setIsSearching] = useState(false);
     const [directBlockId, setDirectBlockId] = useState("");
     const [isDirectBlocking, setIsDirectBlocking] = useState(false);
+
+    // 알림 모달 상태 추가
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
 
     // 차단된 사용자 목록 조회
     const fetchBlockedUsers = async () => {
@@ -78,35 +83,41 @@ const BlockedUsersList = ({ userId, className = "" }) => {
             // 검색 결과에서 해당 사용자 제거
             setSearchResults(prev => prev.filter(user => user._id !== targetUserId));
             
-            alert('사용자가 차단되었습니다.');
+            setAlertMessage('사용자가 차단되었습니다.');
+            setIsAlertOpen(true);
         } catch (err) {
             console.error('사용자 차단 실패:', err);
-            alert('사용자 차단에 실패했습니다.');
+            setAlertMessage('사용자 차단에 실패했습니다.');
+            setIsAlertOpen(true);
         }
     };
 
     // 직접 ID로 사용자 차단
     const blockUserById = async () => {
         if (!directBlockId.trim()) {
-            alert('사용자 ID를 입력해주세요.');
+            setAlertMessage('사용자 ID를 입력해주세요.');
+            setIsAlertOpen(true);
             return;
         }
 
         // ObjectId 형식 간단 검증 (24자리 hex)
         if (!/^[0-9a-fA-F]{24}$/.test(directBlockId.trim())) {
-            alert('올바른 사용자 ID 형식이 아닙니다. (24자리 영문/숫자)');
+            setAlertMessage('올바른 사용자 ID 형식이 아닙니다. (24자리 영문/숫자)');
+            setIsAlertOpen(true);
             return;
         }
 
         // 자기 자신 차단 방지
         if (directBlockId.trim() === userId) {
-            alert('자기 자신은 차단할 수 없습니다.');
+            setAlertMessage('자기 자신은 차단할 수 없습니다.');
+            setIsAlertOpen(true);
             return;
         }
 
         // 이미 차단된 사용자인지 확인
         if (blockedUsers.some(user => user._id === directBlockId.trim())) {
-            alert('이미 차단된 사용자입니다.');
+            setAlertMessage('이미 차단된 사용자입니다.');
+            setIsAlertOpen(true);
             return;
         }
 
@@ -122,14 +133,16 @@ const BlockedUsersList = ({ userId, className = "" }) => {
             // 입력 필드 초기화
             setDirectBlockId('');
             
-            alert('사용자가 차단되었습니다.');
+            setAlertMessage('사용자가 차단되었습니다.');
+            setIsAlertOpen(true);
         } catch (err) {
             console.error('직접 차단 실패:', err);
             if (err.response?.status === 404) {
-                alert('존재하지 않는 사용자 ID입니다.');
+                setAlertMessage('존재하지 않는 사용자 ID입니다.');
             } else {
-                alert('사용자 차단에 실패했습니다: ' + (err.response?.data?.message || err.message));
+                setAlertMessage('사용자 차단에 실패했습니다: ' + (err.response?.data?.message || err.message));
             }
+            setIsAlertOpen(true);
         } finally {
             setIsDirectBlocking(false);
         }
@@ -144,10 +157,12 @@ const BlockedUsersList = ({ userId, className = "" }) => {
             // 차단 해제 성공 시 목록에서 제거
             setBlockedUsers(prev => prev.filter(user => user._id !== targetUserId));
             
-            alert('사용자 차단이 해제되었습니다.');
+            setAlertMessage('사용자 차단이 해제되었습니다.');
+            setIsAlertOpen(true);
         } catch (err) {
             console.error('사용자 차단 해제 실패:', err);
-            alert('사용자 차단 해제에 실패했습니다.');
+            setAlertMessage('사용자 차단 해제에 실패했습니다.');
+            setIsAlertOpen(true);
         }
     };
 
@@ -307,6 +322,15 @@ const BlockedUsersList = ({ userId, className = "" }) => {
                     </div>
                 )}
             </div>
+            <CommonModal
+                isOpen={isAlertOpen}
+                onClose={() => setIsAlertOpen(false)}
+                title="알림"
+                onConfirm={() => setIsAlertOpen(false)}
+                showCancel={false}
+            >
+                {alertMessage}
+            </CommonModal>
         </div>
     );
 };

@@ -35,6 +35,7 @@ import ChatOverlay from "../chatcomponents/ChatOverlay.jsx";
 import { filterProfanity } from '../../utils/profanityFilter.js';
 import useNotificationStore from '../../stores/notificationStore.js';
 import { debounce } from 'lodash';
+import CommonModal from '../../common/CommonModal.jsx';
 
 const FriendChatSidePanel = () => {
     // ✅ 모든 hooks를 최상위에서 먼저 호출
@@ -69,6 +70,10 @@ const FriendChatSidePanel = () => {
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [mobileTab, setMobileTab] = useState('chats'); // 'friends' | 'chats'
     const panelRef = useRef(null);
+
+    // 알림 모달 상태 추가
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
 
 
     // Debounce 함수 생성 (컴포넌트 최상단, hooks 다음)
@@ -944,7 +949,8 @@ const FriendChatSidePanel = () => {
                 userMessage = '친구 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.';
             }
 
-            alert(userMessage);
+            setAlertMessage(userMessage);
+            setIsAlertOpen(true);
         }
     };
 
@@ -971,7 +977,8 @@ const FriendChatSidePanel = () => {
             }
 
             // ✅ 5. 사용자 피드백
-            alert('친구 요청 거절에 실패했습니다. 네트워크를 확인하고 다시 시도해주세요.');
+            setAlertMessage('친구 요청 거절에 실패했습니다. 네트워크를 확인하고 다시 시도해주세요.');
+            setIsAlertOpen(true);
         }
     };
 
@@ -1290,6 +1297,15 @@ const FriendChatSidePanel = () => {
                     </div>
                 </div>
             )}
+            <CommonModal
+                isOpen={isAlertOpen}
+                onClose={() => setIsAlertOpen(false)}
+                title="알림"
+                onConfirm={() => setIsAlertOpen(false)}
+                showCancel={false}
+            >
+                {alertMessage}
+            </CommonModal>
         </>
     );
 };

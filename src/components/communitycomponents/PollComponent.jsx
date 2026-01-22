@@ -24,6 +24,10 @@ const PollComponent = ({
     const [isExpired, setIsExpired] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);     // 삭제 모달
 
+    // 알림 모달 상태 추가
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+
     // 투표 만료 확인
     useEffect(() => {
         const checkExpiry = () => {
@@ -51,7 +55,8 @@ const PollComponent = ({
             setIsDeleteModalOpen(false);
         } catch (error) {
             console.error('투표 삭제 실패:', error);
-            alert('투표 삭제에 실패했습니다.');
+            setAlertMessage('투표 삭제에 실패했습니다.');
+            setIsAlertOpen(true);
             setIsDeleteModalOpen(false);
         }
     };
@@ -263,6 +268,16 @@ const PollComponent = ({
         onClose={cancelDeletePoll}
         showCancel={true}
         > 투표를 삭제 하시겠습니까? </CommonModal>
+
+    <CommonModal
+        isOpen={isAlertOpen}
+        onClose={() => setIsAlertOpen(false)}
+        title="알림"
+        onConfirm={() => setIsAlertOpen(false)}
+        showCancel={false}
+    >
+        {alertMessage}
+    </CommonModal>
 </>
     );
 };
