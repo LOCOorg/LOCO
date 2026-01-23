@@ -1,6 +1,6 @@
 // src/components/FriendListPanel.jsx
 import { useState, useEffect, useMemo  } from 'react';
-import { usePaginatedFriends } from '../../hooks/usePaginatedFriends';
+// import { usePaginatedFriends } from '../../hooks/usePaginatedFriends';
 import useAuthStore from '../../stores/authStore';
 //import { getUserInfo } from '../../api/userAPI.js';
 import { getUserBasic } from '../../api/userLightAPI.js';  // ✅ 경량 API
@@ -9,6 +9,7 @@ import CommonModal from '../../common/CommonModal.jsx';
 import { findOrCreateFriendRoom, toggleFriendRoomActive,  } from '../../api/chatAPI.js';
 import useFriendChatStore from '../../stores/useFriendChatStore.js';
 import FriendSection from './FriendSection.jsx';
+import { useInfiniteFriends } from '../../hooks/queries/useFriendQueries';
 
 const FriendListPanel = () => {
     const [user, setUser] = useState(null);
@@ -19,29 +20,28 @@ const FriendListPanel = () => {
     const authUser = useAuthStore((state) => state.user);
     const { openSidePanelWithChat } = useFriendChatStore();
 
-    // const { friends: onlineFriends,
-    //     total: onlineTotal,
-    //     hasMore: hasMoreOnline,
-    //     loadMore: loadMoreOnline,
-    //     loading: loadingOnline,
-    //     refresh: refreshOnline } = usePaginatedFriends({ online: true });
-    //
-    // const { friends: offlineFriends,
-    //     total: offlineTotal,
-    //     hasMore: hasMoreOffline,
-    //     loadMore: loadMoreOffline,
-    //     loading: loadingOffline,
-    //     refresh: refreshOffline } = usePaginatedFriends({ online: false });
-
-    // 전체 친구 한 번에 가져오기
+    // 🆕 React Query 무한 스크롤 Hook
     const {
-        friends: allFriends,
-        total: totalFriendsCount,
-        hasMore,
-        loadMore,
-        loading,
-        refresh
-    } = usePaginatedFriends({ online: undefined });
+        data,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isLoading,
+        refetch,
+    } = useInfiniteFriends(authUser?._id, undefined);
+
+    // 🆕 모든 페이지의 친구 데이터를 하나로 합치기
+    const allFriends = useMemo(() => {
+        if (!data?.pages) return [];
+        return data.pages.flatMap(page => page.friends);
+    }, [data]);
+
+    // 🆕 전체 친구 수
+    const totalFriendsCount = useMemo(() => {
+        if (!data?.pages || data.pages.length === 0) return 0;
+        return data.pages[0].total;  // 첫 페이지에 total 정보가 있음
+    }, [data]);
+
 
 
     // 프론트엔드에서 온라인/오프라인 분리
@@ -80,11 +80,11 @@ const FriendListPanel = () => {
             }
         })();
     }, [authUser]);
-    
+
     const totalFriends = useAuthStore(state => state.user?.friends?.length);
     useEffect(() => {
-        refresh();  // 1번만!
-    }, [totalFriends, refresh]);
+        refetch();  // ⭐ refresh → refetch로 변경
+    }, [totalFriends, refetch]);
 
     const handleFriendSelect = async (friend) => {
         try {
@@ -176,9 +176,9 @@ const FriendListPanel = () => {
                                 status="online"
                                 friends={onlineFriends}
                                 total={onlineTotal}
-                                hasMore={hasMore}
-                                loadMore={loadMore}
-                                loading={loading}
+                                hasMore={hasNextPage}
+                                loadMore={fetchNextPage}
+                                loading={isFetchingNextPage || isLoading}
                                 onFriendSelect={handleFriendSelect}
                                 isExpanded={isOnlineExpanded}
                                 toggleExpand={() => setIsOnlineExpanded(p => !p)}
@@ -188,9 +188,9 @@ const FriendListPanel = () => {
                                 status="offline"
                                 friends={offlineFriends}
                                 total={offlineTotal}
-                                hasMore={hasMore}
-                                loadMore={loadMore}
-                                loading={loading}
+                                hasMore={hasNextPage}
+                                loadMore={fetchNextPage}
+                                loading={isFetchingNextPage || isLoading}
                                 onFriendSelect={handleFriendSelect}
                                 isExpanded={isOfflineExpanded}
                                 toggleExpand={() => setIsOfflineExpanded(p => !p)}
