@@ -364,3 +364,38 @@ export const fetchLastMessagesBatch = async (roomIds) => {
         return { messages: [] };
     }
 };
+
+
+/**
+ * 증분 동기화: lastMessageId 이후의 새 메시지만 가져오기
+ * 리액트 쿼리 캐싱 - 캐싱된 후에 오는 메세지들만 로드
+ *
+ * @param {string} roomId - 채팅방 ID
+ * @param {string} lastMessageId - 마지막 메시지 ID
+ * @returns {Promise<{success: boolean, messages: Array, count: number}>}
+ *
+ * @example
+ * const result = await getNewMessages('room123', 'msg456');
+ * // { success: true, messages: [...], count: 5 }
+ */
+export const getNewMessages = async (roomId, lastMessageId) => {
+    try {
+        const params = new URLSearchParams();
+        if (lastMessageId) {
+            params.append('lastMessageId', lastMessageId);
+        }
+
+        console.log(`🔄 [API] 증분 동기화 요청: roomId=${roomId}, lastMessageId=${lastMessageId}`);
+
+        const response = await instance.get(
+            `/api/chat/messages/${roomId}/new?${params}`
+        );
+
+        console.log(`✅ [API] 증분 동기화 성공: ${response.data.count}개 새 메시지`);
+
+        return response.data;
+    } catch (error) {
+        console.error('증분 동기화 실패:', error);
+        throw error;
+    }
+};
