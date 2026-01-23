@@ -213,7 +213,7 @@ const CommunityEdit = () => {
                 />
             }
         >
-            <div className="max-w-4xl mx-auto p-6 bg-white">
+            <div className="max-w-4xl mx-auto p-4 md:p-6 bg-white">
                 <div className="mb-8">
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">게시글 수정</h2>
                     <div className="h-1 w-20 bg-blue-500 rounded"></div>

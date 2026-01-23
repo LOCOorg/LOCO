@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import axios from 'axios';
 import useAuthStore from '../../stores/authStore.js';
+import CommonModal from '../../common/CommonModal.jsx';
 
 // 신고 사유 카테고리
 const REPORT_CATEGORIES = [
@@ -21,17 +22,23 @@ const MessageReportModal = ({
     const [selectedCategory, setSelectedCategory] = useState('');
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // 알림 모달 상태
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         
         if (!selectedCategory) {
-            alert('신고 사유를 선택해주세요.');
+            setAlertMessage('신고 사유를 선택해주세요.');
+            setIsAlertOpen(true);
             return;
         }
 
         if (!user || !user._id) {
-            alert('로그인이 필요합니다.');
+            setAlertMessage('로그인이 필요합니다.');
+            setIsAlertOpen(true);
             return;
         }
 
@@ -53,15 +60,25 @@ const MessageReportModal = ({
             );
             
             if (response.data.success) {
-                alert('신고가 접수되었습니다. 검토 후 조치하겠습니다.');
-                handleClose();
+                setAlertMessage('신고가 접수되었습니다. 검토 후 조치하겠습니다.');
+                setIsAlertOpen(true);
+                // 모달 닫기는 확인 버튼 누른 후 처리하거나 여기서 처리
+                // 여기서는 alert 확인 후 닫는게 자연스러우므로 상태 유지
             }
         } catch (error) {
             console.error('신고 실패:', error);
             const errorMessage = error.response?.data?.message || '신고 처리 중 오류가 발생했습니다.';
-            alert(errorMessage);
+            setAlertMessage(errorMessage);
+            setIsAlertOpen(true);
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleAlertConfirm = () => {
+        setIsAlertOpen(false);
+        if (alertMessage === '신고가 접수되었습니다. 검토 후 조치하겠습니다.') {
+            handleClose();
         }
     };
 
@@ -161,6 +178,15 @@ const MessageReportModal = ({
                     </div>
                 </form>
             </div>
+            <CommonModal
+                isOpen={isAlertOpen}
+                onClose={() => setIsAlertOpen(false)}
+                title="알림"
+                onConfirm={handleAlertConfirm}
+                showCancel={false}
+            >
+                {alertMessage}
+            </CommonModal>
         </div>
     );
 };

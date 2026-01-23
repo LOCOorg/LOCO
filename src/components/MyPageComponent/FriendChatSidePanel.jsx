@@ -42,6 +42,7 @@ import ChatOverlay from "../chatcomponents/ChatOverlay.jsx";
 import { filterProfanity } from '../../utils/profanityFilter.js';
 import useNotificationStore from '../../stores/notificationStore.js';
 import { debounce } from 'lodash';
+import CommonModal from '../../common/CommonModal.jsx';
 
 const FriendChatSidePanel = () => {
     // ✅ 모든 hooks를 최상위에서 먼저 호출
@@ -73,6 +74,7 @@ const FriendChatSidePanel = () => {
     const [activeTab, setActiveTab] = useState('friendlist');
     const [activeRightTab, setActiveRightTabLocal] = useState('chatlist');
     const [selectedRoom, setSelectedRoom] = useState(null);
+    const [mobileTab, setMobileTab] = useState('chats'); // 'friends' | 'chats'
     const panelRef = useRef(null);
 
     // 🆕 React Query Hooks 추가
@@ -100,6 +102,11 @@ const FriendChatSidePanel = () => {
         roomType: 'friend',
         isActive: true,
     });
+
+    // 알림 모달 상태 추가
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+
 
     // Debounce 함수 생성 (컴포넌트 최상단, hooks 다음)
     const debouncedMarkAsRead = useRef(
@@ -1008,7 +1015,8 @@ const FriendChatSidePanel = () => {
                 userMessage = '친구 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.';
             }
 
-            alert(userMessage);
+            setAlertMessage(userMessage);
+            setIsAlertOpen(true);
         }
     };
 
@@ -1038,7 +1046,8 @@ const FriendChatSidePanel = () => {
             }
 
             // ✅ 5. 사용자 피드백
-            alert('친구 요청 거절에 실패했습니다. 네트워크를 확인하고 다시 시도해주세요.');
+            setAlertMessage('친구 요청 거절에 실패했습니다. 네트워크를 확인하고 다시 시도해주세요.');
+            setIsAlertOpen(true);
         }
     };
 
@@ -1075,15 +1084,50 @@ const FriendChatSidePanel = () => {
             {showPanel && (
                 <div
                     ref={panelRef}
-                    className={`fixed right-0 top-0 h-full bg-white shadow-2xl z-50 flex transition-all duration-300 ${
-                        selectedRoom ? 'w-[65vw]' : 'w-[40vw]'
+                    className={`fixed right-0 top-0 h-full bg-white shadow-2xl z-50 flex flex-col md:flex-row transition-all duration-300 ${
+                        selectedRoom ? 'w-full md:w-[65vw]' : 'w-full md:w-[40vw]'
                     }`}
                 >
+                    {/* 모바일 상단 탭 (모바일에서만 표시) */}
+                    <div className="md:hidden flex border-b bg-gray-50">
+                        <button
+                            onClick={() => setMobileTab('friends')}
+                            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${
+                                mobileTab === 'friends' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'
+                            }`}
+                        >
+                            <UserGroupIcon className="w-5 h-5" />
+                            친구
+                            {friendRequestCount > 0 && (
+                                <span className="bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                    {friendRequestCount}
+                                </span>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setMobileTab('chats')}
+                            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${
+                                mobileTab === 'chats' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'
+                            }`}
+                        >
+                            <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
+                            채팅
+                            {totalUnreadCount > 0 && (
+                                <span className="bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                    {totalUnreadCount}
+                                </span>
+                            )}
+                        </button>
+                        <button onClick={handleClosePanel} className="px-4 text-gray-400">
+                            <XMarkOutlineIcon className="w-6 h-6" />
+                        </button>
+                    </div>
+
                     {/* 왼쪽: 친구목록/친구요청 */}
-                    <div className={`border-r border-gray-200 flex flex-col transition-all duration-300 ${
-                        selectedRoom ? 'w-1/4' : 'w-2/5'
+                    <div className={`${mobileTab === 'friends' ? 'flex' : 'hidden'} md:flex border-r border-gray-200 flex-col transition-all duration-300 h-full w-full ${
+                        selectedRoom ? 'md:w-1/4' : 'md:w-2/5'
                     }`}>
-                        <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
+                        <div className="p-4 border-b bg-gray-50 flex items-center justify-between hidden md:flex">
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setActiveTab('friendlist')}
@@ -1119,6 +1163,22 @@ const FriendChatSidePanel = () => {
                                 className="p-2 text-gray-400 hover:text-gray-600 transition-colors hover:bg-gray-100 rounded-lg"
                             >
                                 <XMarkOutlineIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* 모바일용 친구/요청 서브탭 (친구 탭일 때만 표시) */}
+                        <div className="md:hidden flex p-2 bg-gray-100 gap-2">
+                            <button
+                                onClick={() => setActiveTab('friendlist')}
+                                className={`flex-1 py-1 text-xs rounded ${activeTab === 'friendlist' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}
+                            >
+                                목록
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('requests')}
+                                className={`flex-1 py-1 text-xs rounded ${activeTab === 'requests' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}
+                            >
+                                요청 {friendRequestCount > 0 && `(${friendRequestCount})`}
                             </button>
                         </div>
 
@@ -1191,12 +1251,12 @@ const FriendChatSidePanel = () => {
                     </div>
 
                     {/* 오른쪽: 채팅 영역 */}
-                    <div className={`flex transition-all duration-300 ${
-                        selectedRoom ? 'w-3/4' : 'w-3/5'
+                    <div className={`${(mobileTab === 'chats' || (selectedRoom && mobileTab === 'chats')) ? 'flex' : 'hidden'} md:flex transition-all duration-300 h-full w-full ${
+                        selectedRoom ? 'md:w-3/4' : 'md:w-3/5'
                     }`}>
-                        {/* 왼쪽: 채팅목록 영역 */}
-                        <div className={`${selectedRoom ? 'w-2/5' : 'w-full'} ${selectedRoom ? 'border-r border-gray-200' : ''} flex flex-col transition-all duration-300`}>
-                            <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
+                        {/* 왼쪽: 채팅목록 영역 (모바일에서는 채팅방 선택되면 숨김) */}
+                        <div className={`${selectedRoom ? 'hidden md:flex md:w-2/5' : 'w-full'} ${selectedRoom ? 'md:border-r border-gray-200' : ''} flex flex-col transition-all duration-300`}>
+                            <div className="p-4 border-b bg-gray-50 flex items-center justify-between hidden md:flex">
                                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                                     <ChatBubbleLeftEllipsisIcon className="w-5 h-5"/>
                                     채팅
@@ -1268,7 +1328,7 @@ const FriendChatSidePanel = () => {
 
                         {/* 오른쪽: 채팅창 영역 */}
                         {selectedRoom && (
-                            <div className="w-3/5 flex flex-col">
+                            <div className="w-full md:w-3/5 flex flex-col h-full absolute md:relative top-0 left-0 bg-white z-50 md:z-auto">
                                 <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <button
@@ -1306,6 +1366,15 @@ const FriendChatSidePanel = () => {
                     </div>
                 </div>
             )}
+            <CommonModal
+                isOpen={isAlertOpen}
+                onClose={() => setIsAlertOpen(false)}
+                title="알림"
+                onConfirm={() => setIsAlertOpen(false)}
+                showCancel={false}
+            >
+                {alertMessage}
+            </CommonModal>
         </>
     );
 };

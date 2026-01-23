@@ -5,7 +5,8 @@ import instance from '../../api/axiosInstance';
 
 const UserLeaveComponent = () => {
     const [isChecked, setIsChecked] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false); // 탈퇴 확인 모달
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false); // 탈퇴 성공 모달
     const [error, setError] = useState('');
     const { logout } = useAuthStore();
 
@@ -13,12 +14,16 @@ const UserLeaveComponent = () => {
         setIsModalOpen(false);
         try {
             await instance.post('/api/user/deactivate');
-            logout();
-            alert('회원 탈퇴가 처리되었습니다.');
-            window.location.href = '/'
+            setIsSuccessModalOpen(true);
         } catch (err) {
             setError(err.response?.data?.message || '회원 탈퇴 중 오류가 발생했습니다.');
         }
+    };
+
+    const handleSuccessConfirm = () => {
+        setIsSuccessModalOpen(false);
+        window.location.href = '/';
+        logout();
     };
 
     const openModal = () => {
@@ -74,6 +79,16 @@ const UserLeaveComponent = () => {
                 title="회원 탈퇴 확인"
             >
                 <p>정말로 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+            </CommonModal>
+
+            <CommonModal
+                isOpen={isSuccessModalOpen}
+                onClose={handleSuccessConfirm}
+                onConfirm={handleSuccessConfirm}
+                title="알림"
+                showCancel={false}
+            >
+                회원 탈퇴가 처리되었습니다.
             </CommonModal>
         </div>
     );

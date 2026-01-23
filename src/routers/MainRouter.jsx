@@ -24,6 +24,8 @@ import DeveloperRouter from "./DeveloperRouter.jsx";
 import NewsRouter from "./NewsRouter.jsx";
 import BannerRouter from "./BannerRouter.jsx";
 import UserLeaveRouter from "./UserLeaveRouter.jsx";
+import TermsRouter from "./TermsRouter.jsx";
+import TermsPage from "../pages/TermsPage.jsx";
 
 const MainRouter = createBrowserRouter([
     {
@@ -47,6 +49,9 @@ const MainRouter = createBrowserRouter([
                 path: "admin/banners/*",
                 element: <BannerRouter />,
             },
+            { path: "terms", element: <TermsPage type="TERMS" /> },
+            { path: "privacy", element: <TermsPage type="PRIVACY" /> },
+            TermsRouter,
             PRRouter,
             DeveloperRouter,
             UserLeaveRouter

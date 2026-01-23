@@ -8,6 +8,7 @@ import PageComponent from '../../common/pageComponent.jsx';
 import CommunityLayout from '../../layout/CommunityLayout/CommunityLayout.jsx';
 import LeftSidebar from '../../layout/CommunityLayout/LeftSidebar.jsx';
 import RightSidebar from '../../layout/CommunityLayout/RightSidebar.jsx';
+import { Search } from 'lucide-react';
 import useAuthStore from '../../stores/authStore.js';
 
 // 유틸리티 함수
@@ -153,115 +154,78 @@ const CommunityList = () => {
                 />
             }
         >
-            <div className="space-y-8">
-                {/* 헤더 */}
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-                        커뮤니티 목록<span className="text-blue-600"> ({selectedCategory})</span>
-                    </h1>
-                    {/* 정렬 버튼 섹션 - TailwindCSS */}
-                    <div className="flex space-x-2 my-5">
-                        <button
-                            onClick={() => handleSortChange('최신순')}
-                            className={`px-4 py-2 rounded border text-sm font-medium transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                selectedSort === '최신순'
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
-                            }`}
+            <div className="space-y-4">
+                {/* 1단: 검색 및 액션 바 */}
+                <div className="flex flex-col lg:flex-row items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+                    {/* 검색 필터 그룹 */}
+                    <div className="flex gap-2 w-full lg:flex-1">
+                        <select
+                            value={searchType}
+                            onChange={(e) => setSearchType(e.target.value)}
+                            className="w-24 sm:w-auto border-none bg-gray-50 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                         >
-                            최신
-                        </button>
+                            <option value="title">제목</option>
+                            <option value="content">내용</option>
+                            <option value="title+content">제목+내용</option>
+                            <option value="author">작성자</option>
+                        </select>
 
-                        <button
-                            onClick={() => handleSortChange('인기순')}
-                            className={`px-4 py-2 rounded border text-sm font-medium transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                selectedSort === '인기순'
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
-                            }`}
-                        >
-                            인기
-                        </button>
-
-                        <button
-                            onClick={() => handleSortChange('추천순')}
-                            className={`px-4 py-2 rounded border text-sm font-medium transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                selectedSort === '추천순'
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
-                            }`}
-                        >
-                            추천
-                        </button>
+                        <div className="relative flex-1">
+                            <input
+                                type="text"
+                                value={keyword}
+                                onChange={(e) => setKeyword(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                placeholder="어떤 글을 찾으시나요?"
+                                className="w-full bg-gray-50 border-none rounded-xl pl-4 pr-10 py-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                            />
+                                                            <button
+                                                                onClick={handleSearch}
+                                                                className="absolute inset-y-0 right-2 flex items-center justify-center w-10 h-10 my-auto text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                                                            >
+                                                                <Search size={20} strokeWidth={2.5} />
+                                                            </button>                        </div>
                     </div>
 
-                </div>
-
-                {/* 검색 및 글쓰기 */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                    <select
-                        value={searchType}
-                        onChange={(e) => setSearchType(e.target.value)}
-                        className="w-full sm:w-auto border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                    >
-                        <option value="title">제목</option>
-                        <option value="content">내용</option>
-                        <option value="title+content">제목+내용</option>
-                        <option value="author">작성자</option>
-                    </select>
-
-                    <div className="relative flex-1">
-                        <input
-                            type="text"
-                            value={keyword}
-                            onChange={(e) => setKeyword(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                            placeholder="검색어를 입력하세요"
-                            className="w-full border border-gray-300 rounded-full pl-4 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
-                        />
-                        <button
-                            onClick={handleSearch}
-                            className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1116.65 16.65z"
-                                />
-                            </svg>
-                        </button>
-                    </div>
-
-                    {/* 시간 범위 옵션 */}
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-600">기간:</span>
+                    {/* 부가 설정 그룹 */}
+                    <div className="flex gap-2 w-full lg:w-auto">
                         <select
                             value={selectedPeriod}
                             onChange={(e) => handlePeriodChange(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                            className="flex-1 lg:w-32 border-none bg-gray-50 rounded-xl px-3 py-2 text-sm font-medium text-gray-600 focus:ring-2 focus:ring-blue-100 outline-none cursor-pointer"
                         >
                             {periodOptions.map((period) => (
-                                <option key={period} value={period}>
-                                    {period}
-                                </option>
+                                <option key={period} value={period}>{period}</option>
                             ))}
                         </select>
-                    </div>
 
-                    <button
-                        onClick={() => navigate('/community/new')}
-                        className="w-full sm:w-auto bg-blue-500 text-white px-5 py-2 rounded-md hover:bg-blue-600 transition-colors"
-                    >
-                        ✏️ 글쓰기
-                    </button>
+                        <button
+                            onClick={() => navigate('/community/new')}
+                            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-bold text-sm transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                        >
+                            ✏️ 글쓰기
+                        </button>
+                    </div>
+                </div>
+
+                {/* 2단: 정렬 탭 (검색창 아래) */}
+                <div className="flex justify-start">
+                    <div className="inline-flex bg-gray-200/50 p-1 rounded-xl">
+                        {['최신순', '인기순', '추천순'].map((sort) => (
+                            <button
+                                key={sort}
+                                onClick={() => handleSortChange(sort)}
+                                className={`px-5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-1.5 ${
+                                    selectedSort === sort
+                                        ? 'bg-white text-blue-600 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <span>{sort === '최신순' ? '🕒' : sort === '인기순' ? '🔥' : '👍'}</span>
+                                <span>{sort.replace('순', '')}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* 게시글 목록 */}
@@ -279,39 +243,42 @@ const CommunityList = () => {
                             return (
                                 <li
                                     key={community._id}
-                                    className="flex bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
+                                    className="flex flex-col-reverse sm:flex-row bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow gap-4"
                                 >
 
-                                    <div className="flex-1 flex flex-col justify-between">
+                                    <div className="flex-1 flex flex-col justify-between min-w-0">
                                         <button
                                             onClick={() => navigate(`/community/${community._id}`)}
-                                            className="text-lg font-semibold text-blue-600 hover:underline text-left"
+                                            className="text-lg font-semibold text-blue-600 hover:underline text-left truncate w-full"
                                         >
                                             {community.communityTitle}{' '}
-                                            <span className="text-sm text-gray-500">
+                                            <span className="text-sm text-gray-500 whitespace-nowrap">
                                                 ({community.communityCategory})
                                             </span>
                                         </button>
 
-                                        <div className="mt-2 text-xs text-gray-500 flex flex-wrap gap-2">
+                                        <div className="mt-3 text-xs text-gray-500 flex flex-wrap gap-y-1 gap-x-3 items-center">
                                             <span>
                                                 작성일{' '}
                                                 <span className="font-medium text-gray-700">
                                                     {formatRelativeTime(community.createdAt)}
                                                 </span>
                                             </span>
+                                            <span className="hidden sm:inline text-gray-300">|</span>
                                             <span>
                                                 조회수{' '}
                                                 <span className="font-medium text-gray-700">
                                                     {community.communityViews}
                                                 </span>
                                             </span>
+                                            <span className="hidden sm:inline text-gray-300">|</span>
                                             <span>
                                                 추천{' '}
                                                 <span className="font-medium text-gray-700">
                                                     {community.recommended}
                                                 </span>
                                             </span>
+                                            <span className="hidden sm:inline text-gray-300">|</span>
                                             <span>
                                                 댓글{' '}
                                                 <span className="font-medium text-gray-700">
@@ -320,19 +287,24 @@ const CommunityList = () => {
                                             </span>
                                         </div>
 
-                                        <div className="mt-1 text-xs text-gray-500">
-                                            작성자:{' '}
+                                        <div className="mt-2 text-xs text-gray-500 flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden text-xs">
+                                                {/* 프로필 이미지가 있다면 여기에 표시 */}
+                                                🤖
+                                            </div>
                                             <span className="font-medium text-gray-700">
                                                 {getDisplayNickname(community)}
                                             </span>
                                         </div>
                                     </div>
                                     {community.communityImages?.length > 0 && (
-                                        <img
-                                            src={thumb}
-                                            alt="thumbnail"
-                                            className="h-20 w-28 shrink-0 object-cover rounded mr-4"
-                                        />
+                                        <div className="sm:w-32 sm:shrink-0">
+                                            <img
+                                                src={thumb}
+                                                alt="thumbnail"
+                                                className="w-full h-40 sm:h-24 object-cover rounded-lg"
+                                            />
+                                        </div>
                                     )}
                                 </li>
                             );
