@@ -112,11 +112,11 @@ const RandomChatComponent = () => {
 
             try {
                 // const rooms = await fetchChatRooms({ roomType: "random", userId });
-                const rooms = chatRooms;
+                const roomsArray = chatRooms?.rooms || [];
                 // const leftRooms = await fetchUserLeftRooms(userId);
                 const blockedIds = (blockedUsers || []).map((u) => u._id);
 
-                const existingRoom = rooms.find(
+                const existingRoom = roomsArray.find(
                     (room) =>
                         room.status !== 'closed' &&
                         room.chatUsers.some((u) => u._id === userId) &&
