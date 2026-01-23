@@ -1,10 +1,9 @@
 // src/components/MyPageComponent.jsx
 import {useEffect, useRef, useState} from 'react';
 import { Link } from 'react-router-dom';
-import { updateUserProfile } from "../../api/userAPI"; // declineFriendRequest 추가됨
-import { getUserForEdit } from '../../api/userProfileLightAPI.js';
 import {uploadFile} from "../../api/fileUploadAPI";
 import useAuthStore from '../../stores/authStore';
+import { useUpdateUserProfile, useUserForEdit } from '../../hooks/queries/useUserQueries';
 import ProfilePhotoSection from './ProfilePhotoSection';
 import ProfileDetailSection from './ProfileDetailSection';
 import {toast, ToastContainer, Zoom} from "react-toastify";
@@ -13,6 +12,19 @@ import QnaHistoryComponent from "./QnaHistoryComponent.jsx";
 const MyPageContent = ({overrideProfile}) => {
     const authUser = useAuthStore((state) => state.user);
     const setUser = useAuthStore((state) => state.setUser);  // 🔥 이 줄 추가
+
+    // Mutation Hook
+    const updateProfileMutation = useUpdateUserProfile()
+
+    //  Query Hook 추가
+    const {
+        data: profileData,
+        isLoading,
+        error
+    } = useUserForEdit(overrideProfile ? null : authUser?._id, {
+        enabled: !overrideProfile && !!authUser?._id
+    });
+
     const [profile, setProfile] = useState(overrideProfile || null);
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({});
@@ -37,27 +49,25 @@ const MyPageContent = ({overrideProfile}) => {
                 profilePhoto: overrideProfile.profilePhoto || '',
                 photo: overrideProfile.photo || [],
             });
-        } else if (authUser) {
-            getUserForEdit(authUser._id)
-                .then((data) => {
-                    setProfile(data);
-                    setFormData({
-                        nickname: data.nickname || '',
-                        info: data.info || '',
-                        gender: data.gender || '',
-                        lolNickname: data.lolNickname || '',
-                        suddenNickname: data.suddenNickname || '',
-                        battleNickname: data.battleNickname || '',
-                        profilePhoto: data.profilePhoto || '',
-                        photo: data.photo || [],
-                    });
-                })
-                .catch((error) => console.error('프로필 불러오기 에러:', error));
+        } else if (profileData) {  // ⭐ Hook에서 받은 데이터 사용
+            setProfile(profileData);
+            setFormData({
+                nickname: profileData.nickname || '',
+                info: profileData.info || '',
+                gender: profileData.gender || '',
+                lolNickname: profileData.lolNickname || '',
+                suddenNickname: profileData.suddenNickname || '',
+                battleNickname: profileData.battleNickname || '',
+                profilePhoto: profileData.profilePhoto || '',
+                photo: profileData.photo || [],
+            });
         }
-    }, [authUser, overrideProfile]);
+    }, [profileData, overrideProfile]);  // ⭐ 의존성 변경
 
 
-    if (!profile) return <div>로딩 중...</div>;
+    if (isLoading) return <div>로딩 중...</div>;
+    if (error) return <div className="text-red-500">프로필을 불러오는데 실패했습니다.</div>;
+    if (!profile) return <div>프로필 정보가 없습니다.</div>;
 
     const isOwnProfile = !overrideProfile || (authUser && authUser._id === profile._id);
 
@@ -75,9 +85,12 @@ const MyPageContent = ({overrideProfile}) => {
             // 0번으로 삽입 + 이전 0번 제거
             setFormData(prev => ({...prev, profilePhoto: url}));
 
-            const updated = await updateUserProfile(authUser._id, {
-                profilePhoto: url     // ← 이것만 전송!
+            // Mutation Hook 사용
+            const updated = await updateProfileMutation.mutateAsync({
+                userId: authUser._id,
+                formData: { profilePhoto: url }
             });
+
             setProfile(updated);
 
             setUser(prev => ({
@@ -107,7 +120,6 @@ const MyPageContent = ({overrideProfile}) => {
 
     const handlePhotoChange = async (e) => {
         const files = Array.from(e.target.files);
-
         const currentCount = formData.photo.length;
 
         if (currentCount + files.length > 7) {
@@ -128,9 +140,10 @@ const MyPageContent = ({overrideProfile}) => {
             const updatedPhotos = [...formData.photo, ...newPhotoURLs];
             setFormData((prev) => ({...prev, photo: updatedPhotos}));
 
-            // 3) updateUserProfile() 호출 → 서버에 profile.photo 필드가 갱신된다.
-            const updatedProfile = await updateUserProfile(authUser._id, {
-                photo: updatedPhotos  // ← 이것만 전송!
+            //  Mutation Hook 사용!
+            const updatedProfile = await updateProfileMutation.mutateAsync({
+                userId: authUser._id,
+                formData: { photo: updatedPhotos }
             });
 
             setProfile(updatedProfile);
@@ -159,8 +172,13 @@ const MyPageContent = ({overrideProfile}) => {
             //     ...formData,
             //     photo: filteredPhotos
             // }); 현재 컴포넌트의 이 로직을 아래로 다 바꿈
-            const updatedProfile = await updateUserProfile(authUser._id, {
-                photo: filteredPhotos  // ← 이것만 전송!
+            // const updatedProfile = await updateUserProfile(authUser._id, {
+            //     photo: filteredPhotos  // ← 이것만 전송!
+            // });
+            // Mutation Hook 사용
+            const updatedProfile = await updateProfileMutation.mutateAsync({
+                userId: authUser._id,
+                formData: { photo: filteredPhotos }
             });
 
             setProfile(updatedProfile);
@@ -178,8 +196,12 @@ const MyPageContent = ({overrideProfile}) => {
 
     const handleRemoveProfileImage = async () => {
         try {
-            // profilePhoto만 빈 문자열로 갱신
-            const updated = await updateUserProfile(authUser._id, {profilePhoto: ''});
+            // Mutation Hook 사용
+            const updated = await updateProfileMutation.mutateAsync({
+                userId: authUser._id,
+                formData: { profilePhoto: '' }
+            });
+
             setProfile(updated);
             setFormData(prev => ({...prev, profilePhoto: ''}));
 
@@ -196,7 +218,11 @@ const MyPageContent = ({overrideProfile}) => {
 
     const handleSave = async () => {
         try {
-            const updated = await updateUserProfile(authUser._id, formData);
+            const updated = await updateProfileMutation.mutateAsync({
+                userId: authUser._id,
+                formData
+            });
+
             setProfile(updated);
 
             // 🔥 여기서부터 추가 (authStore 업데이트)
