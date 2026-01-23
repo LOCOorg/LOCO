@@ -1,7 +1,8 @@
 import React, {useMemo, useState, useEffect} from 'react';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
 import useAuthStore from '../../stores/authStore';
-import {sendFriendRequest, blockUserMinimal, deleteFriend, unblockUserMinimal } from "../../api/userAPI.js";
+import {sendFriendRequest, blockUserMinimal, unblockUserMinimal } from "../../api/userAPI.js";
+import { useDeleteFriend } from '../../hooks/queries/useFriendQueries';
 import CommonModal from '../../common/CommonModal.jsx';
 import PhotoGallery from './PhotoGallery.jsx';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +16,10 @@ import {CheckIcon, XMarkIcon} from "@heroicons/react/24/solid";
 const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requestId, onAccept, onDecline }) => {
     const authUser = useAuthStore(state => state.user);
     const blockedUsers = useBlockedStore(state => state.blockedUsers);
+
+    // 🆕 친구 삭제 Mutation Hook
+    const deleteFriendMutation = useDeleteFriend();
+
     const isOwnProfile = authUser && profile._id === authUser._id; // 내 프로필인지 확인
     const isBlocked = blockedUsers.some(blocked => blocked._id === profile._id); // 차단된 사용자인지 확인
     const [isReportModalVisible, setIsReportModalVisible] = useState(false);
@@ -128,32 +133,54 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
         setAlertModalOpen(true);
     };
 
-    const handleDeleteFriend = async () => {
-        try {
-            await deleteFriend(authUser._id, profile._id);    // 서버 삭제[1]
+    const handleDeleteFriend = () => {
+        // 🆕 React Query Mutation 사용 (낙관적 업데이트)
+        deleteFriendMutation.mutate(
+            {
+                userId: authUser._id,
+                friendId: profile._id,
+            },
+            {
+                onSuccess: () => {
+                    console.log('✅ 친구 삭제 성공');
 
-            // 로컬 상태 즉시 갱신
-            const updatedUser = {
-                ...authUser,
-                friends: authUser.friends.filter((id) => id !== profile._id),
-            };
-            setUser(updatedUser);                            // Zustand 스토어 업데이트[4]
-            useFriendListStore.getState().removeFriend(profile._id);   // 전역 리스트 동기화
+                    // 1️⃣ Zustand 스토어 업데이트 (로컬 상태)
+                    const updatedUser = {
+                        ...authUser,
+                        friends: authUser.friends.filter((id) => id !== profile._id),
+                    };
+                    setUser(updatedUser);
+                    useFriendListStore.getState().removeFriend(profile._id);
 
-            /* 2) 열려 있던 친구 채팅창 닫기 */
-            const friendRooms = useFriendChatStore.getState().friendRooms || [];
-            const targetChat = friendRooms.find(c => c.friend._id === profile._id);
-            if (targetChat) {
-                await closeFriendChat(targetChat.roomId);   // ⬅ 핵심
+                    // 2️⃣ 친구 채팅창 닫기
+                    const friendRooms = useFriendChatStore.getState().friendRooms || [];
+                    const targetChat = friendRooms.find(c => c.friend._id === profile._id);
+                    if (targetChat) {
+                        closeFriendChat(targetChat.roomId);
+                    }
+
+                    // 3️⃣ 로컬 UI 상태 업데이트
+                    setLocalIsFriend(false);
+
+                    // 4️⃣ 성공 메시지
+                    setAlertModalMessage("친구를 삭제했습니다.");
+                    setConfirmDeleteOpen(false);
+                    setAlertModalOpen(true);
+                },
+                onError: (error) => {
+                    console.error('❌ 친구 삭제 실패:', error);
+
+                    // 에러 처리
+                    setAlertModalMessage(
+                        error.response?.data?.message ||
+                        error.message ||
+                        "친구 삭제에 실패했습니다."
+                    );
+                    setConfirmDeleteOpen(false);
+                    setAlertModalOpen(true);
+                }
             }
-
-            setAlertModalMessage("친구를 삭제했습니다.");
-        } catch (error) {
-            setAlertModalMessage(error.response?.data?.message || error.message);
-        }finally {
-            setConfirmDeleteOpen(false);                      // 확인 모달 닫기
-            setAlertModalOpen(true);                          // 알림 모달 열기
-        }
+        );
     };
 
     // Line 144-153: handleBlockUser 수정

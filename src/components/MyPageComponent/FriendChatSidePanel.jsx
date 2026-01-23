@@ -3,7 +3,7 @@ import useAuthStore from '../../stores/authStore';
 import useFriendChatStore from '../../stores/useFriendChatStore';
 import { NotificationContext } from '../../hooks/NotificationContext';
 import {
-    fetchChatRooms,
+    // fetchChatRooms,
     // fetchMessages,
     markRoomAsRead,
     // getUnreadCount,
@@ -13,12 +13,19 @@ import {
 } from '../../api/chatAPI';
 import { useSocket } from '../../hooks/useSocket';
 import {
-    acceptFriendRequest,
-    declineFriendRequest,
-    getFriendRequestList,
-    getFriendRequestCount,
+    // acceptFriendRequest,
+    // declineFriendRequest,
+    // getFriendRequestList,
+    // getFriendRequestCount,
 } from '../../api/userAPI';
 import { getUserFriendProfile } from '../../api/userLightAPI.js';
+import {
+    useFriendRequestCount,
+    useFriendRequestList,
+    useAcceptFriendRequest,
+    useDeclineFriendRequest} from '../../hooks/queries/useFriendQueries';
+import { useQueryClient } from '@tanstack/react-query';
+import { useChatRooms } from '../../hooks/queries/useChatQueries';
 import useFriendListStore from '../../stores/useFriendListStore';
 import {
     UserGroupIcon,
@@ -64,12 +71,37 @@ const FriendChatSidePanel = () => {
 
     const [showPanel, setShowPanel] = useState(false);
     const [friendRequests, setFriendRequests] = useState([]);
-    const [friendRequestCount, setFriendRequestCount] = useState(0);  // ✅ 추가
     const [activeTab, setActiveTab] = useState('friendlist');
     const [activeRightTab, setActiveRightTabLocal] = useState('chatlist');
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [mobileTab, setMobileTab] = useState('chats'); // 'friends' | 'chats'
     const panelRef = useRef(null);
+
+    // 🆕 React Query Hooks 추가
+    const { data: friendRequestCount = 0 } = useFriendRequestCount(user?._id);
+    const queryClient = useQueryClient();
+
+    // 친구 요청 Mutation Hooks 추가
+    const acceptMutation = useAcceptFriendRequest();
+    const declineMutation = useDeclineFriendRequest();
+
+    // 친구 요청 목록 조회 Hook (탭 활성화 시에만)
+    const { data: friendRequestListData } = useFriendRequestList(
+        user?._id,
+        activeTab === 'requests'  // 탭이 'requests'일 때만 활성화
+    );
+
+
+    // 🆕 채팅방 목록 조회 (React Query로 자동 캐싱)
+    const {
+        data: chatRoomsData,
+        isLoading: isChatRoomsLoading,
+        error: chatRoomsError
+    } = useChatRooms({
+        userId: user?._id,
+        roomType: 'friend',
+        isActive: true,
+    });
 
     // 알림 모달 상태 추가
     const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -348,19 +380,50 @@ const FriendChatSidePanel = () => {
     //     setRoomSummaries(summaries);
     // }, [friendRooms, user?._id, setRoomSummaries]);
 
-    // 채팅방 로드
-    const loadRooms = useCallback(async () => {
-        if (!user?._id) return;
-        try {
-            const rooms = await fetchChatRooms({ roomType: 'friend', isActive: true  });
-            if (!rooms || !Array.isArray(rooms)) return;
+    // // 채팅방 로드
+    // const loadRooms = useCallback(async () => {
+    //     if (!user?._id) return;
+    //     try {
+    //         const rooms = await fetchChatRooms({ roomType: 'friend', isActive: true  });
+    //         if (!rooms || !Array.isArray(rooms)) return;
+    //
+    //         const myRooms = rooms.filter((r) =>
+    //             r?.chatUsers &&
+    //             Array.isArray(r.chatUsers) &&
+    //             r.chatUsers.some((u) => u?._id === user._id)
+    //         );
+    //
+    //         const mapped = myRooms
+    //             .filter((r) => r?.isActive)
+    //             .map((r) => ({
+    //                 roomId: r._id,
+    //                 friend: r.chatUsers?.find((u) => u?._id !== user._id),
+    //             }))
+    //             .filter(room => room && room.friend && room.roomId);
+    //
+    //         setFriendRooms(mapped);
+    //     } catch (e) {
+    //         console.error('친구 채팅방 조회 실패', e);
+    //     }
+    // }, [user?._id, setFriendRooms]);
 
-            const myRooms = rooms.filter((r) =>
+    // 채팅방 로드 대체
+    // 🆕 React Query 데이터를 Zustand Store에 동기화
+    useEffect(() => {
+        // 데이터가 없거나 로딩 중이면 무시
+        if (!chatRoomsData || !user?._id) return;
+
+        try {
+
+            const roomsArray = chatRoomsData.rooms || [];
+            // 1. 내가 참여한 채팅방만 필터링
+            const myRooms = roomsArray.filter((r) =>
                 r?.chatUsers &&
                 Array.isArray(r.chatUsers) &&
                 r.chatUsers.some((u) => u?._id === user._id)
             );
 
+            // 2. 친구 정보 매핑
             const mapped = myRooms
                 .filter((r) => r?.isActive)
                 .map((r) => ({
@@ -369,25 +432,15 @@ const FriendChatSidePanel = () => {
                 }))
                 .filter(room => room && room.friend && room.roomId);
 
+            // 3. Zustand Store에 저장
             setFriendRooms(mapped);
-        } catch (e) {
-            console.error('친구 채팅방 조회 실패', e);
-        }
-    }, [user?._id, setFriendRooms]);
 
-    // ✅ 친구 요청 개수만 조회 (경량)
-    const loadFriendRequestCount = useCallback(async () => {
-        if (!user?._id) return;
-        try {
-            console.log('📊 [개수 조회] 친구 요청 개수만 조회');
-            const count = await getFriendRequestCount(user._id);  // ~20 bytes
-            setFriendRequestCount(count);
-            console.log(`✅ [개수 조회] ${count}개`);
-        } catch (error) {
-            console.error('❌ [개수 조회] 실패:', error);
-            setFriendRequestCount(0);
+            console.log(`✅ [React Query] ${mapped.length}개 채팅방 로드 완료`);
+        } catch (e) {
+            console.error('❌ [React Query] 채팅방 처리 실패:', e);
         }
-    }, [user?._id]);
+    }, [chatRoomsData, user?._id, setFriendRooms]);
+
 
     // 친구 요청 로드
     const loadFriendReqFromServer = useCallback(async () => {
@@ -396,7 +449,7 @@ const FriendChatSidePanel = () => {
 
         try {
             console.log('📋 [전체 목록] 친구 요청 전체 목록 조회');
-            const list = await getFriendRequestList(user._id);
+            const list = friendRequestListData;
 
             if (!list || !Array.isArray(list)) {
                 // ⚠️ 서버에서 빈 목록이 왔어도 소켓 알림은 유지
@@ -428,7 +481,6 @@ const FriendChatSidePanel = () => {
             });
 
             setFriendRequests(mergedList);
-            setFriendRequestCount(mergedList.length);
             console.log(`✅ [전체 목록] 서버: ${list.length}개, 알림: ${notificationRequests.length}개, 총: ${mergedList.length}개`);
 
             // ✅ 3. 서버에 있는 요청은 알림에서 제거
@@ -443,7 +495,7 @@ const FriendChatSidePanel = () => {
             console.error('❌ [전체 목록] 조회 실패:', e);
             // ⚠️ 에러 발생 시에도 덮어쓰지 않음
         }
-    }, [user?._id, activeTab, notifications, removeNotification]);
+    }, [user?._id, friendRequestListData, notifications, removeNotification]);
 
     // // 메시지 전송 시 콜백
     // const handleMessageSent = useCallback((roomId) => {
@@ -762,20 +814,12 @@ const FriendChatSidePanel = () => {
     // user 로그인 시 친구 채팅방 목록 자동 로드
     // user가 로그인되면 자동으로 친구 채팅방 데이터를 가져옴
     // user 변경 시 채팅방 목록 재로드
-    useEffect(() => {
-        if (user?._id) {
-            loadRooms();
-        }
-    }, [user?._id, loadRooms]);
+    // useEffect(() => {
+    //     if (user?._id) {
+    //         loadRooms();
+    //     }
+    // }, [user?._id, loadRooms]);
 
-    // user 로그인 시 친구 요청 개수만 조회 (경량 로딩)
-    // 배지에 표시할 개수만 먼저 가져옴 (빠른 응답)
-    // 전체 목록은 사용자가 "친구요청" 탭을 클릭할 때만 로드
-    useEffect(() => {
-        if (user?._id) {
-            loadFriendRequestCount();
-        }
-    }, [user?._id, loadFriendRequestCount]);
 
     // 친구요청 탭 클릭 시에만 전체 목록 로드 (지연 로딩)
     // 사용자가 탭을 클릭하기 전까지는 상세 정보를 불러오지 않음
@@ -784,7 +828,7 @@ const FriendChatSidePanel = () => {
         if (user?._id && activeTab === 'requests') {
             loadFriendReqFromServer();
         }
-    }, [user?._id, activeTab, loadFriendReqFromServer]);
+    }, [user?._id, activeTab, friendRequestListData, loadFriendReqFromServer]);
 
     // 채팅방 목록이 준비되면 각 방의 요약 정보 로드
     // 마지막 메시지, 안읽은 개수 등을 배치로 조회
@@ -812,7 +856,7 @@ const FriendChatSidePanel = () => {
             .filter(req => req?._id && req?.sender?._id);
 
         if (incoming.length > 0) {
-            setFriendRequestCount(prev => prev + incoming.length);  // ✅ 개수 증가
+            queryClient.setQueryData(['friendRequestCount', user._id], (old = 0) => old + incoming.length);
             setFriendRequests((prev) => {
                 const ids = new Set((prev || []).map((r) => r?._id).filter(Boolean));
                 const merged = [...(prev || [])];
@@ -843,7 +887,17 @@ const FriendChatSidePanel = () => {
 
         const handleReconnect = () => {
             console.log('🔄 [Socket] 재연결됨 - 배지 재동기화 시작');
+
+            // 1. 채팅방 요약 정보 재로드
             loadRoomSummaries();
+
+            // 2. 친구 요청 개수 캐시 무효화 (React Query가 자동으로 다시 fetch)
+            if (user?._id) {
+                queryClient.invalidateQueries({
+                    queryKey: ['friendRequestCount', user._id]
+                });
+                console.log('✅ [Socket] 친구 요청 개수 캐시 무효화 완료');
+            }
         };
 
         socket.on('connect', handleReconnect);
@@ -851,7 +905,7 @@ const FriendChatSidePanel = () => {
         return () => {
             socket.off('connect', handleReconnect);
         };
-    }, [socket, loadRoomSummaries]);
+    }, [socket, loadRoomSummaries, queryClient, user?._id]);
 
     // ✅ 조건부 렌더링을 모든 hooks 호출 후에 수행
     if (!user || !user._id) {
@@ -879,10 +933,17 @@ const FriendChatSidePanel = () => {
             return;
         }
 
+        // ✅ 1. 롤백용 데이터 저장
+        const targetRequest = friendRequests.find(r => r._id === reqId);
+
         try {
             // 1) 백엔드 API 호출
             console.log('📡 [친구수락] acceptFriendRequest 호출...');
-            const result = await acceptFriendRequest(user._id, reqId);
+            // ✅ 2. Mutation Hook 사용 (낙관적 업데이트 자동 처리!)
+            const result = await acceptMutation.mutateAsync({
+                userId: user._id,
+                requestId: reqId
+            });
 
             // ✅ 응답 데이터 검증 강화
             if (!result) {
@@ -894,11 +955,11 @@ const FriendChatSidePanel = () => {
             afterHandled(reqId, notiIdx);
             console.log('✅ [친구수락] UI 요청 제거 완료');
 
-            setFriendRequestCount(prev => Math.max(0, prev - 1));  // ✅ 개수 감소
+
             console.log('✅ [친구수락] UI 요청 제거 완료');
 
             // 3) 친구 정보 가져오기
-            const accepted = friendRequests.find((r) => r?._id === reqId);
+            const accepted = targetRequest
             console.log('🔍 [친구수락] 수락한 요청:', accepted);
 
             if (!accepted?.sender?._id) {
@@ -934,6 +995,11 @@ const FriendChatSidePanel = () => {
             console.error('❌ [친구수락 실패]', e);
             console.error('❌ [친구수락] 에러 상세:', e.message);
 
+            // ✅ Mutation Hook이 자동으로 롤백하지만, local state도 복원
+            if (targetRequest) {
+                setFriendRequests(prev => [targetRequest, ...prev]);
+            }
+
             // ✅ 에러 종류별 처리
             let userMessage = '친구 요청 수락 중 오류가 발생했습니다.';
 
@@ -962,18 +1028,21 @@ const FriendChatSidePanel = () => {
 
         // ✅ 2. 즉시 UI 업데이트 (낙관적)
         afterHandled(reqId, notiIdx);
-        setFriendRequestCount(prev => Math.max(0, prev - 1));
+
 
         try {
-            await declineFriendRequest(user._id, reqId);
-            console.log('✅ 친구 요청 거절 완료');
+            // ✅ 3. Mutation Hook 사용 (낙관적 업데이트 자동 처리!)
+            await declineMutation.mutateAsync({
+                userId: user._id,
+                requestId: reqId
+            });
         } catch (e) {
             console.error('❌ 친구 요청 거절 실패', e);
 
             // ✅ 4. 실패 시 UI 롤백
             if (targetRequest) {
                 setFriendRequests(prev => [targetRequest, ...prev]);
-                setFriendRequestCount(prev => prev + 1);
+                queryClient.setQueryData(['friendRequestCount', user._id], (old = 0) => old + 1);
             }
 
             // ✅ 5. 사용자 피드백

@@ -3,10 +3,10 @@ import instance from './axiosInstance';
 
 
 // 로그인한 사용자의 미확인 알림 조회 함수
-export const fetchNotifications = async (userId) => {
+export const fetchNotifications = async (userId, page = 1, limit = 20) => {
     try {
         const response = await instance.get(`/api/reportNotification/${userId}`, {
-
+            params: { page, limit }
         });
         // 서버의 응답에서 알림 리스트가 data.data에 있다고 가정합니다.
         return response.data.data;

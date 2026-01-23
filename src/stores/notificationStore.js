@@ -71,56 +71,29 @@ const useNotificationStore = create((set, get) => ({
         return stored !== null ? stored : true;
     })(),
 
-    async toggleFriendReq() {
-        const previous = get().friendReqEnabled;  // ⭐ 이전 값 저장
-        const next = !previous;
 
+
+    // ⭐ 이 함수는 React Query Mutation으로 대체되므로 간소화
+    toggleFriendReq() {
+        const next = !get().friendReqEnabled;
         set({ friendReqEnabled: next });
         setEncryptedItem('friendReqEnabled', next);
 
-        const userId = useAuthStore.getState().user?._id;
-        if (userId) {
-            try {
-                await updateUserPrefs(userId, { friendReqEnabled: next });
-                // ✅ 성공: 아무 것도 안 함
-            } catch (error) {
-                // ✅ 실패: 롤백
-                console.error('친구 요청 설정 업데이트 실패:', error);
-                set({ friendReqEnabled: previous });
-                setEncryptedItem('friendReqEnabled', previous);
-
-                // 선택사항: 사용자에게 알림
-                 get().addNotification({
-                     id: Date.now(),
-                     message: '설정 업데이트에 실패했습니다.',
-                     type: 'error'
-                 });
-            }
-        }
+        // ⚠️ 실제 서버 업데이트는 컴포넌트에서 useUpdateUserPrefs Hook 사용
+        console.log('⚠️ toggleFriendReq: 로컬 상태만 변경. 서버 업데이트는 Hook 사용 필요');
     },
+
+
 
     toastEnabled: (() => {
         const stored = getDecryptedItem('toastEnabled');
         return stored !== null ? stored : true;
     })(),
 
-    async toggleToast() {
-        const previous = get().toastEnabled;
-        const next = !previous;
-
+    toggleToast() {
+        const next = !get().toastEnabled;
         set({ toastEnabled: next });
         setEncryptedItem('toastEnabled', next);
-
-        const userId = useAuthStore.getState().user?._id;
-        if (userId) {
-            try {
-                await updateUserPrefs(userId, { toastEnabled: next });
-            } catch (error) {
-                console.error('토스트 설정 업데이트 실패:', error);
-                set({ toastEnabled: previous });
-                setEncryptedItem('toastEnabled', previous);
-            }
-        }
     },
 
     chatPreviewEnabled: (() => {
@@ -128,24 +101,10 @@ const useNotificationStore = create((set, get) => ({
         return stored !== null ? stored : true;
     })(),
 
-    async toggleChatPreview() {
-        const previous = get().chatPreviewEnabled;  // ⭐ 이전 값 저장
-        const next = !previous;
-
+    toggleChatPreview() {
+        const next = !get().chatPreviewEnabled;
         set({ chatPreviewEnabled: next });
         setEncryptedItem('chatPreviewEnabled', next);
-
-        const userId = useAuthStore.getState().user?._id;
-        if (userId) {
-            try {
-                await updateUserPrefs(userId, { chatPreviewEnabled: next });
-            } catch (error) {
-                // 서버 업데이트 실패 시 로컬 상태 롤백
-                set({ chatPreviewEnabled: previous });
-                setEncryptedItem('chatPreviewEnabled', previous);
-                console.error('채팅 미리보기 설정 업데이트 실패:', error);
-            }
-        }
     },
 
     // ✅ 욕설 필터 설정 (만 19세 이상만 변경 가능, 기본값: true)
@@ -154,32 +113,18 @@ const useNotificationStore = create((set, get) => ({
         return stored !== null ? stored : true; // ✅ 기본값: ON
     })(),
 
-    async toggleWordFilter() {
+    toggleWordFilter() {
         const userId = useAuthStore.getState().user?._id;
         const userAge = useAuthStore.getState().user?.calculatedAge;
-        
-        // 만 19세 이상만 변경 가능
+
         if (!userAge || userAge < 19) {
             console.warn('만 19세 이상만 설정할 수 있습니다.');
             return;
         }
 
-        const previous = get().wordFilterEnabled;  // ⭐ 이전 값 저장
-        const next = !previous;
-
+        const next = !get().wordFilterEnabled;
         set({ wordFilterEnabled: next });
         setEncryptedItem('wordFilterEnabled', next);
-
-        if (userId) {
-            try {
-                await updateUserPrefs(userId, { wordFilterEnabled: next });
-            } catch (error) {
-                // 서버 업데이트 실패 시 로컬 상태 롤백
-                set({ wordFilterEnabled: previous });
-                setEncryptedItem('wordFilterEnabled', previous );
-                console.error('욕설 필터 설정 업데이트 실패:', error);
-            }
-        }
     },
 
 // syncWithUserPrefs 함수에도 추가

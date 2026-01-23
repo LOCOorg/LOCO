@@ -1,7 +1,8 @@
 // src/components/communitycomponents/CommunityList.jsx
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { fetchCommunities } from '../../api/communityApi.js';
+//import { fetchCommunities } from '../../api/communityApi.js';
+import { useCommunities } from '../../hooks/queries/useCommunityQueries';
 import useSidebarData from '../../hooks/useSidebarData.js';
 import PageComponent from '../../common/pageComponent.jsx';
 import CommunityLayout from '../../layout/CommunityLayout/CommunityLayout.jsx';
@@ -33,14 +34,10 @@ const CommunityList = () => {
     const API_HOST = import.meta.env.VITE_API_HOST;
 
     // 페이지네이션 상태
-    const [pageResponse, setPageResponse] = useState(null);
+    // const [pageResponse, setPageResponse] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 5;
 
-    // 데이터 상태
-    const [filteredCommunities, setFilteredCommunities] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
     // 필터 및 정렬 상태
     const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -49,12 +46,32 @@ const CommunityList = () => {
     const [searchType, setSearchType] = useState('title+content');
     const [selectedPeriod, setSelectedPeriod] = useState('전체');
 
-    // // 사이드바 상태
-    // const [topViewed, setTopViewed] = useState([]);
-    // const [topCommented, setTopCommented] = useState([]);
-    // const [sideTab, setSideTab] = useState('viewed');
+
     // ✅ useSidebarData Hook 사용
     const { sideTab, setSideTab, topViewed, topCommented } = useSidebarData();
+
+
+    // 🆕 게시글 목록 Query Hook 추가
+    const {
+        data: pageResponse,
+        isLoading: loading,
+        error,
+    } = useCommunities({
+        page: currentPage,
+        pageSize,
+        category: selectedCategory,
+        userId: (selectedCategory === '내 글' || selectedCategory === '내 댓글')
+            ? currentUserId
+            : null,
+        sort: selectedSort,
+        keyword,
+        searchType,
+        period: selectedPeriod,
+    });
+
+    // 🆕 게시글 목록 추출
+    const filteredCommunities = pageResponse?.dtoList || [];
+
 
     // 시간 범위 옵션 정의
     const periodOptions = [
@@ -71,33 +88,12 @@ const CommunityList = () => {
         return community.userNickname;
     };
 
-    // 커뮤니티 데이터 로드
-    const loadCommunities = async (page) => {
-        setLoading(true);
-        try {
-            const data = await fetchCommunities(
-                page,
-                pageSize,
-                selectedCategory,
-                (selectedCategory === '내 글' || selectedCategory === '내 댓글') ? currentUserId : null,
-                selectedSort,
-                keyword,
-                searchType,
-                selectedPeriod
-            );
-            setPageResponse(data);
-            setFilteredCommunities(data.dtoList || []);
-        } catch (err) {
-            setError('커뮤니티 목록을 불러오는 데 실패했습니다.');
-        } finally {
-            setLoading(false);
-        }
-    };
+
 
     // 이벤트 핸들러
     const handleSearch = () => {
         setCurrentPage(1);
-        loadCommunities(1);
+
     };
 
     const handleCategoryClick = (category) => {
@@ -121,31 +117,7 @@ const CommunityList = () => {
         setCurrentPage(page);
     };
 
-    // // Effects
-    // useEffect(() => {
-    //     const fetchGlobalTop = async () => {
-    //         try {
-    //             const [topViewedData, topCommentedData] = await Promise.all([
-    //                 fetchTopViewed(),
-    //                 fetchTopCommented()
-    //             ]);
-    //             setTopViewed(topViewedData);
-    //             setTopCommented(topCommentedData);
-    //         } catch (error) {
-    //             console.error('사이드바 데이터 로드 실패:', error);
-    //             setTopViewed([]);
-    //             setTopCommented([]);
-    //         }
-    //     };
-    //     fetchGlobalTop();
-    // }, []);
 
-    useEffect(() => {
-        if ((selectedCategory === '내 글' || selectedCategory === '내 댓글') && !currentUserId) {
-            return;
-        }
-        loadCommunities(currentPage);
-    }, [currentPage, selectedCategory, selectedSort, currentUserId, selectedPeriod]);
 
     // 로딩 상태
     if (loading) {
@@ -158,7 +130,11 @@ const CommunityList = () => {
 
     // 에러 상태
     if (error) {
-        return <div className="text-red-500 text-center mt-4">{error}</div>;
+        return (
+            <div className="text-red-500 text-center mt-4">
+                {error.message || '커뮤니티 목록을 불러오는 데 실패했습니다.'}
+            </div>
+        );
     }
 
     return (

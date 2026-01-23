@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, useCallback, useMemo  } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useSocket } from "../../hooks/useSocket.js";
-import {fetchMessages, markRoomAsRead, recordRoomEntry} from "../../api/chatAPI.js";
+import { markRoomAsRead, recordRoomEntry, getNewMessages } from "../../api/chatAPI.js";
 import useAuthStore from "../../stores/authStore.js";
 import ProfileButton from "../MyPageComponent/ProfileButton.jsx";
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
@@ -8,16 +8,28 @@ import useNotificationStore from '../../stores/notificationStore.js';
 import { filterProfanity } from '../../utils/profanityFilter.js';
 import MessageReportModal from "./MessageReportModal.jsx";
 import { debounce } from 'lodash';
+import { useChatMessages } from "../../hooks/queries/useChatQueries.js"; // 추가
+import { useUserMinimal } from "../../hooks/queries/useUserQueries.js";
+import { useQueryClient } from '@tanstack/react-query'; // 추가
 
 // eslint-disable-next-line react/prop-types
 function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
-    const [messagesMap, setMessagesMap] = useState(new Map());
-    const [pagination, setPagination] = useState({ currentPage: 1, hasNextPage: false });
-    const [loadingMore, setLoadingMore] = useState(false);
+
     const [newMessage, setNewMessage] = useState("");
     const socket = useSocket();
     const authUser = useAuthStore((state) => state.user);
     const senderId = authUser?._id;
+
+    // React Query Hook
+    const queryClient = useQueryClient();
+    const {
+        data,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useChatMessages(roomId, 'friend', senderId);
+
+
     const messagesContainerRef = useRef(null);
     const scrollPositionRef = useRef(null);
     const { removeNotificationsByRoom } = useNotificationStore();
@@ -27,11 +39,22 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
     const [showMessageReportModal, setShowMessageReportModal] = useState(false);
     const [reportTargetMessage, setReportTargetMessage] = useState(null);
 
-    const messages = useMemo(() =>
-            Array.from(messagesMap.values())
-                .sort((a, b) => new Date(a.textTime) - new Date(b.textTime)),
-        [messagesMap]
-    );
+    const messages = useMemo(() => {
+        if (!data?.pages) return [];
+        return data.pages.flatMap(page => page.messages);
+    }, [data]);
+
+    const scrollToBottom = useCallback(() => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+
+        if (scrollPositionRef.current !== null) {
+            container.scrollTop = container.scrollHeight - scrollPositionRef.current;
+            scrollPositionRef.current = null;
+        } else {
+            container.scrollTop = container.scrollHeight;
+        }
+    }, []);
 
     //  Debounce 함수 추가 (messages useMemo 바로 다음)
     const debouncedMarkAsRead = useRef(
@@ -166,56 +189,51 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
         }, {});
     };
 
-    const loadMessages = useCallback(async (page) => {
-        if (!roomId || !senderId) return;
-        setLoadingMore(true);
-        try {
-            const data = await fetchMessages(roomId, page, 20);
-            if (data && data.messages) {
-                if (page === 1) {
-                    // ✅ 첫 페이지: Map 초기화
-                    const newMap = new Map();
-                    data.messages.forEach(msg => newMap.set(msg._id, msg));
-                    setMessagesMap(newMap);
-                } else {
-                    // ✅ 추가 페이지: 기존 Map에 추가
-                    setMessagesMap(prev => {
-                        const newMap = new Map(prev);
-                        data.messages.forEach(msg => {
-                            newMap.set(msg._id, msg);
-                        });
-                        return newMap;
-                    });
-                }
-                setPagination(data.pagination);
-            }
-        } catch (error) {
-            console.error("채팅 메시지 불러오기 실패:", error);
-        } finally {
-            setLoadingMore(false);
-        }
-    }, [roomId, senderId]);
-
-    useEffect(() => {
-        loadMessages(1);
-    }, [loadMessages]);
-
     useEffect(() => {
         if (socket && roomId) {
             socket.emit("joinRoom", roomId, "friend");
 
-            const handleReceiveMessage = (message) => {
+            const handleReceiveMessage = async (message) => {
                 if (message.chatRoom !== roomId) return;
+
+                // ✅ sender가 문자열이면 캐시에서 사용자 정보 가져오기
+                if (typeof message.sender === "string") {
+                    const senderId = message.sender;
+
+                    // 캐시 확인
+                    const cachedUser = queryClient.getQueryData(['userMinimal', senderId]);
+
+                    if (cachedUser) {
+                        message.sender = { _id: senderId, ...cachedUser };
+                    } else {
+                        // 캐시 미스 - API 호출 및 저장
+                        const { getUserBasic } = await import('../../api/userLightAPI');
+                        const user = await getUserBasic(senderId);
+                        message.sender = { _id: senderId, ...user };
+                        queryClient.setQueryData(['userMinimal', senderId], user);
+                    }
+                }
+
                 const normalizedMessage = {
                     ...message,
                     sender: message.sender.id
                         ? { _id: message.sender.id, name: message.sender.name, nickname: message.sender.nickname }
                         : message.sender,
                 };
-                // ✅ 다른 사용자의 메시지만 추가 (Map은 자동 중복 제거)
-                if (normalizedMessage.sender._id !== senderId) {
-                    setMessagesMap(prev => new Map(prev).set(normalizedMessage._id, normalizedMessage));
-                }
+                // ✅ React Query 캐시에 메시지 추가
+                queryClient.setQueryData(['chat-messages', roomId], (old) => {
+                    if (!old?.pages) return old;
+
+                    const newPages = [...old.pages];
+                    const lastPage = newPages[newPages.length - 1];
+
+                    // 중복 체크 후 추가
+                    if (!lastPage.messages.some(m => m._id === normalizedMessage._id)) {
+                        lastPage.messages = [...lastPage.messages, normalizedMessage];
+                    }
+
+                    return { ...old, pages: newPages };
+                });
 
                 const isFromOther = message.sender?._id !== senderId || message.sender?.id !== senderId;
                 if (isFromOther && document.hasFocus()) {
@@ -230,48 +248,142 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
         }
     }, [socket, roomId, onMessageSent, senderId, debouncedMarkAsRead]);
 
+
+    // 증분 동기화
+    useEffect(() => {
+        if (!roomId) return;
+
+        let isCancelled = false;
+
+        const syncNewMessages = async () => {
+            if (isCancelled) return;
+
+            try {
+                const currentData = queryClient.getQueryData(['chat-messages', roomId]);
+                if (!currentData?.pages) return;
+
+                const allMessages = currentData.pages.flatMap(p => p.messages);
+                const lastMessage = allMessages[allMessages.length - 1];
+                if (!lastMessage) return;
+
+                console.log(`🔄 [ChatOverlay-증분동기화] 시작 - lastId: ${lastMessage._id}`);
+
+                const result = await getNewMessages(roomId, lastMessage._id);
+                if (isCancelled) return;
+
+                if (result.messages && result.messages.length > 0) {
+                    console.log(`✅ [ChatOverlay-증분동기화] ${result.messages.length}개 발견`);
+
+                    queryClient.setQueryData(['chat-messages', roomId], (old) => {
+                        if (!old?.pages) return old;
+
+                        const newPages = [...old.pages];
+                        const lastPageIndex = newPages.length - 1;
+                        const lastPage = newPages[lastPageIndex];
+
+                        const existingIds = new Set(lastPage.messages.map(m => m._id));
+                        const uniqueMessages = result.messages.filter(m => !existingIds.has(m._id));
+
+                        if (uniqueMessages.length === 0) return old;
+
+                        // ✅ 불변성 유지
+                        newPages[lastPageIndex] = {
+                            ...lastPage,
+                            messages: [...lastPage.messages, ...uniqueMessages]
+                        };
+
+                        return { ...old, pages: newPages };
+                    });
+                }
+            } catch (error) {
+                console.error('❌ [ChatOverlay-증분동기화] 실패:', error);
+            }
+        };
+
+        // roomId 변경 시 또는 소켓 재연결 시
+        syncNewMessages();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [roomId, queryClient, socket?.connected]);
+
+
     useEffect(() => {
         const handleFocus = () => {
             if (roomId && senderId) {
-                console.log('👁️ [Focus] 탭 포커스 감지 - Debounce 시작');
+                console.log('👁️ [ChatOverlay-Focus] 탭 포커스 감지');
+
+                // 1. 입장 처리
                 debouncedEnterRoom(roomId, senderId, socket, onMessageSent);
+
+                // 2. 증분 동기화 (위 useEffect와 동일한 로직)
+                const currentData = queryClient.getQueryData(['chat-messages', roomId]);
+                if (currentData?.pages) {
+                    const allMessages = currentData.pages.flatMap(p => p.messages);
+                    const lastMessage = allMessages[allMessages.length - 1];
+
+                    if (lastMessage) {
+                        getNewMessages(roomId, lastMessage._id)
+                            .then(result => {
+                                if (result.messages && result.messages.length > 0) {
+                                    queryClient.setQueryData(['chat-messages', roomId], (old) => {
+                                        if (!old?.pages) return old;
+
+                                        const newPages = [...old.pages];
+                                        const lastPageIndex = newPages.length - 1;
+                                        const lastPage = newPages[lastPageIndex];
+
+                                        const existingIds = new Set(lastPage.messages.map(m => m._id));
+                                        const uniqueMessages = result.messages.filter(m => !existingIds.has(m._id));
+
+                                        if (uniqueMessages.length === 0) return old;
+
+                                        // ✅ 불변성 유지
+                                        newPages[lastPageIndex] = {
+                                            ...lastPage,
+                                            messages: [...lastPage.messages, ...uniqueMessages]
+                                        };
+
+                                        return { ...old, pages: newPages };
+                                    });
+                                }
+                            })
+                            .catch(error => console.error('포커스 시 증분동기화 실패:', error));
+                    }
+                }
             } else {
-                console.warn('⚠️ [Focus] roomId 또는 senderId 없음');
+                console.warn('⚠️ [ChatOverlay-Focus] roomId 또는 senderId 없음');
             }
         };
 
         const handleVisibilityChange = () => {
             if (!document.hidden) {
-                console.log('👁️ [Visibility] 탭 보임 감지');
+                console.log('👁️ [ChatOverlay-Visibility] 탭 보임 감지');
                 handleFocus();
             }
         };
 
         window.addEventListener('focus', handleFocus);
         document.addEventListener('visibilitychange', handleVisibilityChange);
+
         return () => {
             window.removeEventListener('focus', handleFocus);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [roomId, senderId, socket, onMessageSent, debouncedEnterRoom]);
+    }, [roomId, senderId, socket, onMessageSent, debouncedEnterRoom, queryClient]);
+
 
     useEffect(() => {
-        const container = messagesContainerRef.current;
-        if (!container) return;
+        scrollToBottom();
+    }, [messages, scrollToBottom]);
 
-        if (scrollPositionRef.current !== null) {
-            container.scrollTop = container.scrollHeight - scrollPositionRef.current;
-            scrollPositionRef.current = null;
-        } else {
-            container.scrollTop = container.scrollHeight;
-        }
-    }, [messages]);
 
     const handleScroll = () => {
         const container = messagesContainerRef.current;
-        if (container && container.scrollTop === 0 && pagination.hasNextPage && !loadingMore) {
+        if (container && container.scrollTop === 0 && hasNextPage && !isFetchingNextPage) {
             scrollPositionRef.current = container.scrollHeight;
-            loadMessages(pagination.currentPage + 1);
+            fetchNextPage();
         }
     };
 
@@ -288,8 +400,19 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
                                 ? { _id: response.message.sender.id, name: response.message.sender.name }
                                 : response.message.sender,
                         };
-                        // ✅ Map에 추가 (내 메시지)
-                        setMessagesMap(prev => new Map(prev).set(normalizedMessage._id, normalizedMessage));
+                        // ✅ React Query 캐시에 메시지 추가
+                        queryClient.setQueryData(['chat-messages', roomId], (old) => {
+                            if (!old?.pages) return old;
+
+                            const newPages = [...old.pages];
+                            const lastPage = newPages[newPages.length - 1];
+
+                            if (!lastPage.messages.some(m => m._id === normalizedMessage._id)) {
+                                lastPage.messages = [...lastPage.messages, normalizedMessage];
+                            }
+
+                            return { ...old, pages: newPages };
+                        });
 
                         if (onMessageSent) onMessageSent(roomId);
                     } else {
@@ -319,7 +442,7 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
     return (
         <div className={`h-full flex flex-col ${isSidePanel ? 'bg-white' : 'bg-white border rounded-lg shadow-lg'}`}>
             <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-4">
-                {loadingMore && <div className="text-center text-gray-500">이전 메시지 로딩 중...</div>}
+                {isFetchingNextPage && <div className="text-center text-gray-500">이전 메시지 로딩 중...</div>}
                 {Object.entries(groupedMessages).map(([date, dayMessages]) => (
                     <div key={date}>
                         <div className="text-center mb-4">

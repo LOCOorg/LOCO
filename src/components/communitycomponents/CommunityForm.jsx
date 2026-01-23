@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    createCommunity,
     fetchTopCommented,
     fetchTopViewed,
 } from '../../api/communityAPI.js';
 import useAuthStore from '../../stores/authStore.js';
+import { useCreateCommunity } from '../../hooks/queries/useCommunityQueries';
 import LeftSidebar from '../../layout/CommunityLayout/LeftSidebar.jsx';
 import RightSidebar from '../../layout/CommunityLayout/RightSidebar.jsx';
 import CommunityLayout from '../../layout/CommunityLayout/CommunityLayout.jsx';
@@ -87,6 +87,9 @@ const CommunityForm = () => {
     const currentUser = useAuthStore((s) => s.user);
     const userId = currentUser?._id;
 
+    // 🆕 게시글 작성 Mutation Hook
+    const createMutation = useCreateCommunity();
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const fd = new FormData();
@@ -114,7 +117,8 @@ const CommunityForm = () => {
         }
 
         try {
-            await createCommunity(fd);
+            await createMutation.mutateAsync(fd);
+            // ✅ 이 시점에 자동으로 인기글 캐시 무효화 완료!
             navigate('/community');
         } catch (err) {
             setError(err.response?.data?.message || '게시글 생성에 실패했습니다.');
@@ -416,10 +420,25 @@ const CommunityForm = () => {
                         </button>
                         <button
                             type="submit"
-                            className="flex items-center justify-center gap-2 px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg min-w-[140px]"
+                            disabled={createMutation.isPending}
+                            className={`flex items-center justify-center gap-2 px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg min-w-[140px] ${
+                                createMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
                         >
-                            <span className="text-lg"></span>
-                            게시글 작성
+                            {createMutation.isPending ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    작성 중...
+                                </>
+                            ) : (
+                                <>
+                                    <span className="text-lg">✏️</span>
+                                    게시글 작성
+                                </>
+                            )}
                         </button>
                     </div>
                 </form>

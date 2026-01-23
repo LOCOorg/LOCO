@@ -1,15 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import {
-    fetchCommunityById,
-    fetchCommentsByPostId,
-    deleteCommunity,
-    recommendCommunity,
-    addComment,
-    fetchTopViewed,
-    fetchTopCommented,
-    cancelRecommendCommunity
-} from '../../api/communityApi.js';
+import { useDeleteCommunity, useCommunity, useComments, useRecommendCommunity, useAddComment} from '../../hooks/queries/useCommunityQueries';
+import { useQueryClient } from '@tanstack/react-query';
+import useSidebarData from '../../hooks/useSidebarData.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import useAuthStore from '../../stores/authStore.js';
 import CommunityLayout from "../../layout/CommunityLayout/CommunityLayout.jsx";
@@ -45,18 +38,17 @@ const CommunityDetail = () => {
     const isAdmin = currentUser?.userLv >= 2;
     const API_HOST = import.meta.env.VITE_API_HOST;
 
-    const [comments, setComments] = useState([]);
-    const [commentsPage, setCommentsPage] = useState(1);
-    const [hasMoreComments, setHasMoreComments] = useState(false);
-
-    // 커뮤니티 관련 상태
-    const [community, setCommunity] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [isRecommended, setIsRecommended] = useState(false);
+    // const [comments, setComments] = useState([]);
+    // const [commentsPage, setCommentsPage] = useState(1);
+    // const [hasMoreComments, setHasMoreComments] = useState(false);
 
     // 프로필 관련 상태
     const [postProfile, setPostProfile] = useState(null);
+    const [isRecommended, setIsRecommended] = useState(false);
+    const [isRecommending, setIsRecommending] = useState(false); // ✅ 추천 로딩 상태
+    
+    // ✅ 댓글 수 로컬 관리 (파생 상태)
+    const [localCommentCount, setLocalCommentCount] = useState(0);
 
 
     // 모달 상태
@@ -74,9 +66,40 @@ const CommunityDetail = () => {
 
     // 사이드바 관련 상태
     const [selectedCategory, setSelectedCategory] = useState('전체');
-    const [sideTab, setSideTab] = useState('viewed');
-    const [topViewed, setTopViewed] = useState([]);
-    const [topCommented, setTopCommented] = useState([]);
+    
+    //  사이드바 데이터 Hook
+    const { sideTab, setSideTab, topViewed, topCommented } = useSidebarData();
+
+    //  게시글 상세 Query Hook
+    const {
+        data: community,
+        isLoading: loading,
+        error,
+    } = useCommunity(id);
+
+    //  댓글 목록 Query Hook (무한 스크롤)
+    const {
+        data: commentsData,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isLoading: commentsLoading,
+    } = useComments(id);
+
+    //  queryClient 선언
+    const queryClient = useQueryClient();
+
+    //  게시글 삭제 Mutation Hook
+    const deleteMutation = useDeleteCommunity();
+
+    // 추천 Mutation Hook
+    const recommendMutation = useRecommendCommunity();
+
+    // 댓글 작성 Mutation Hook
+    const addCommentMutation = useAddComment();
+
+    //  댓글 배열 추출
+    const comments = commentsData?.pages.flatMap(page => page.comments) || [];
 
     // 닉네임 표시 함수
     const getDisplayNickname = (item) => {
@@ -84,43 +107,27 @@ const CommunityDetail = () => {
         return item.userNickname || item.userId; // ✅ userNickname 사용
     };
 
-    // 데이터 로딩 Effects
+    // // ✅ 댓글 로드 (useEffect 유지 - 나중에 useComments Hook으로 이동 예정)
+    // useEffect(() => {
+    //     const loadComments = async () => {
+    //         if (!id) return;
+    //         try {
+    //             const commentsData = await fetchCommentsByPostId(id, 1, 20);
+    //             setComments(commentsData.comments);
+    //             setHasMoreComments(commentsData.currentPage < commentsData.totalPages);
+    //         } catch (err) {
+    //             console.error('댓글 로드 실패:', err);
+    //         }
+    //     };
+    //     loadComments();
+    // }, [id]);
+    
+    // ✅ 초기 commentCount 동기화
     useEffect(() => {
-        const loadCommunity = async () => {
-            try {
-                const data = await fetchCommunityById(id);
-                setCommunity(data);
-                const commentsData = await fetchCommentsByPostId(id, 1, 20); // Fetch first page
-                setComments(commentsData.comments);
-                setHasMoreComments(commentsData.currentPage < commentsData.totalPages);
-            } catch (err) {
-                setError('게시글을 불러오는 데 실패했습니다.');
-                console.log(err);
-            }
-            finally {
-                setLoading(false);
-            }
-        };
-        loadCommunity();
-    }, [id]);
-
-    useEffect(() => {
-        const fetchGlobalTop = async () => {
-            try {
-                const [viewedData, commentedData] = await Promise.all([
-                    fetchTopViewed(),
-                    fetchTopCommented()
-                ]);
-                setTopViewed(viewedData);
-                setTopCommented(commentedData);
-            } catch (error) {
-                console.log(error);
-                setTopViewed([]);
-                setTopCommented([]);
-            }
-        };
-        fetchGlobalTop();
-    }, []);
+        if (community?.commentCount !== undefined) {
+            setLocalCommentCount(community.commentCount);
+        }
+    }, [community?.commentCount]);
 
 
     // 추천 관련 Effects
@@ -141,40 +148,21 @@ const CommunityDetail = () => {
         }
     }, [hash, community]);
 
-    const loadMoreComments = async () => {
-        const nextPage = commentsPage + 1;
-        try {
-            const newCommentsData = await fetchCommentsByPostId(id, nextPage, 20);
-            setComments(prevComments => [...prevComments, ...newCommentsData.comments]);
-            setCommentsPage(nextPage);
-            setHasMoreComments(newCommentsData.currentPage < newCommentsData.totalPages);
-        } catch (error) {
-            console.error('Failed to load more comments:', error);
+    const loadMoreComments = () => {
+        if (hasNextPage) {
+            fetchNextPage();
         }
     };
 
-    // 추천 관련 함수
+    // ✅ 추천 관련 함수 (내곤적 업데이트 - 나중에 Mutation으로 개선 예정)
     const handleToggleRecommend = async () => {
         if (!community) return;
 
-        const updatedRecommendedUsers = isRecommended
-            ? community.recommendedUsers.filter(uid => uid !== currentUserId)
-            : [...community.recommendedUsers, currentUserId];
-
-        setCommunity({ ...community, recommendedUsers: updatedRecommendedUsers });
-        setIsRecommended(!isRecommended);
-
-        try {
-            if (isRecommended) {
-                await cancelRecommendCommunity(community._id, currentUserId);
-            } else {
-                await recommendCommunity(community._id, currentUserId);
-            }
-        } catch (err) {
-            console.error('추천 처리 에러', err);
-            setCommunity(community);
-            setIsRecommended(isRecommended);
-        }
+        recommendMutation.mutate({
+            postId: community._id,
+            userId: currentUserId,
+            isRecommend: !isRecommended,
+        });
     };
 
     // 게시글 삭제 관련 함수
@@ -186,7 +174,8 @@ const CommunityDetail = () => {
 
     const handleDeleteConfirmed = async () => {
         try {
-            await deleteCommunity(community._id);
+            await deleteMutation.mutateAsync(community._id);
+            //  이 시점에 자동으로 인기글 캐시 무효화 완료!
             setDeleteModalOpen(false);
             navigate('/community');
         } catch (err) {
@@ -197,7 +186,7 @@ const CommunityDetail = () => {
         }
     };
 
-    // 댓글 작성 관련 함수
+    // ✅ 댓글 작성 관련 함수
     const handleAddComment = async (e) => {
         e.preventDefault();
         if (!newComment.trim()) {
@@ -205,23 +194,36 @@ const CommunityDetail = () => {
             return;
         }
 
-        try {
+            // FormData 생성
             const formData = new FormData();
             formData.append('userId', currentUserId);
             formData.append('commentContents', newComment.trim());
             formData.append('isAnonymous', commentIsAnonymous);
             if (commentFile) formData.append('commentImage', commentFile);
 
-            const newCommentData = await addComment(community._id, formData);
-            setComments([newCommentData, ...comments]);
-            setNewComment('');
-            setCommentFile(null);
-            setCommentError('');
-            setCommentIsAnonymous(false);
-        } catch (err) {
-            setCommentError('댓글 작성에 실패했습니다.');
-            console.log(err);
-        }
+        // Mutation 실행
+        addCommentMutation.mutate(
+            {
+                postId: community._id,
+                formData
+            },
+            {
+                onSuccess: () => {
+                    // 입력 폼 초기화
+                    setNewComment('');
+                    setCommentFile(null);
+                    setCommentError('');
+                    setCommentIsAnonymous(false);
+
+                    // 댓글 수 증가
+                    setLocalCommentCount(prev => prev + 1);
+                },
+                onError: (error) => {
+                    setCommentError('댓글 작성에 실패했습니다.');
+                    console.error('댓글 작성 오류:', error);
+                }
+            }
+        );
     };
 
     // 신고 관련 함수
@@ -236,7 +238,7 @@ const CommunityDetail = () => {
     // 기타 핸들러
     const handleCategoryNav = (category) => navigate(`/community?category=${category}`);
 
-    // 로딩 및 에러 상태 처리
+    // ✅ 로딩 및 에러 상태 처리
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen text-gray-700">
@@ -246,7 +248,11 @@ const CommunityDetail = () => {
     }
 
     if (error) {
-        return <div className="text-red-500 text-center mt-4">{error}</div>;
+        return (
+            <div className="text-red-500 text-center mt-4">
+                {error.message || '게시글을 불러오는 데 실패했습니다.'}
+            </div>
+        );
     }
 
     if (!community) {
@@ -324,24 +330,30 @@ const CommunityDetail = () => {
                         onDelete={handleDelete}
                         currentUserId={currentUserId}
                         isAdmin={isAdmin}
+                        isDeleting={deleteMutation.isPending}
+                        isRecommending={recommendMutation.isPending}
                     />
 
                     {/* 투표 관리자 컴포넌트 */}
                     <PollManager
                         community={community}
-                        setCommunity={setCommunity}
+                        setCommunity={() => {}} // ⚠️ 임시: 투표는 commentCount 영향 없음
                         currentUserId={currentUserId}
                         isAdmin={isAdmin}
                     />
 
                     {/* 댓글 섹션 - 별도 컴포넌트로 분리 */}
                     <CommentSection
-                        community={community}
+                        community={{ ...community, commentCount: localCommentCount }} // ✅ 로컬 commentCount 사용
                         comments={comments}
-                        setComments={setComments}
                         currentUserId={currentUserId}
                         isAdmin={isAdmin}
-                        setCommunity={setCommunity}
+                        setCommunity={(updatedCommunity) => {
+                            // ✅ commentCount 업데이트만 처리
+                            if (updatedCommunity.commentCount !== undefined) {
+                                setLocalCommentCount(updatedCommunity.commentCount);
+                            }
+                        }}
                         getDisplayNickname={getDisplayNickname}
                         formatRelativeTime={formatRelativeTime}
                         newComment={newComment}
@@ -353,8 +365,10 @@ const CommunityDetail = () => {
                         commentIsAnonymous={commentIsAnonymous}
                         setCommentIsAnonymous={setCommentIsAnonymous}
                         onAddComment={handleAddComment}
+                        isAddingComment={addCommentMutation.isPending}
                         loadMoreComments={loadMoreComments}
-                        hasMoreComments={hasMoreComments}
+                        hasMoreComments={hasNextPage}
+                        isFetchingNextPage={isFetchingNextPage}
                     />
 
                     {/* 목록으로 버튼 */}

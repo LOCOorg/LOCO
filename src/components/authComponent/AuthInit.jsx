@@ -6,8 +6,9 @@ import { getUserFriendIds } from '../../api/userLightAPI.js';  // ✅ 추가
 import useAuthStore from '../../stores/authStore.js';
 import { useSocket } from '../../hooks/useSocket.js';
 import { getBlockedUsers } from '../../api/userAPI.js';  // ✅ 추가
-import useBlockedStore from '../../stores/useBlockedStore.js';  // ✅ 추가
-
+import useBlockedStore from '../../stores/useBlockedStore.js';
+import { useAutoLogout } from '../../hooks/logout/useAutoLogout.js';
+import { useTokenExpiry } from '../../hooks/logout/useTokenExpiry.js';
 const AuthInit = () => {
     const triedOnce = useRef(false);
     const setUser        = useAuthStore(s => s.setUser);
@@ -17,7 +18,11 @@ const AuthInit = () => {
     const socket = useSocket();  // 🔧 소켓 인스턴스
     const setBlockedUsers = useBlockedStore(s => s.setBlockedUsers);
 
+    // 자동 로그아웃 훅 추가 (30분 비활동 시)
+    useAutoLogout(3 * 60 * 60 * 1000);
 
+    // 토큰 만료 감지 훅 추가
+    useTokenExpiry();
 
     useEffect(() => {
         if (triedOnce.current) return; // 이미 시도했으면 무시

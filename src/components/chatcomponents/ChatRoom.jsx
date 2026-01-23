@@ -1,10 +1,13 @@
-import {useEffect, useState, useRef, useMemo} from "react";
+import {useEffect, useState, useRef, useMemo, useCallback} from "react";
 import {useSocket} from "../../hooks/useSocket.js";
-import {fetchMessages, deleteMessage, leaveChatRoom, getChatRoomInfo} from "../../api/chatAPI.js";
+import { leaveChatRoom, getNewMessages} from "../../api/chatAPI.js";
+import { useChatMessages, useDeleteMessage } from "../../hooks/queries/useChatQueries.js";
+import { useUserMinimal } from '../../hooks/queries/useUserQueries';
+import { useQueryClient } from '@tanstack/react-query';
 import PropTypes from "prop-types";
 import {useNavigate} from "react-router-dom";
 import {decrementChatCount,  rateUser, getLeagueRecord} from "../../api/userAPI.js";
-import { getUserNickname, getUserBasic , getUserRiotInfo  } from "../../api/userLightAPI.js";  // ✅ 경량 API
+import { getUserNickname, getUserBasic , getUserRiotInfo  } from "../../api/userLightAPI.js";  // 경량 API
 import CommonModal from "../../common/CommonModal.jsx";
 import ProfileButton from "../../components/MyPageComponent/ProfileButton.jsx";
 import LeagueRecordSection from "./LeagueRecordSection.jsx";
@@ -14,9 +17,23 @@ import MessageReportModal from "./MessageReportModal.jsx";
 import { retryWithBackoff } from "../../utils/retryUtils.js";  // 🔄 재시도 유틸리티
 
 const ChatRoom = ({roomId, userId}) => {
-    const [messagesMap, setMessagesMap] = useState(new Map());
+
+    const queryClient = useQueryClient();
+    const {
+        data,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useChatMessages(roomId, 'random', userId);
+
+    const deleteMutation = useDeleteMessage(roomId);
+
     const [text, setText] = useState("");
-    const [userName, setUserName] = useState("");
+
+    // userName state 제거하고 React Query 훅 사용
+    const { data: myProfile } = useUserMinimal(userId);
+    const userName = myProfile?.nickname || "";  // 캐시에서 바로 가져옴
+
     const socket = useSocket();
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,6 +45,7 @@ const ChatRoom = ({roomId, userId}) => {
     const [roomInfo, setRoomInfo] = useState(null);
 
     const messagesContainerRef = useRef(null);
+    const scrollPositionRef = useRef(null);
 
     // 전적 관련 상태
     const [partnerRecords, setPartnerRecords] = useState([]);
@@ -50,12 +68,24 @@ const ChatRoom = ({roomId, userId}) => {
     const { removeNotificationsByRoom } = useNotificationStore();
     const wordFilterEnabled = useNotificationStore(state => state.wordFilterEnabled);
 
-    // ✅ 렌더링용 배열 (useMemo로 최적화)
-    const messages = useMemo(() =>
-            Array.from(messagesMap.values())
-                .sort((a, b) => new Date(a.textTime) - new Date(b.textTime)),
-        [messagesMap]
-    );
+    const messages = useMemo(() => {
+        if (!data?.pages) return [];
+        return data.pages.flatMap(page => page.messages);
+    }, [data]);
+
+    const scrollToBottom = useCallback(() => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+
+        if (scrollPositionRef.current !== null) {
+            // 무한 스크롤 후 위치 복원
+            container.scrollTop = container.scrollHeight - scrollPositionRef.current;
+            scrollPositionRef.current = null;
+        } else {
+            // 일반적인 경우 맨 아래로
+            container.scrollTop = container.scrollHeight;
+        }
+    }, []);
 
 
     useEffect(() => {
@@ -71,31 +101,48 @@ const ChatRoom = ({roomId, userId}) => {
         return date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
     };
 
-    const getUserName = async () => {
-        try {
-            const response = await getUserNickname(userId);
-            if (response && response.nickname) {
-                setUserName(response.nickname);
-            } else {
-                console.error("유저 닉네임 가져오기 실패: 닉네임이 존재하지 않습니다.");
-            }
-        } catch (error) {
-            console.error("유저 닉네임 가져오기 중 오류:", error);
-        }
-    };
+
 
     const handleReceiveMessage = async (message) => {
         // 현재 채팅방의 메시지만 처리
         if (message.chatRoom !== roomId) return;
 
         if (typeof message.sender === "string") {
+
+            const senderId = message.sender;
+
             try {
-                const user = await getUserBasic(message.sender);
-                if (user && user.nickname) {
-                    message.sender = {_id: message.sender, ...user};
+
+                // 1️⃣ 먼저 캐시 확인 (즉시 반환, 0ms)
+                const cachedUser = queryClient.getQueryData(['userMinimal', senderId]);
+
+                if (cachedUser) {
+                    // ✅ 캐시 히트 - API 호출 없이 즉시 사용
+                    console.log(`✅ [캐시 히트] ${cachedUser.nickname} 정보 사용`);
+                    message.sender = {
+                        _id: senderId,
+                        nickname: cachedUser.nickname,
+                        profilePhoto: cachedUser.profilePhoto
+                    };
                 } else {
-                    console.error("수신 메시지의 sender 정보 조회 실패");
-                    return;
+                    // ⚠️ 캐시 미스 - API 호출 후 캐시에 저장
+                    console.log(`⚠️ [캐시 미스] ${senderId} API 조회`);
+                    const user = await getUserBasic(senderId);
+
+                    if (user && user.nickname) {
+                        message.sender = {_id: senderId, ...user};
+
+                        // 2️⃣ 수동으로 캐시에 저장 (다음부터는 캐시 히트)
+                        queryClient.setQueryData(['userMinimal', senderId], {
+                            _id: senderId,
+                            nickname: user.nickname,
+                            profilePhoto: user.profilePhoto
+                        });
+                        console.log(`💾 [캐시 저장] ${user.nickname} 정보 저장됨`);
+                    } else {
+                        console.error("수신 메시지의 sender 정보 조회 실패");
+                        return;
+                    }
                 }
             } catch (error) {
                 console.error("sender 정보 조회 중 오류:", error);
@@ -103,9 +150,39 @@ const ChatRoom = ({roomId, userId}) => {
             }
         }
 
-        // ✅ 다른 사용자의 메시지만 추가 (Map은 자동 중복 제거)
+        //  중복 체크 (1단계)
+        const currentMessages = queryClient.getQueryData(['chat-messages', roomId]);
+
+        if (currentMessages?.pages) {
+            const allMessages = currentMessages.pages.flatMap(p => p.messages);
+            const exists = allMessages.some(m => m._id === message._id);
+
+            if (exists) {
+                console.log(`⚠️ [Socket] 중복 메시지 무시: ${message._id}`);
+                return;  // ✅ 조기 종료
+            }
+        }
+
+        // React Query 캐시에 메시지
         if (message.sender._id !== userId) {
-            setMessagesMap(prev => new Map(prev).set(message._id, message));
+            queryClient.setQueryData(['chat-messages', roomId], (old) => {
+                if (!old?.pages) return old;
+
+                const newPages = [...old.pages];
+                const lastPage = newPages[newPages.length - 1];
+
+                // ✅ 중복 체크 (2단계)
+                if (lastPage.messages.some(m => m._id === message._id)) {
+                    console.log(`⚠️ [Socket] 중복 메시지 무시 (2단계): ${message._id}`);
+                    return old;
+                }
+
+                lastPage.messages = [...lastPage.messages, message];
+                console.log(`✅ [Socket] 메시지 추가: ${message.text?.slice(0, 30)}...`);
+
+
+                return { ...old, pages: newPages };
+            });
         }
     };
 
@@ -324,7 +401,21 @@ const ChatRoom = ({roomId, userId}) => {
                     ...response.message,
                     sender: { _id: userId, nickname: userName } // sender 정보를 프론트엔드 형식에 맞게 재구성
                 };
-                setMessagesMap(prev => new Map(prev).set(receivedMessage._id, receivedMessage));
+
+                // ✅ React Query 캐시에 메시지 추가
+                queryClient.setQueryData(['chat-messages', roomId], (old) => {
+                    if (!old?.pages) return old;
+
+                    const newPages = [...old.pages];
+                    const lastPage = newPages[newPages.length - 1];
+
+                    if (!lastPage.messages.some(m => m._id === receivedMessage._id)) {
+                        lastPage.messages = [...lastPage.messages, receivedMessage];
+                    }
+
+                    return { ...old, pages: newPages };
+                });
+
                 setText("");
             } else {
                 console.error("메시지 전송 실패", response);
@@ -341,16 +432,9 @@ const ChatRoom = ({roomId, userId}) => {
 // 모달에서 “확인” 클릭 시 실제 삭제
     const confirmDelete = async () => {
         try {
-            await deleteMessage(deleteTargetId);
-            // Map에서 메시지 업데이트
-            setMessagesMap((prev) => {
-                const newMap = new Map(prev);
-                const message = newMap.get(deleteTargetId);
-                if (message) {
-                    newMap.set(deleteTargetId, { ...message, isDeleted: true });
-                }
-                return newMap;
-            });
+
+            // React Query 낙관적 업데이트
+            await deleteMutation.mutateAsync({ messageId: deleteTargetId });
 
             if (socket) {
                 socket.emit("deleteMessage", { messageId: deleteTargetId, roomId });
@@ -423,20 +507,31 @@ const ChatRoom = ({roomId, userId}) => {
     };
 
     const handleSystemMessage = (msg) => {
-        setMessagesMap(prev => new Map(prev).set(msg._id, msg));
+        queryClient.setQueryData(['chat-messages', roomId], (old) => {
+            if (!old?.pages) return old;
+
+            const newPages = [...old.pages];
+            const lastPage = newPages[newPages.length - 1];
+
+            if (!lastPage.messages.some(m => m._id === msg._id)) {
+                lastPage.messages = [...lastPage.messages, msg];
+            }
+
+            return { ...old, pages: newPages };
+        });
+    };
+
+    // 무한 스크롤 핸들러
+    const handleScroll = () => {
+        const container = messagesContainerRef.current;
+        if (container && container.scrollTop === 0 && hasNextPage && !isFetchingNextPage) {
+            scrollPositionRef.current = container.scrollHeight;
+            fetchNextPage();
+        }
     };
 
 
     useEffect(() => {
-        fetchMessages(roomId).then((data) => {
-            if (data && data.messages) {
-                const newMap = new Map();
-                data.messages.forEach(msg => {
-                    newMap.set(msg._id, msg);
-                });
-                setMessagesMap(newMap);
-            }
-        });
 
         if (socket) {
             socket.emit("joinRoom", roomId, "random");
@@ -466,13 +561,45 @@ const ChatRoom = ({roomId, userId}) => {
 
                     setRoomInfo({ chatUsers, activeUsers, capacity, isActive, status });
 
+                    // ✅ 캐시 활용: 먼저 캐시 확인, 없으면 API 호출
                     const participantsWithNames = await Promise.all(
                         activeUsers.map(async u => {
                             const id = typeof u === "object" ? u._id : u;
-                            const userInfo = await getUserBasic(id);
-                            return { _id: id, nickname: userInfo.nickname || "알 수 없음" };
+
+                            // 1️⃣ 캐시 확인
+                            const cachedUser = queryClient.getQueryData(['userMinimal', id]);
+
+                            if (cachedUser) {
+                                // ✅ 캐시 히트 - 즉시 반환
+                                console.log(`✅ [참가자-캐시히트] ${cachedUser.nickname}`);
+                                return {
+                                    _id: id,
+                                    nickname: cachedUser.nickname,
+                                    profilePhoto: cachedUser.profilePhoto
+                                };
+                            } else {
+                                // ⚠️ 캐시 미스 - API 호출
+                                console.log(`⚠️ [참가자-캐시미스] ${id} 조회 중`);
+                                const userInfo = await getUserBasic(id);
+
+                                // 2️⃣ 캐시에 저장
+                                queryClient.setQueryData(['userMinimal', id], {
+                                    _id: id,
+                                    nickname: userInfo.nickname,
+                                    profilePhoto: userInfo.profilePhoto
+                                });
+
+                                console.log(`💾 [참가자-캐시저장] ${userInfo.nickname}`);
+
+                                return {
+                                    _id: id,
+                                    nickname: userInfo.nickname || "알 수 없음",
+                                    profilePhoto: userInfo.profilePhoto
+                                };
+                            }
                         })
                     );
+
                     setParticipants(participantsWithNames);
                     setCapacity(capacity);
                 } catch (err) {
@@ -483,13 +610,20 @@ const ChatRoom = ({roomId, userId}) => {
             socket.on("userLeft", handleUserLeft);
             socket.on("systemMessage", handleSystemMessage);
             socket.on("messageDeleted", ({messageId}) => {
-                setMessagesMap((prev) => {
-                    const newMap = new Map(prev);
-                    const message = newMap.get(messageId);
-                    if (message) {
-                        newMap.set(messageId, { ...message, isDeleted: true });
-                    }
-                    return newMap;
+                queryClient.setQueryData(['chat-messages', roomId], (old) => {
+                    if (!old?.pages) return old;
+
+                    return {
+                        ...old,
+                        pages: old.pages.map(page => ({
+                            ...page,
+                            messages: page.messages.map(msg =>
+                                msg._id === messageId
+                                    ? { ...msg, isDeleted: true, text: '[삭제된 메시지입니다]' }
+                                    : msg
+                            ),
+                        })),
+                    };
                 });
             });
 
@@ -501,14 +635,132 @@ const ChatRoom = ({roomId, userId}) => {
             };
         }
 
-        getUserName();
     }, [roomId, socket, userId]);
 
+
+    // 증분 동기화 (불변성 준수 + 소켓 재연결 감지 + 백업 폴링)
     useEffect(() => {
-        if (messagesContainerRef.current) {
-            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        if (!roomId) {
+            console.log('⚠️ [증분동기화] roomId 없음');
+            return;
         }
-    }, [messages]);
+
+        let isCancelled = false;
+
+        const syncNewMessages = async () => {
+            if (isCancelled) {
+                console.log('⚠️ [증분동기화] 취소됨 (cleanup)');
+                return;
+            }
+
+            try {
+                // 1. 현재 캐시에서 데이터 조회 (data 변수 의존 안 함!)
+                const currentData = queryClient.getQueryData(['chat-messages', roomId]);
+
+                if (!currentData?.pages) {
+                    console.log('⚠️ [증분동기화] 캐시 데이터 없음');
+                    return;
+                }
+
+                // 2. 마지막 메시지 ID 찾기
+                const allMessages = currentData.pages.flatMap(p => p.messages);
+                const lastMessage = allMessages[allMessages.length - 1];
+
+                if (!lastMessage) {
+                    console.log('⚠️ [증분동기화] 메시지 없음 (첫 로딩)');
+                    return;
+                }
+
+                console.log(`🔄 [증분동기화] 시작 - lastId: ${lastMessage._id}`);
+
+                // 3. API 호출: "이 ID 이후 메시지만 주세요"
+                const result = await getNewMessages(roomId, lastMessage._id);
+
+                if (isCancelled) {
+                    console.log('⚠️ [증분동기화] API 응답 받았지만 취소됨');
+                    return;
+                }
+
+                // 4. 새 메시지 처리
+                if (result.messages && result.messages.length > 0) {
+                    console.log(`✅ [증분동기화] 새 메시지 ${result.messages.length}개 발견!`);
+
+                    queryClient.setQueryData(['chat-messages', roomId], (old) => {
+                        if (!old?.pages) return old;
+
+                        // ✅ 불변성 준수: 배열과 객체를 새로 생성
+                        const newPages = [...old.pages];
+                        const lastPageIndex = newPages.length - 1;
+                        const lastPage = newPages[lastPageIndex];
+
+                        // 중복 제거
+                        const existingIds = new Set(lastPage.messages.map(m => m._id));
+                        const uniqueMessages = result.messages.filter(m => !existingIds.has(m._id));
+
+                        if (uniqueMessages.length === 0) {
+                            console.log('✅ [증분동기화] 모두 중복 메시지 (이미 있음)');
+                            return old;
+                        }
+
+                        // ✅ 핵심: 새 객체로 교체 (원본 수정 안 함)
+                        newPages[lastPageIndex] = {
+                            ...lastPage,
+                            messages: [...lastPage.messages, ...uniqueMessages]
+                        };
+
+                        console.log(`✅ [증분동기화] ${uniqueMessages.length}개 캐시에 추가 완료`);
+
+                        return { ...old, pages: newPages };
+                    });
+                } else {
+                    console.log(`✅ [증분동기화] 새 메시지 없음 (이미 최신)`);
+                }
+            } catch (error) {
+                console.error('❌ [증분동기화] 실패:', error);
+            }
+        };
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 실행 시점 1: 마운트 시 또는 소켓 재연결 시
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        console.log('🔄 [증분동기화] useEffect 실행 - 즉시 동기화');
+        syncNewMessages();
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 실행 시점 2: 백업 타이머 (30초마다)
+        // 이유: 소켓이 연결되어 있어도 패킷 누락 가능성 대비
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const intervalId = setInterval(() => {
+            // 화면이 보일 때만 실행 (백그라운드 낭비 방지)
+            if (document.visibilityState === 'visible') {
+                console.log('⏰ [백업폴링] 30초 경과 - 증분 동기화 체크');
+                syncNewMessages();
+            }
+        }, 30000);  // 30초
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Cleanup
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        return () => {
+            console.log('🧹 [증분동기화] Cleanup - 타이머 중지 & 플래그 설정');
+            isCancelled = true;
+            clearInterval(intervalId);
+        };
+
+    }, [roomId, queryClient, socket?.connected]);
+//   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//   의존성 설명:
+//   - roomId: 방이 바뀌면 재실행
+//   - queryClient: 안정적 (변경 안 됨)
+//   - socket?.connected: false → true 되면 재실행 (재연결 감지!)
+//==========================================================================
+
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, scrollToBottom]);
+
+
     // ────────── ③ participants 변경 시 상대 소환사명으로 전적 조회 ──────────
     // ChatRoom.jsx의 useEffect 부분을 다음과 같이 수정
     useEffect(() => {
@@ -527,18 +779,48 @@ const ChatRoom = ({roomId, userId}) => {
                 const userInfo = { nickname: participant.nickname }; // 참가자 정보에서 닉네임 사용
 
                 try {
-                    const riotInfo = await getUserRiotInfo(participantId);
+                    // 1️⃣ Riot ID 캐시 확인
+                    let riotInfo = queryClient.getQueryData(['user-riot-info', participantId]);
+
+                    if (!riotInfo) {
+                        // 캐시 미스 - API 호출
+                        console.log(`⚠️ [전적-Riot정보] ${participantId} 조회`);
+                        riotInfo = await getUserRiotInfo(participantId);
+
+                        // 캐시에 저장
+                        queryClient.setQueryData(['user-riot-info', participantId], riotInfo);
+                    } else {
+                        console.log(`✅ [전적-Riot정보-캐시히트] ${participantId}`);
+                    }
 
                     if (riotInfo && riotInfo.riotGameName && riotInfo.riotTagLine) {
                         const { riotGameName, riotTagLine } = riotInfo;
-                        // 전적 섹션에 표시할 Riot ID 정보 추가
                         userInfo.riotGameName = riotGameName;
                         userInfo.riotTagLine = riotTagLine;
 
-                        const leagueRecord = await getLeagueRecord(riotGameName, riotTagLine);
+                        // 2️⃣ 전적 캐시 확인
+                        let leagueRecord = queryClient.getQueryData(['league-record', riotGameName, riotTagLine]);
+
+                        if (!leagueRecord) {
+                            // 캐시 미스 - API 호출
+                            console.log(`⚠️ [전적-리그정보] ${riotGameName}#${riotTagLine} 조회`);
+                            leagueRecord = await getLeagueRecord(riotGameName, riotTagLine);
+
+                            // 캐시에 저장 (5분)
+                            queryClient.setQueryData(['league-record', riotGameName, riotTagLine], leagueRecord);
+                            console.log(`💾 [전적-리그정보-저장] ${riotGameName}#${riotTagLine}`);
+                        } else {
+                            console.log(`✅ [전적-리그정보-캐시히트] ${riotGameName}#${riotTagLine}`);
+                        }
+
                         return { participantId, userInfo, leagueRecord, error: null };
                     } else {
-                        return { participantId, userInfo, leagueRecord: null, error: "Riot ID가 연동되지 않은 유저입니다." };
+                        return {
+                            participantId,
+                            userInfo,
+                            leagueRecord: null,
+                            error: "Riot ID가 연동되지 않은 유저입니다."
+                        };
                     }
                 } catch (err) {
                     console.error('전적 조회 오류:', err);
@@ -549,13 +831,14 @@ const ChatRoom = ({roomId, userId}) => {
             .then(results => {
                 setPartnerRecords(results);
                 setRecordsLoading(false);
+                console.log('✅ [전적] 전체 조회 완료');
             })
             .catch(err => {
                 console.error('전적 조회 전체 오류:', err);
                 setRecordsError(err.message);
                 setRecordsLoading(false);
             });
-    }, [participants, userId]);
+    }, [participants, userId, queryClient]);
 
 
     return (
@@ -586,8 +869,14 @@ const ChatRoom = ({roomId, userId}) => {
 
                         <div
                             ref={messagesContainerRef}
+                            onScroll={handleScroll}
                             className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"
                         >
+                            {isFetchingNextPage && (  // ✅ 로딩 표시 추가
+                                <div className="text-center text-gray-500 py-2">
+                                    이전 메시지 로딩 중...
+                                </div>
+                            )}
                             {messages.filter(msg => msg && (msg.isSystem || msg.sender)).map(msg => {
                                 /* 시스템-메시지라면 중앙 정렬 회색 글씨로 */
                                 if (msg.isSystem) {
