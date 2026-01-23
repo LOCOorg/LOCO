@@ -1,52 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, {useEffect, useState} from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { newsService } from '../../api/newsAPI.js';
+//import { newsService } from '../../api/newsAPI.js';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../stores/authStore.js';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
+import { useNews } from '../../hooks/queries/useNewsQueries';
 
 const NewsPageComponent = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuthStore();
-    
-    const [news, setNews] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [pagination, setPagination] = useState({});
-    const [isAdmin, setIsAdmin] = useState(false);
+
     const [activeTab, setActiveTab] = useState(searchParams.get('category') || 'all');
     const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page')) || 1);
 
+
+    const {
+        data,
+        isLoading: loading,
+        error,
+    } = useNews({
+        page: currentPage,
+        limit: 10,
+        category: activeTab,
+    });
+
+    // ✅ 데이터 추출
+    const news = data?.news || [];
+    const pagination = data?.pagination || {};
+    const isAdmin = data?.isAdmin || false;
+
     useEffect(() => {
-        loadNews();
-    }, [activeTab, currentPage]);
-
-    const loadNews = async () => {
-        try {
-            setLoading(true);
-            const params = {
-                page: currentPage,
-                limit: 10
-            };
-            
-            if (activeTab !== 'all') {
-                params.category = activeTab;
-            }
-
-            const response = await newsService.getNewsList(params);
-            if (response.success) {
-                setNews(response.data.news);
-                setPagination(response.data.pagination);
-                setIsAdmin(response.data.isAdmin || false);
-            } else {
-                toast.error('뉴스를 불러오는데 실패했습니다.');
-            }
-        } catch (error) {
-            console.error('뉴스 로딩 오류:', error);
+        if (error) {
             toast.error('뉴스를 불러오는데 실패했습니다.');
-        } finally {
-            setLoading(false);
         }
-    };
+    }, [error]);
 
     const handleTabChange = (tab) => {
         setActiveTab(tab);

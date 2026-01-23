@@ -5,10 +5,14 @@ import { editorService } from '../../api/editorAPI.js';
 import { toast } from 'react-toastify';
 import NovelEditor from '../editor/NovelEditor.jsx';
 import ImageUploadTest from '../editor/ImageUploadTest.jsx';
+import { useCreateNews } from '../../hooks/queries/useNewsQueries';
 
 const NewsWriteComponent = () => {
     const navigate = useNavigate();
     const editorRef = useRef(null);
+
+    // 🆕 React Query Mutation Hook
+    const createNewsMutation = useCreateNews();
     
     const [formData, setFormData] = useState({
         title: '',
@@ -17,7 +21,6 @@ const NewsWriteComponent = () => {
         isImportant: false
     });
     const [images, setImages] = useState([]);
-    const [loading, setLoading] = useState(false);
     const fileInputRef = useRef(null);
 
     const handleInputChange = (e) => {
@@ -101,35 +104,33 @@ const NewsWriteComponent = () => {
         setImages(prev => prev.filter((_, i) => i !== index));
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         if (!formData.title.trim()) {
             toast.error('제목을 입력해주세요.');
             return;
         }
-        
+
         if (!formData.content.trim()) {
             toast.error('내용을 입력해주세요.');
             return;
         }
 
-        try {
-            setLoading(true);
-            const response = await newsService.createNews(formData, images);
-            
-            if (response.success) {
-                toast.success('게시글이 성공적으로 작성되었습니다.');
-                navigate('/news');
-            } else {
-                toast.error(response.message || '게시글 작성에 실패했습니다.');
+        // 🆕 Mutation 실행 (낙관적 업데이트)
+        createNewsMutation.mutate(
+            formData,  // newsData
+            {
+                onSuccess: () => {
+                    toast.success('게시글이 성공적으로 작성되었습니다.');
+                    navigate('/news');
+                },
+                onError: (error) => {
+                    console.error('게시글 작성 오류:', error);
+                    toast.error('게시글 작성에 실패했습니다.');
+                }
             }
-        } catch (error) {
-            console.error('게시글 작성 오류:', error);
-            toast.error('게시글 작성에 실패했습니다.');
-        } finally {
-            setLoading(false);
-        }
+        );
     };
 
     return (
@@ -270,10 +271,10 @@ const NewsWriteComponent = () => {
                     </button>
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={createNewsMutation.isPending}
                         className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        {loading ? '작성 중...' : '게시글 작성'}
+                        {createNewsMutation.isPending ? '작성 중...' : '게시글 작성'}
                     </button>
                 </div>
 
