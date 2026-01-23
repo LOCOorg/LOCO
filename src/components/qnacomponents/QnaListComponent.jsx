@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QnaDetailModal from './QnaDetailModal';
-import { getQnaPageByStatus, deleteQna } from '../../api/qnaAPI.js';
+//import { getQnaPageByStatus, deleteQna } from '../../api/qnaAPI.js';
+import { useQnAList, useDeleteQnA } from '../../hooks/queries/useQnAQueries';
+import { useQueryClient } from '@tanstack/react-query';
 import useAuthStore from '../../stores/authStore';
 import CommonModal from '../../common/CommonModal.jsx';
 import {toKST} from "../../utils/dateUtils.js";
@@ -16,26 +18,65 @@ function QnaListComponent() {
     const [searchType, setSearchType]    = useState('both');
 
     // "답변대기" 상태 목록 및 페이징 상태
-    const [waitingQnas, setWaitingQnas] = useState([]);
-    const [waitingPagination, setWaitingPagination] = useState(null);
+    // const [waitingQnas, setWaitingQnas] = useState([]);
+    // const [waitingPagination, setWaitingPagination] = useState(null);
     const [waitingPage, setWaitingPage] = useState(1);
 
     // "답변완료" 상태 목록 및 페이징 상태
-    const [answeredQnas, setAnsweredQnas] = useState([]);
-    const [answeredPagination, setAnsweredPagination] = useState(null);
+    // const [answeredQnas, setAnsweredQnas] = useState([]);
+    // const [answeredPagination, setAnsweredPagination] = useState(null);
     const [answeredPage, setAnsweredPage] = useState(1);
 
     const [pageSize] = useState(6);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+
+    // ✅ "답변대기" Query Hook
+    const {
+        data: waitingData,
+        isLoading: waitingLoading,
+        error: waitingError,
+    } = useQnAList({
+        status: '답변대기',
+        page: waitingPage,
+        size: pageSize,
+        keyword: searchKeyword,
+        searchType: searchType,
+    });
+
+    const waitingQnas = waitingData?.qnas || [];
+    const waitingPagination = waitingData?.pagination;
+
+    // ✅ "답변완료" Query Hook
+    const {
+        data: answeredData,
+        isLoading: answeredLoading,
+        error: answeredError,
+    } = useQnAList({
+        status: '답변완료',
+        page: answeredPage,
+        size: pageSize,
+        keyword: searchKeyword,
+        searchType: searchType,
+    });
+
+    const answeredQnas = answeredData?.qnas || [];
+    const answeredPagination = answeredData?.pagination;
+
+
     const [selectedQna, setSelectedQna] = useState(null);
     const [showModal, setShowModal] = useState(false);
+
     const navigate = useNavigate();
     const { user } = useAuthStore();
 
     // 삭제 확인 모달 상태
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState(null);
+
+    // ✅ 삭제 Mutation
+    const deleteMutation = useDeleteQnA();
+
+    //
+    const queryClient = useQueryClient();
 
     // QnA 필터링(관리자만 볼 수 있음 처리)
     const isAdmin = user?.role === 'admin' || user?.userLv >= 2; // admin 판정
@@ -44,41 +85,9 @@ function QnaListComponent() {
         (String(user._id) === String(qna.userId) ||
             String(user._id) === String(qna.userId?._id));
 
-    // "답변대기" 목록 데이터 불러오기 (검색어 반영)
-    useEffect(() => {
-        const fetchWaitingQnas = async () => {
-            setLoading(true);
-            try {
-                const data = await getQnaPageByStatus(waitingPage, pageSize, "답변대기", searchKeyword, searchType);
-                setWaitingQnas(data.dtoList);
-                setWaitingPagination(data);
-            } catch (err) {
-                setError(err.message);
-            }
-            setLoading(false);
-        };
-        if (activeTab === "답변대기") {
-            fetchWaitingQnas();
-        }
-    }, [waitingPage, pageSize, searchKeyword, searchType, activeTab]);
 
-    // "답변완료" 목록 데이터 불러오기 (검색어 반영)
-    useEffect(() => {
-        const fetchAnsweredQnas = async () => {
-            setLoading(true);
-            try {
-                const data = await getQnaPageByStatus(answeredPage, pageSize, "답변완료", searchKeyword, searchType);
-                setAnsweredQnas(data.dtoList);
-                setAnsweredPagination(data);
-            } catch (err) {
-                setError(err.message);
-            }
-            setLoading(false);
-        };
-        if (activeTab === "답변완료") {
-            fetchAnsweredQnas();
-        }
-    }, [answeredPage, pageSize, searchKeyword, searchType, activeTab]);
+
+
 
     const handleQnaClick = (qna) => {
         setSelectedQna(qna);
@@ -87,15 +96,8 @@ function QnaListComponent() {
 
     const handleCloseModal = () => {
         if (selectedQna && selectedQna.qnaStatus === "답변완료") {
-            setWaitingQnas(prevWaiting => prevWaiting.filter(qna => qna._id !== selectedQna._id));
-            setAnsweredQnas(prevAnswered => {
-                const exists = prevAnswered.some(qna => qna._id === selectedQna._id);
-                if (exists) {
-                    return prevAnswered.map(qna => qna._id === selectedQna._id ? selectedQna : qna);
-                } else {
-                    return [...prevAnswered, selectedQna];
-                }
-            });
+            // ✅ 캐시 무효화 → 양쪽 목록 자동 리프레시
+            queryClient.invalidateQueries({ queryKey: ['qna', 'list'] });
         }
         setSelectedQna(null);
         setShowModal(false);
@@ -106,25 +108,20 @@ function QnaListComponent() {
         setIsDeleteModalOpen(true);
     };
 
-    const confirmDelete = async () => {
-        try {
-            await deleteQna(deleteTargetId);
-            if (activeTab === "답변대기") {
-                const waitingData = await getQnaPageByStatus(waitingPage, pageSize, "답변대기", searchKeyword);
-                setWaitingQnas(waitingData.dtoList);
-                setWaitingPagination(waitingData);
-            } else {
-                const answeredData = await getQnaPageByStatus(answeredPage, pageSize, "답변완료", searchKeyword);
-                setAnsweredQnas(answeredData.dtoList);
-                setAnsweredPagination(answeredData);
-            }
-            setIsDeleteModalOpen(false);
-            setDeleteTargetId(null);
-        } catch (err) {
-            setError(err.message);
-            setIsDeleteModalOpen(false);
-            setDeleteTargetId(null);
-        }
+    const confirmDelete =  () => {
+        deleteMutation.mutate(deleteTargetId, {
+            onSuccess: () => {
+                // ✅ React Query가 자동으로 캐시 무효화
+                // ✅ 목록 자동 리로드
+                setIsDeleteModalOpen(false);
+                setDeleteTargetId(null);
+            },
+            onError: (err) => {
+                console.error('삭제 실패:', err);
+                setIsDeleteModalOpen(false);
+                setDeleteTargetId(null);
+            },
+        });
     };
 
     const handleNewQna = () => {
@@ -223,8 +220,19 @@ function QnaListComponent() {
             </div>
 
             {/* 콘텐츠 */}
-            {loading && <p className="text-center text-gray-500">로딩 중...</p>}
-            {error && <p className="text-center text-red-600">에러: {error}</p>}
+            {(waitingLoading || answeredLoading) && (
+                <div className="flex justify-center items-center py-20">
+                    <div className="text-center">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                        <p className="text-gray-600">로딩 중...</p>
+                    </div>
+                </div>
+            )}
+            {(waitingError || answeredError) && (
+                <p className="text-center text-red-600">
+                    에러: {waitingError?.message || answeredError?.message}
+                </p>
+            )}
 
             {activeTab === "답변대기" && (
                 <>
