@@ -112,7 +112,7 @@ const RandomChatComponent = () => {
 
             try {
                 // const rooms = await fetchChatRooms({ roomType: "random", userId });
-                const roomsArray = chatRooms?.rooms || [];
+                const roomsArray = chatRoomsData?.rooms || [];
                 // const leftRooms = await fetchUserLeftRooms(userId);
                 const blockedIds = (blockedUsers || []).map((u) => u._id);
 
