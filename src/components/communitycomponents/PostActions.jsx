@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { FaThumbsUp } from 'react-icons/fa';
-import clsx from 'clsx';
+import { HandThumbUpIcon } from '@heroicons/react/24/outline';
+import PropTypes from 'prop-types';
 
 const PostActions = ({
     community,
@@ -9,7 +9,10 @@ const PostActions = ({
     onReport,
     onDelete,
     currentUserId,
-    isAdmin
+    isAdmin,
+    isDeleting = false,
+    isRecommending = false,
+
 }) => {
     const navigate = useNavigate();
 
@@ -23,18 +26,17 @@ const PostActions = ({
             <div className="mt-4 flex items-center gap-2">
                 <button
                     onClick={onToggleRecommend}
-                    aria-label="추천하기"
-                    className={clsx(
-                        'w-10 h-10 rounded-full border flex items-center justify-center transition-colors',
-                        {
-                            'bg-blue-500 border-blue-500 text-white': isRecommended,
-                            'bg-transparent border-gray-300 text-gray-500 hover:bg-gray-100': !isRecommended,
-                        }
-                    )}
+                    disabled={isRecommending}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                        isRecommended
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                    <FaThumbsUp size={20} />
+                    <HandThumbUpIcon className="w-5 h-5" />
+                    <span>추천 {community.recommendedUsers?.length || 0}</span>
+                    {isRecommending && <span>...</span>}
                 </button>
-
                 {!isAuthor && (
                     <button
                         onClick={onReport}
@@ -58,14 +60,44 @@ const PostActions = ({
                     )}
                     <button
                         onClick={onDelete}
-                        className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-200"
+                        disabled={isDeleting}
+                        className={`bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-200 flex items-center ${
+                            isDeleting ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                     >
-                        삭제
+                        {isDeleting ? (
+                            <>
+                                <svg className="animate-spin h-4 w-4 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                삭제 중...
+                            </>
+                        ) : (
+                            '삭제'
+                        )}
                     </button>
                 </div>
             )}
         </div>
     );
+};
+
+
+PostActions.propTypes = {
+    community: PropTypes.shape({
+        _id: PropTypes.string.isRequired,
+        userId: PropTypes.string.isRequired,
+        recommendedUsers: PropTypes.arrayOf(PropTypes.string),
+    }).isRequired,
+    isRecommended: PropTypes.bool.isRequired,
+    onToggleRecommend: PropTypes.func.isRequired,
+    onReport: PropTypes.func.isRequired,
+    onDelete: PropTypes.func.isRequired,
+    currentUserId: PropTypes.string,
+    isAdmin: PropTypes.bool,
+    isDeleting: PropTypes.bool,
+    isRecommending: PropTypes.bool,
 };
 
 export default PostActions;
