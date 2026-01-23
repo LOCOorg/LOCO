@@ -1,44 +1,61 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import CommonModal from '../../common/CommonModal.jsx';
-import { fetchNotifications, markNotificationAsReadAndDelete } from '../../api/reportNotificationAPI.js';
+import { useNotifications, useMarkAsReadAndDelete } from '../../hooks/queries/useNotificationQueries';
 import useAuthStore from '../../stores/authStore.js';
 
 const NotificationModal = () => {
     const { user } = useAuthStore();
-    const [notifications, setNotifications] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    useEffect(() => {
-        const loadNotifications = async () => {
-            if (user) {
-                try {
-                    const notifs = await fetchNotifications(user._id);
-                    if (notifs && notifs.length > 0) {
-                        setNotifications(notifs);
-                        setIsModalOpen(true);
-                    }
-                } catch (error) {
-                    console.error(error.message);
-                }
+    // 🆕 React Query Hook 사용
+    const {
+        data: notifications = [],
+        isLoading,
+        error
+    } = useNotifications(user?._id, {
+        enabled: !!user?._id,
+        onSuccess: (data) => {
+            // 알림이 있으면 모달 열기
+            if (data && data.length > 0) {
+                setIsModalOpen(true);
             }
-        };
-        loadNotifications();
-    }, [user]);
-
-    const handleClose = async () => {
-        if (notifications[currentIndex]) {
-            // 알림 읽음 후 즉시 삭제 처리
-            await markNotificationAsReadAndDelete(notifications[currentIndex]._id);
         }
+    });
+
+    // 🆕 삭제 Mutation Hook
+    const markAsReadAndDeleteMutation = useMarkAsReadAndDelete();
+
+    const handleClose = () => {
+        const currentNotification = notifications[currentIndex];
+
+        if (currentNotification) {
+            // 🆕 Mutation 실행 (낙관적 업데이트)
+            markAsReadAndDeleteMutation.mutate({
+                userId: user._id,
+                notificationId: currentNotification._id
+            });
+        }
+
         // 다음 알림이 있으면 인덱스 업데이트, 없으면 모달 닫기
         if (currentIndex < notifications.length - 1) {
             setCurrentIndex(currentIndex + 1);
         } else {
             setIsModalOpen(false);
+            setCurrentIndex(0);  // 인덱스 초기화
         }
     };
 
+    // 로딩 중
+    if (isLoading) return null;
+
+    // 에러 발생
+    if (error) {
+        console.error('알림 로딩 에러:', error);
+        return null;
+    }
+
+    // 알림이 없거나 모달이 닫혀있음
     if (!isModalOpen || notifications.length === 0) {
         return null;
     }
@@ -51,7 +68,7 @@ const NotificationModal = () => {
             onConfirm={handleClose}
             showCancel={false}
         >
-            <p>{notifications[currentIndex].content}</p>
+            <p>{notifications[currentIndex]?.content}</p>
         </CommonModal>
     );
 };
