@@ -104,7 +104,16 @@ const CommunityDetail = () => {
     // 닉네임 표시 함수
     const getDisplayNickname = (item) => {
         if (item.isAnonymous) return '익명';
-        return item.userNickname || item.userId; // ✅ userNickname 사용
+
+        // userNickname이 있으면 사용
+        if (item.userNickname) return item.userNickname;
+
+        // userId가 객체(populated)인 경우 처리
+        if (typeof item.userId === 'object' && item.userId !== null) {
+            return item.userId.nickname || '알 수 없음';
+        }
+
+        return item.userId || '알 수 없음';
     };
 
     // // ✅ 댓글 로드 (useEffect 유지 - 나중에 useComments Hook으로 이동 예정)

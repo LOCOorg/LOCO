@@ -1,5 +1,6 @@
 // src/hooks/useCommentPoll.js
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
     createCommentPoll,
     voteCommentPoll,
@@ -9,14 +10,31 @@ import {
     getCommentPollResults
 } from '../api/communityApi.js';
 
-export const useCommentPoll = (community, comment, setComments, currentUserId, isAdmin) => {
+export const useCommentPoll = (community, comment, currentUserId, isAdmin) => {
     const [commentUserVotes, setCommentUserVotes] = useState({});
     const [showCommentPollModal, setShowCommentPollModal] = useState({});
+    const queryClient = useQueryClient();
+
+    // 댓글 캐시 업데이트 헬퍼 함수
+    const updateCommentsCache = (updateFn) => {
+        queryClient.setQueryData(['comments', community._id], (oldData) => {
+            if (!oldData?.pages) return oldData;
+            return {
+                ...oldData,
+                pages: oldData.pages.map(page => ({
+                    ...page,
+                    comments: page.comments.map(c =>
+                        c._id === comment._id ? updateFn(c) : c
+                    )
+                }))
+            };
+        });
+    };
 
     // 댓글 투표 데이터 로딩
     useEffect(() => {
         if (!comment?.polls || !currentUserId) {
-            setCommentUserVotes({}); // Clear votes if no polls or user
+            setCommentUserVotes({});
             return;
         }
 
@@ -37,16 +55,10 @@ export const useCommentPoll = (community, comment, setComments, currentUserId, i
         try {
             const newPoll = await createCommentPoll(comment._id, pollData);
 
-            setComments(prevComments =>
-                prevComments.map(c =>
-                    c._id === comment._id
-                        ? {
-                            ...c,
-                            polls: [...(c.polls || []), newPoll]
-                        }
-                        : c
-                )
-            );
+            updateCommentsCache((c) => ({
+                ...c,
+                polls: [...(c.polls || []), newPoll]
+            }));
 
             setShowCommentPollModal(prev => ({
                 ...prev,
@@ -58,7 +70,6 @@ export const useCommentPoll = (community, comment, setComments, currentUserId, i
         }
     };
 
-
     // 댓글 투표 참여
     const handleCommentVote = async (pollId, optionIndex) => {
         try {
@@ -68,18 +79,12 @@ export const useCommentPoll = (community, comment, setComments, currentUserId, i
                 optionIndex
             );
 
-            setComments(prevComments =>
-                prevComments.map(c =>
-                    c._id === comment._id
-                        ? {
-                            ...c,
-                            polls: c.polls.map(poll =>
-                                poll._id === pollId ? updatedPoll : poll
-                            )
-                        }
-                        : c
+            updateCommentsCache((c) => ({
+                ...c,
+                polls: c.polls.map(poll =>
+                    poll._id === pollId ? updatedPoll : poll
                 )
-            );
+            }));
 
             setCommentUserVotes(prev => ({
                 ...prev,
@@ -98,43 +103,36 @@ export const useCommentPoll = (community, comment, setComments, currentUserId, i
         try {
             await cancelCommentVote(comment._id, pollId);
 
-            // 1. 로컬 UI 상태 즉시 업데이트
             const newVotes = { ...commentUserVotes };
             delete newVotes[`${comment._id}-${pollId}`];
             setCommentUserVotes(newVotes);
 
-            // 2. 댓글 데이터(votedUsers 와 투표 수)를 즉시 업데이트
-            setComments(prevComments =>
-                prevComments.map(c => {
-                    if (c._id !== comment._id) return c;
+            updateCommentsCache((c) => {
+                const updatedPolls = c.polls.map(p => {
+                    if (p._id !== pollId) return p;
 
-                    const updatedPolls = c.polls.map(p => {
-                        if (p._id !== pollId) return p;
-
-                        let userVoteIndex = -1;
-                        const updatedOptions = p.options.map((opt, index) => {
-                            const originalVotedUsers = opt.votedUsers || [];
-                            if (originalVotedUsers.includes(currentUserId)) {
-                                userVoteIndex = index;
-                            }
-                            return {
-                                ...opt,
-                                votedUsers: originalVotedUsers.filter(uid => uid !== currentUserId)
-                            };
-                        });
-
-                        if (userVoteIndex > -1) {
-                            updatedOptions[userVoteIndex].votes = Math.max(0, updatedOptions[userVoteIndex].votes - 1);
+                    let userVoteIndex = -1;
+                    const updatedOptions = p.options.map((opt, index) => {
+                        const originalVotedUsers = opt.votedUsers || [];
+                        if (originalVotedUsers.includes(currentUserId)) {
+                            userVoteIndex = index;
                         }
-
-                        const newTotalVotes = updatedOptions.reduce((sum, opt) => sum + opt.votes, 0);
-
-                        return { ...p, options: updatedOptions, totalVotes: newTotalVotes };
+                        return {
+                            ...opt,
+                            votedUsers: originalVotedUsers.filter(uid => uid !== currentUserId)
+                        };
                     });
 
-                    return { ...c, polls: updatedPolls };
-                })
-            );
+                    if (userVoteIndex > -1) {
+                        updatedOptions[userVoteIndex].votes = Math.max(0, updatedOptions[userVoteIndex].votes - 1);
+                    }
+
+                    const newTotalVotes = updatedOptions.reduce((sum, opt) => sum + opt.votes, 0);
+                    return { ...p, options: updatedOptions, totalVotes: newTotalVotes };
+                });
+
+                return { ...c, polls: updatedPolls };
+            });
 
         } catch (error) {
             console.error('댓글 투표 취소 실패:', error);
@@ -147,16 +145,10 @@ export const useCommentPoll = (community, comment, setComments, currentUserId, i
         try {
             await deleteCommentPoll(comment._id, pollId);
 
-            setComments(prevComments =>
-                prevComments.map(c =>
-                    c._id === comment._id
-                        ? {
-                            ...c,
-                            polls: c.polls.filter(poll => poll._id !== pollId)
-                        }
-                        : c
-                )
-            );
+            updateCommentsCache((c) => ({
+                ...c,
+                polls: c.polls.filter(poll => poll._id !== pollId)
+            }));
 
             const newVotes = { ...commentUserVotes };
             delete newVotes[`${comment._id}-${pollId}`];
@@ -171,27 +163,21 @@ export const useCommentPoll = (community, comment, setComments, currentUserId, i
         try {
             const results = await getCommentPollResults(comment._id, pollId);
 
-            setComments(prevComments =>
-                prevComments.map(c =>
-                    c._id === comment._id
+            updateCommentsCache((c) => ({
+                ...c,
+                polls: c.polls.map(poll =>
+                    poll._id === pollId
                         ? {
-                            ...c,
-                            polls: c.polls.map(poll =>
-                                poll._id === pollId
-                                    ? {
-                                        ...poll,
-                                        options: results.options.map((resultOption, index) => ({
-                                            ...poll.options[index],
-                                            votes: resultOption.votes
-                                        })),
-                                        totalVotes: results.totalVotes
-                                    }
-                                    : poll
-                            )
+                            ...poll,
+                            options: results.options.map((resultOption, index) => ({
+                                ...poll.options[index],
+                                votes: resultOption.votes
+                            })),
+                            totalVotes: results.totalVotes
                         }
-                        : c
+                        : poll
                 )
-            );
+            }));
         } catch (error) {
             console.error('댓글 투표 결과 새로고침 실패:', error);
         }

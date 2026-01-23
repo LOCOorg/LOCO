@@ -99,13 +99,14 @@ export const useCreateCommunity = () => {
                 }];
 
                 queryClient.setQueryData(queryKey, (old) => {
-                    if (!old) return old;
+                    if (!old || !old.dtoList) return old;
 
                     // 임시 게시글을 목록 최상단에 추가
                     return {
                         ...old,
-                        posts: [optimisticPost, ...old.posts],
-                        totalPosts: old.totalPosts + 1,
+                        dtoList: [optimisticPost, ...old.dtoList],
+                        // totalCount가 있다면 업데이트 (선택 사항)
+                        totalCount: (old.totalCount || 0) + 1,
                     };
                 });
             });
@@ -262,11 +263,11 @@ export const useDeleteCommunity = () => {
 
             // 3. 모든 목록 캐시에서 게시글 제거
             queryClient.getQueriesData({ queryKey: ['communities', 'list'] }).forEach(([queryKey, data]) => {
-                if (data?.posts) {
+                if (data?.dtoList) {
                     queryClient.setQueryData(queryKey, {
                         ...data,
-                        posts: data.posts.filter(post => post._id !== postId),
-                        totalPosts: data.totalPosts - 1,
+                        dtoList: data.dtoList.filter(post => post._id !== postId),
+                        totalCount: (data.totalCount || 1) - 1,
                     });
                 }
             });

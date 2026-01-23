@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createQna } from '../../api/qnaAPI.js';
+// import { createQna } from '../../api/qnaAPI.js'; // 직접 API 호출 제거
+import { useCreateQnA } from '../../hooks/queries/useQnAQueries.js'; // 훅 추가
 import useAuthStore from '../../stores/authStore';
 // import { getUserInfo } from '../../api/userAPI';
 import CommonModal from '../../common/CommonModal.jsx';
@@ -18,12 +19,15 @@ function QnaWriteComponent() {
         isAnonymous: false,
         isAdminOnly: false,
     });
-    const [loading, setLoading] = useState(false);
+    // const [loading, setLoading] = useState(false); // 훅의 isPending 사용
     const [error, setError] = useState('');
     // const [userData, setUserData] = useState(null);
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+
+    // Mutation Hook 사용
+    const createQnAMutation = useCreateQnA();
 
     // useEffect(() => {
     //     if (user && user._id) {
@@ -41,29 +45,35 @@ function QnaWriteComponent() {
         }));
     };
 
-    const confirmSubmit = async () => {
-        setLoading(true);
+    const confirmSubmit = () => {
         setError('');
         if (!user) {
             setError('로그인 후 문의를 작성할 수 있습니다.');
-            setLoading(false);
             setIsSubmitModalOpen(false);
             return;
         }
-        try {
-            await createQna({ ...qnaData, userId: user._id });
-            setIsSubmitModalOpen(false);
-            navigate('/qna');
-        } catch (err) {
-            setError(err.message || 'QnA 작성 실패');
-        }
-        setLoading(false);
+
+        createQnAMutation.mutate(
+            { ...qnaData, userId: user._id },
+            {
+                onSuccess: () => {
+                    setIsSubmitModalOpen(false);
+                    navigate('/qna');
+                },
+                onError: (err) => {
+                    setError(err.message || 'QnA 작성 실패');
+                    setIsSubmitModalOpen(false);
+                }
+            }
+        );
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsSubmitModalOpen(true);
     };
+
+    const loading = createQnAMutation.isPending;
 
     return (
         <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
