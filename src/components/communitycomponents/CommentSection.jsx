@@ -1,14 +1,19 @@
 // src/components/communitycomponents/CommentSection.jsx
-import { useState } from 'react';
-import { addReply, addSubReply, deleteComment, deleteReply, deleteSubReply } from '../../api/communityApi.js';
+import {useState} from 'react';
+import {
+    useAddReply,
+    useAddSubReply,
+    useDeleteComment,
+    useDeleteReply,
+    useDeleteSubReply} from '../../hooks/queries/useCommunityQueries';
 import CommonModal from '../../common/CommonModal.jsx';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
 import Comment from './Comment.jsx';
+import {useQueryClient} from '@tanstack/react-query';
 
 const CommentSection = ({
                             community,
                             comments,
-                            setComments,
                             setCommunity,
                             currentUserId,
                             isAdmin,
@@ -22,8 +27,10 @@ const CommentSection = ({
                             commentIsAnonymous,
                             setCommentIsAnonymous,
                             onAddComment,
+                            isAddingComment = false,
                             loadMoreComments,
                             hasMoreComments,
+                            isFetchingNextPage,
                         }) => {
     // 댓글 관련 상태
     const [replyState, setReplyState] = useState({});
@@ -36,14 +43,25 @@ const CommentSection = ({
     const [replyDeleteModalOpen, setReplyDeleteModalOpen] = useState(false);
     const [subReplyDeleteModalOpen, setSubReplyDeleteModalOpen] = useState(false);
     const [commentToDelete, setCommentToDelete] = useState(null);
-    const [replyToDelete, setReplyToDelete] = useState({ commentId: null, replyId: null });
-    const [subReplyToDelete, setSubReplyToDelete] = useState({ commentId: null, replyId: null, subReplyId: null });
+    const [replyToDelete, setReplyToDelete] = useState({commentId: null, replyId: null});
+    const [subReplyToDelete, setSubReplyToDelete] = useState({commentId: null, replyId: null, subReplyId: null});
 
     // 신고 모달 상태
     const [reportModalOpen, setReportModalOpen] = useState(false);
-    const [reportTarget, setReportTarget] = useState({ nickname: '', anchor: null });
+    const [reportTarget, setReportTarget] = useState({nickname: '', anchor: null});
 
     const API_HOST = import.meta.env.VITE_API_HOST;
+
+    const queryClient = useQueryClient();
+
+    // 대댓글/대대댓글 Mutation Hook
+    const addReplyMutation = useAddReply();
+    const addSubReplyMutation = useAddSubReply();
+
+    // 삭제 Mutation Hook
+    const deleteCommentMutation = useDeleteComment();
+    const deleteReplyMutation = useDeleteReply();
+    const deleteSubReplyMutation = useDeleteSubReply();
 
 
     // 총 댓글 수 계산
@@ -92,51 +110,53 @@ const CommentSection = ({
         if (text.length > 1000) return;
         setReplyState((prev) => ({
             ...prev,
-            [commentId]: { ...prev[commentId], text },
+            [commentId]: {...prev[commentId], text},
         }));
     };
 
     const handleReplyFileChange = (commentId, file) => {
         setReplyState((prev) => ({
             ...prev,
-            [commentId]: { ...prev[commentId], file },
+            [commentId]: {...prev[commentId], file},
         }));
     };
 
     const handleAddReply = async (communityId, commentId) => {
-        const state = replyState[commentId] || { text: '', file: null };
+        const state = replyState[commentId] || {text: '', file: null};
         const text = state.text.trim();
         if (!text) return;
 
-        try {
-            const formData = new FormData();
-            formData.append('userId', currentUserId);
-            formData.append('commentContents', text);
-            formData.append('isAnonymous', replyIsAnonymous[commentId] || false);
-            if (state.file) formData.append('replyImage', state.file);
+        // FormData 생성
+        const formData = new FormData();
+        formData.append('userId', currentUserId);
+        formData.append('commentContents', text);
+        formData.append('isAnonymous', replyIsAnonymous[commentId] || false);
+        if (state.file) formData.append('replyImage', state.file);
 
-            const newReply = await addReply(communityId, commentId, formData);
+        // Mutation 실행
+        addReplyMutation.mutate(
+            {
+                postId: communityId,
+                commentId,
+                formData
+            },
+            {
+                onSuccess: () => {
+                    // 입력 폼 초기화
+                    setReplyState((prev) => ({
+                        ...prev,
+                        [commentId]: {open: false, text: '', file: null},
+                    }));
+                    setReplyIsAnonymous((prev) => ({...prev, [commentId]: false}));
 
-            setComments(comments.map(c => {
-                if (c._id === commentId) {
-                    // ✅ replies가 배열인지 확인하고 없으면 빈 배열 사용
-                    const existingReplies = Array.isArray(c.replies) ? c.replies : [];
-                    return { ...c, replies: [...existingReplies, newReply] };
+                    // 댓글 수 증가
+                    setCommunity({...community, commentCount: community.commentCount + 1});
+                },
+                onError: (error) => {
+                    console.error('답글 추가 오류:', error);
                 }
-                return c;
-            }));
-
-            setReplyState((prev) => ({
-                ...prev,
-                [commentId]: { open: false, text: '', file: null },
-            }));
-            setReplyIsAnonymous((prev) => ({ ...prev, [commentId]: false }));
-
-            // ✅ 댓글 수 증가
-            setCommunity({ ...community, commentCount: community.commentCount + 1 });
-        } catch (err) {
-            console.error('답글 추가 오류:', err);
-        }
+            }
+        );
     };
 
     // 대대댓글 관련 함수들
@@ -155,175 +175,148 @@ const CommentSection = ({
         if (text.length > 1000) return;
         setSubReplyState((prev) => ({
             ...prev,
-            [replyId]: { ...prev[replyId], text },
+            [replyId]: {...prev[replyId], text},
         }));
     };
 
     const handleSubReplyFileChange = (replyId, file) => {
         setSubReplyState((prev) => ({
             ...prev,
-            [replyId]: { ...prev[replyId], file },
+            [replyId]: {...prev[replyId], file},
         }));
     };
 
     const handleAddSubReply = async (communityId, commentId, replyId) => {
-        const state = subReplyState[replyId] || { text: '', file: null };
+        const state = subReplyState[replyId] || {text: '', file: null};
         const text = state.text.trim();
         if (!text) return;
 
-        try {
-            const formData = new FormData();
-            formData.append('userId', currentUserId);
-            formData.append('commentContents', text);
-            formData.append('isAnonymous', subReplyIsAnonymous[replyId] || false);
-            if (state.file) formData.append('subReplyImage', state.file);
+        // FormData 생성
+        const formData = new FormData();
+        formData.append('userId', currentUserId);
+        formData.append('commentContents', text);
+        formData.append('isAnonymous', subReplyIsAnonymous[replyId] || false);
+        if (state.file) formData.append('subReplyImage', state.file);
 
-            const newSubReply = await addSubReply(communityId, commentId, replyId, formData);
+        // Mutation 실행
+        addSubReplyMutation.mutate(
+            {
+                postId: communityId,
+                commentId,
+                replyId,
+                formData
+            },
+            {
+                onSuccess: () => {
+                    // 입력 폼 초기화
+                    setSubReplyState((prev) => ({
+                        ...prev,
+                        [replyId]: {open: false, text: '', file: null},
+                    }));
+                    setSubReplyIsAnonymous((prev) => ({...prev, [replyId]: false}));
 
-            setComments(comments.map(c => {
-                if (c._id === commentId) {
-                    // ✅ replies가 배열인지 확인
-                    const existingReplies = Array.isArray(c.replies) ? c.replies : [];
-                    const newReplies = existingReplies.map(r => {
-                        if (r._id === replyId) {
-                            // ✅ subReplies가 배열인지 확인하고 없으면 빈 배열 사용
-                            const existingSubReplies = Array.isArray(r.subReplies) ? r.subReplies : [];
-                            return { ...r, subReplies: [...existingSubReplies, newSubReply] };
-                        }
-                        return r;
-                    });
-                    return { ...c, replies: newReplies };
+                    // 댓글 수 증가
+                    setCommunity({...community, commentCount: community.commentCount + 1});
+                },
+                onError: (error) => {
+                    console.error('대댓글 추가 오류:', error);
                 }
-                return c;
-            }));
-
-            setSubReplyState((prev) => ({
-                ...prev,
-                [replyId]: { open: false, text: '', file: null },
-            }));
-            setSubReplyIsAnonymous((prev) => ({ ...prev, [replyId]: false }));
-
-            // ✅ 댓글 수 증가
-            setCommunity({ ...community, commentCount: community.commentCount + 1 });
-        } catch (err) {
-            console.error('대댓글 추가 오류:', err);
-        }
+            }
+        );
     };
 
     // 삭제 관련 함수들
     const openCommentDeleteModal = (communityId, commentId) => {
-        setCommentToDelete({ communityId, commentId });
+        setCommentToDelete({communityId, commentId});
         setCommentDeleteModalOpen(true);
     };
 
-// ✅ 댓글 삭제
-    const confirmDeleteComment = async () => {
-        try {
-            await deleteComment(commentToDelete.communityId, commentToDelete.commentId);
 
-            // 프론트에서 isDeleted만 설정 (하위 항목 유지)
-            setComments(comments.map(c =>
-                c._id === commentToDelete.commentId
-                    ? { ...c, isDeleted: true }
-                    : c
-            ));
-
-            setCommunity({ ...community, commentCount: community.commentCount - 1 });
-            setCommentDeleteModalOpen(false);
-            setCommentToDelete(null);
-        } catch (err) {
-            console.error('댓글 삭제 오류:', err);
-            setCommentDeleteModalOpen(false);
-        }
+    // ✅ 댓글 삭제 (낙관적 업데이트)
+    const confirmDeleteComment = () => {
+        deleteCommentMutation.mutate(
+            {
+                postId: commentToDelete.communityId,
+                commentId: commentToDelete.commentId
+            },
+            {
+                onSuccess: () => {
+                    // 댓글 수 감소
+                    setCommunity({...community, commentCount: community.commentCount - 1});
+                    setCommentDeleteModalOpen(false);
+                    setCommentToDelete(null);
+                },
+                onError: (error) => {
+                    console.error('댓글 삭제 오류:', error);
+                    setCommentDeleteModalOpen(false);
+                }
+            }
+        );
     };
 
     const openReplyDeleteModal = (communityId, commentId, replyId) => {
-        setReplyToDelete({ communityId, commentId, replyId });
+        setReplyToDelete({communityId, commentId, replyId});
         setReplyDeleteModalOpen(true);
     };
 
-// ✅ 답글 삭제
-    const confirmDeleteReply = async () => {
-        try {
-            await deleteReply(
-                replyToDelete.communityId,
-                replyToDelete.commentId,
-                replyToDelete.replyId
-            );
 
-            // 프론트에서 isDeleted만 설정 (하위 대댓글 유지)
-            setComments(comments.map(c =>
-                c._id === replyToDelete.commentId
-                    ? {
-                        ...c,
-                        replies: c.replies.map(r =>
-                            r._id === replyToDelete.replyId
-                                ? { ...r, isDeleted: true }
-                                : r
-                        )
-                    }
-                    : c
-            ));
-
-            setCommunity({ ...community, commentCount: community.commentCount - 1 });
-            setReplyDeleteModalOpen(false);
-            setReplyToDelete({ communityId: null, commentId: null, replyId: null });
-        } catch (err) {
-            console.error('답글 삭제 오류:', err);
-            setReplyDeleteModalOpen(false);
-        }
+    // ✅ 대댓글 삭제 (낙관적 업데이트)
+    const confirmDeleteReply = () => {
+        deleteReplyMutation.mutate(
+            {
+                postId: replyToDelete.communityId,
+                commentId: replyToDelete.commentId,
+                replyId: replyToDelete.replyId
+            },
+            {
+                onSuccess: () => {
+                    // 댓글 수 감소
+                    setCommunity({...community, commentCount: community.commentCount - 1});
+                    setReplyDeleteModalOpen(false);
+                    setReplyToDelete({communityId: null, commentId: null, replyId: null});
+                },
+                onError: (error) => {
+                    console.error('대댓글 삭제 오류:', error);
+                    setReplyDeleteModalOpen(false);
+                }
+            }
+        );
     };
 
     const openSubReplyDeleteModal = (communityId, commentId, replyId, subReplyId) => {
-        setSubReplyToDelete({ communityId, commentId, replyId, subReplyId });
+        setSubReplyToDelete({communityId, commentId, replyId, subReplyId});
         setSubReplyDeleteModalOpen(true);
     };
 
-// ✅ 대댓글 삭제
-    const confirmDeleteSubReply = async () => {
-        try {
-            await deleteSubReply(
-                subReplyToDelete.communityId,
-                subReplyToDelete.commentId,
-                subReplyToDelete.replyId,
-                subReplyToDelete.subReplyId
-            );
-
-            // 프론트에서 isDeleted만 설정
-            setComments(comments.map(c =>
-                c._id === subReplyToDelete.commentId
-                    ? {
-                        ...c,
-                        replies: c.replies.map(r =>
-                            r._id === subReplyToDelete.replyId
-                                ? {
-                                    ...r,
-                                    subReplies: r.subReplies.map(s =>
-                                        s._id === subReplyToDelete.subReplyId
-                                            ? { ...s, isDeleted: true }
-                                            : s
-                                    )
-                                }
-                                : r
-                        )
-                    }
-                    : c
-            ));
-
-            setCommunity({ ...community, commentCount: community.commentCount - 1 });
-            setSubReplyDeleteModalOpen(false);
-            setSubReplyToDelete({ communityId: null, commentId: null, replyId: null, subReplyId: null });
-        } catch (err) {
-            console.error('대댓글 삭제 오류:', err);
-            setSubReplyDeleteModalOpen(false);
-        }
+    // ✅ 대대댓글 삭제 (낙관적 업데이트)
+    const confirmDeleteSubReply = () => {
+        deleteSubReplyMutation.mutate(
+            {
+                postId: subReplyToDelete.communityId,
+                commentId: subReplyToDelete.commentId,
+                replyId: subReplyToDelete.replyId,
+                subReplyId: subReplyToDelete.subReplyId
+            },
+            {
+                onSuccess: () => {
+                    // 댓글 수 감소
+                    setCommunity({...community, commentCount: community.commentCount - 1});
+                    setSubReplyDeleteModalOpen(false);
+                    setSubReplyToDelete({communityId: null, commentId: null, replyId: null, subReplyId: null});
+                },
+                onError: (error) => {
+                    console.error('대대댓글 삭제 오류:', error);
+                    setSubReplyDeleteModalOpen(false);
+                }
+            }
+        );
     };
 
     // 신고 관련 함수들
     const handleCommentReport = (comment) => {
         setReportTarget({
             nickname: getDisplayNickname(comment),
-            anchor: { type: 'comment', parentId: comment.postId, targetId: comment._id }
+            anchor: {type: 'comment', parentId: comment.postId, targetId: comment._id}
         });
         setReportModalOpen(true);
     };
@@ -331,7 +324,7 @@ const CommentSection = ({
     const handleReplyReport = (reply, postId) => {
         setReportTarget({
             nickname: getDisplayNickname(reply),
-            anchor: { type: 'reply', parentId: postId, targetId: reply._id }
+            anchor: {type: 'reply', parentId: postId, targetId: reply._id}
         });
         setReportModalOpen(true);
     };
@@ -339,7 +332,7 @@ const CommentSection = ({
     const handleSubReplyReport = (subReply, postId) => {
         setReportTarget({
             nickname: getDisplayNickname(subReply),
-            anchor: { type: 'subReply', parentId: postId, targetId: subReply._id }
+            anchor: {type: 'subReply', parentId: postId, targetId: subReply._id}
         });
         setReportModalOpen(true);
     };
@@ -386,7 +379,7 @@ const CommentSection = ({
                         </button>
                         <ReportForm
                             onClose={() => setReportModalOpen(false)}
-                            reportedUser={{ nickname: reportTarget.nickname }}
+                            reportedUser={{nickname: reportTarget.nickname}}
                             anchor={reportTarget.anchor}
                             defaultArea="커뮤니티"
                         />
@@ -420,7 +413,6 @@ const CommentSection = ({
                                 handleAddReply={handleAddReply}
                                 openCommentDeleteModal={openCommentDeleteModal}
                                 handleCommentReport={handleCommentReport}
-                                setComments={setComments}
                                 setCommunity={setCommunity}
                                 API_HOST={API_HOST}
                                 subReplyState={subReplyState}
@@ -444,9 +436,10 @@ const CommentSection = ({
                     <div className="text-center mt-4">
                         <button
                             onClick={loadMoreComments}
-                            className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
+                            disabled={isFetchingNextPage}
+                            className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            더보기
+                            {isFetchingNextPage ? '로딩중...' : '더보기'}
                         </button>
                     </div>
                 )}
@@ -486,9 +479,10 @@ const CommentSection = ({
                         </label>
                         <button
                             onClick={onAddComment}
+                            disabled={isAddingComment}
                             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                         >
-                            등록
+                            {isAddingComment ? '등록 중...' : '등록'}
                         </button>
                     </div>
                 </div>
