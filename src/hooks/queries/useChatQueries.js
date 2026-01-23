@@ -1,5 +1,6 @@
 // src/hooks/queries/useChatQueries.js
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+// 채팅방 목록 캐싱
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     fetchChatRooms,
     getChatRoomInfo,
@@ -55,9 +56,14 @@ export const useUnreadCountsBatch = (roomIds, userId) => {
     return useQuery({
         queryKey: ['unread-counts-batch', roomIds, userId],
         queryFn: () => getUnreadCountsBatch(roomIds, userId),
-        staleTime: 5000,        // 5초
-        gcTime: 60000,          // 1분
-        refetchInterval: 10000, // 10초마다 자동 갱신
+
+        // ✅ 최적화된 설정
+        staleTime: 30000,         // 30초 (5초 → 30초)
+        gcTime: 300000,           // 5분 (1분 → 5분)
+        refetchInterval: false,   // 비활성화 (10초 → false)
+        refetchOnWindowFocus: true,  // 포커스 시에만
+        refetchOnMount: false,    // 마운트 시 재조회 안함
+
         enabled: roomIds.length > 0 && !!userId,
     });
 };
@@ -89,6 +95,113 @@ export const useMarkRoomAsRead = () => {
         onSuccess: () => {
             // 안읽은 개수 캐시 무효화
             queryClient.invalidateQueries(['unread-counts-batch']);
+        },
+    });
+};
+
+/**
+ * 채팅 메시지 무한 스크롤 조회
+ *
+ * @param {string} roomId - 채팅방 ID
+ * @param {string} roomType - 'friend' | 'random'
+ * @param {string} userId - 사용자 ID (권한 확인용)
+ * @returns {UseInfiniteQueryResult}
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage } = useChatMessages(roomId, 'friend', userId);
+ * const messages = data?.pages.flatMap(page => page.messages) || [];
+ */
+export const useChatMessages = (roomId, roomType, userId) => {
+    return useInfiniteQuery({
+        queryKey: ['chat-messages', roomId],
+
+        queryFn: async ({ pageParam = 1 }) => {
+            const { fetchMessages } = await import('../../api/chatAPI');
+            return fetchMessages(roomId, pageParam, 20, userId);
+        },
+
+        getNextPageParam: (lastPage) => {
+            if (lastPage?.pagination?.hasNextPage) {
+                return lastPage.pagination.currentPage + 1;
+            }
+            return undefined;
+        },
+
+        // ✅ 수정: 친구 채팅 3시간, 랜덤 채팅 30분
+        staleTime: 30000,  // 30초
+        gcTime: roomType === 'friend'
+            ? 3 * 60 * 60 * 1000   // 친구: 3시간
+            : 30 * 60 * 1000,      // 랜덤: 30분
+
+        // ✅ 수정: 자동 refetch 비활성화 (수동 제어)
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+
+        enabled: !!roomId && !!userId,
+        initialPageParam: 1,
+
+
+        select: (data) => ({
+            pages: data.pages,
+            pageParams: data.pageParams,
+        }),
+    });
+};
+
+/**
+ * 메시지 삭제 Mutation (낙관적 업데이트)
+ *
+ * @param {string} roomId - 채팅방 ID
+ * @returns {UseMutationResult}
+ *
+ * @example
+ * const deleteMutation = useDeleteMessage(roomId);
+ * deleteMutation.mutate({ messageId: 'msg123' });
+ */
+export const useDeleteMessage = (roomId) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ messageId }) => {
+            const { deleteMessage } = await import('../../api/chatAPI');
+            return deleteMessage(messageId);
+        },
+
+        onMutate: async ({ messageId }) => {
+            await queryClient.cancelQueries({
+                queryKey: ['chat-messages', roomId]
+            });
+
+            const previousMessages = queryClient.getQueryData(['chat-messages', roomId]);
+
+            queryClient.setQueryData(['chat-messages', roomId], (old) => {
+                if (!old?.pages) return old;
+
+                return {
+                    ...old,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        messages: page.messages.map(msg =>
+                            msg._id === messageId
+                                ? { ...msg, isDeleted: true, text: '[삭제된 메시지입니다]' }
+                                : msg
+                        ),
+                    })),
+                };
+            });
+
+            return { previousMessages };
+        },
+
+        onError: (err, variables, context) => {
+            if (context?.previousMessages) {
+                queryClient.setQueryData(['chat-messages', roomId], context.previousMessages);
+            }
+            console.error('메시지 삭제 실패:', err);
+        },
+
+        onSuccess: () => {
+            console.log('✅ 메시지 삭제 완료');
         },
     });
 };
