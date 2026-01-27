@@ -41,14 +41,14 @@ const PollManager = ({
                 <PollComponent
                     key={poll._id}
                     poll={poll}
-                    onVote={(optionIndex) => handleVote(poll._id, optionIndex, setCommunity)}
+                    onVote={(optionIndex) => handleVote(poll._id, optionIndex)}
                     currentUserId={currentUserId}
                     hasVoted={userVotes[poll._id] !== undefined}
                     userVote={userVotes[poll._id]}
                     communityId={community._id}
-                    onRefreshResults={(pollId) => handleRefreshPollResults(pollId, setCommunity)}
-                    onCancelVote={() => handleCancelVote(poll._id, setCommunity)}
-                    onDeletePoll={() => handleDeletePoll(poll._id, setCommunity)}
+                    onRefreshResults={(pollId) => handleRefreshPollResults(pollId)}
+                    onCancelVote={() => handleCancelVote(poll._id)}
+                    onDeletePoll={() => handleDeletePoll(poll._id)}
                     canDeletePoll={canDeletePoll(poll)}
                 />
             ))}
@@ -70,7 +70,7 @@ const PollManager = ({
             <CreatePollModal
                 isOpen={showPollModal}
                 onClose={() => setShowPollModal(false)}
-                onCreatePoll={(pollData) => handleCreatePoll(pollData, setCommunity)}
+                onCreatePoll={(pollData) => handleCreatePoll(pollData)}
             />
         </div>
     );

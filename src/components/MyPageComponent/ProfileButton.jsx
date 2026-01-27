@@ -12,7 +12,10 @@ const ProfileButton = ({ profile: externalProfile, area = '프로필', onModalTo
     const [imgError, setImgError] = useState(false);
 
     // 🆕 사용자 ID 결정
-    const userId = externalProfile?._id || externalProfile?.id || authUser?._id;
+    const rawId = externalProfile?._id || externalProfile?.id || authUser?._id;
+    const userId = (typeof rawId === 'object' && rawId !== null)
+        ? (rawId._id || rawId.id)
+        : rawId;
 
     // 🆕 최소 프로필 조회 (프로필 사진용)
     const {

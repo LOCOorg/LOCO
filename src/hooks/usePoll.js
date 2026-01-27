@@ -1,5 +1,5 @@
-
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
     createPoll,
     votePoll,
@@ -10,6 +10,15 @@ import {
 export const usePoll = (community, currentUserId, isAdmin) => {
     const [userVotes, setUserVotes] = useState({});
     const [showPollModal, setShowPollModal] = useState(false);
+    const queryClient = useQueryClient();
+
+    // 커뮤니티 캐시 업데이트 헬퍼 함수
+    const updateCommunityCache = (updateFn) => {
+        queryClient.setQueryData(['communities', 'detail', community._id], (oldData) => {
+            if (!oldData) return oldData;
+            return updateFn(oldData);
+        });
+    };
 
     // 투표 데이터 로딩 (클라이언트에서 직접 계산)
     useEffect(() => {
@@ -28,11 +37,11 @@ export const usePoll = (community, currentUserId, isAdmin) => {
     }, [community, currentUserId]);
 
     // 투표 생성
-    const handleCreatePoll = async (pollData, setCommunity) => {
+    const handleCreatePoll = async (pollData) => {
         try {
             const newPoll = await createPoll(community._id, pollData);
 
-            setCommunity(prevCommunity => ({
+            updateCommunityCache((prevCommunity) => ({
                 ...prevCommunity,
                 polls: [...(prevCommunity.polls || []), newPoll]
             }));
@@ -45,7 +54,7 @@ export const usePoll = (community, currentUserId, isAdmin) => {
     };
 
     // 투표하기
-    const handleVote = async (pollId, optionIndex, setCommunity) => {
+    const handleVote = async (pollId, optionIndex) => {
         try {
             // 1. 서버에 투표 요청 -> 최신 투표 '수'를 결과로 받음
             const results = await votePoll(community._id, pollId, optionIndex);
@@ -57,7 +66,7 @@ export const usePoll = (community, currentUserId, isAdmin) => {
             }));
 
             // 3. 게시글 데이터(votedUsers)를 업데이트하고, 서버에서 받은 투표 수로 동기화
-            setCommunity(prevCommunity => {
+            updateCommunityCache((prevCommunity) => {
                 const updatedPolls = prevCommunity.polls.map(p => {
                     if (p._id !== pollId) return p;
 
@@ -88,13 +97,12 @@ export const usePoll = (community, currentUserId, isAdmin) => {
 
         } catch (error) {
             console.error('투표 실패:', error);
-            // TODO: Consider reverting optimistic UI updates on error
             throw error;
         }
     };
 
     // 투표 취소
-    const handleCancelVote = async (pollId, setCommunity) => {
+    const handleCancelVote = async (pollId) => {
         try {
             await cancelVote(community._id, pollId);
 
@@ -104,7 +112,7 @@ export const usePoll = (community, currentUserId, isAdmin) => {
             setUserVotes(newUserVotes);
 
             // 2. 게시글 데이터(votedUsers 와 투표 수)를 즉시 업데이트
-            setCommunity(prevCommunity => {
+            updateCommunityCache((prevCommunity) => {
                 const updatedPolls = prevCommunity.polls.map(p => {
                     if (p._id !== pollId) return p;
 
@@ -139,11 +147,11 @@ export const usePoll = (community, currentUserId, isAdmin) => {
     };
 
     // 투표 삭제
-    const handleDeletePoll = async (pollId, setCommunity) => {
+    const handleDeletePoll = async (pollId) => {
         try {
             await deletePoll(community._id, pollId);
 
-            setCommunity(prevCommunity => ({
+            updateCommunityCache((prevCommunity) => ({
                 ...prevCommunity,
                 polls: prevCommunity.polls.filter(poll => poll._id !== pollId)
             }));
@@ -154,6 +162,11 @@ export const usePoll = (community, currentUserId, isAdmin) => {
         } catch (error) {
             console.error('투표 삭제 실패:', error);
         }
+    };
+
+    // 투표 결과 새로고침 (옵션)
+    const handleRefreshPollResults = async (pollId) => {
+        // ... 구현 필요 시 추가
     };
 
     // 투표 삭제 권한 확인
@@ -173,6 +186,7 @@ export const usePoll = (community, currentUserId, isAdmin) => {
         handleVote,
         handleCancelVote,
         handleDeletePoll,
+        handleRefreshPollResults,
         canDeletePoll
     };
 };

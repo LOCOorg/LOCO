@@ -80,10 +80,14 @@ function QnaListComponent() {
 
     // QnA 필터링(관리자만 볼 수 있음 처리)
     const isAdmin = user?.role === 'admin' || user?.userLv >= 2; // admin 판정
-    const isOwner = (qna, user) =>
-        user &&
-        (String(user._id) === String(qna.userId) ||
-            String(user._id) === String(qna.userId?._id));
+    const isOwner = (qna, user) => {
+        if (!user || !qna) return false;
+        
+        // qna.userId가 객체인 경우와 문자열인 경우 모두 처리
+        const qnaUserId = typeof qna.userId === 'object' ? qna.userId._id : qna.userId;
+        
+        return String(user._id) === String(qnaUserId);
+    };
 
 
 
@@ -258,7 +262,7 @@ function QnaListComponent() {
                                         {qna.qnaStatus}
                                       </span>
                                 {qna.isAdminOnly && <span style={{ color: 'gray', fontWeight: 'bold' }}>비공개</span>}
-                                {(user?.userLv >= 2 || user?._id === qna.userId?._id) && (
+                                {(isAdmin || isOwner(qna, user)) && (
                                     <button
                                         onClick={e => {
                                             e.stopPropagation();
@@ -343,7 +347,7 @@ function QnaListComponent() {
                                         {qna.qnaStatus}
                                       </span>
                                 {qna.isAdminOnly && <span style={{ color: 'gray', fontWeight: 'bold' }}>비공개</span>}
-                                {(user?.userLv >= 2 || user?._id === qna.userId?._id) && (
+                                {(isAdmin || isOwner(qna, user)) && (
                                     <button
                                         onClick={e => {
                                             e.stopPropagation();

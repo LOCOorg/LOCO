@@ -7,7 +7,6 @@ import { useCommentPoll } from '../../hooks/useCommentPoll.js';
 const CommentPollManager = ({
                                 comment,
                                 community,
-                                setComments,
                                 currentUserId,
                                 isAdmin
                             }) => {
@@ -21,7 +20,7 @@ const CommentPollManager = ({
         handleDeleteCommentPoll,
         handleRefreshCommentPollResults,
         canDeleteCommentPoll
-    } = useCommentPoll(community, comment, setComments, currentUserId, isAdmin);
+    } = useCommentPoll(community, comment, currentUserId, isAdmin);
 
     // 댓글 투표 생성 권한 확인
     const canCreateCommentPoll = () => {
