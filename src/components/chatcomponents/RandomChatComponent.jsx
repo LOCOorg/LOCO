@@ -114,6 +114,13 @@ const RandomChatComponent = () => {
                 // const rooms = await fetchChatRooms({ roomType: "random", userId });
                 const roomsArray = chatRoomsData?.rooms || [];
                 // const leftRooms = await fetchUserLeftRooms(userId);
+
+                // ✅ 추가 안전 장치 (혹시 모를 경우 대비)
+                if (!Array.isArray(roomsArray)) {
+                    console.warn('⚠️ roomsArray가 배열이 아닙니다:', roomsArray);
+                    return;
+                }
+
                 const blockedIds = (blockedUsers || []).map((u) => u._id);
 
                 const existingRoom = roomsArray.find(
@@ -136,29 +143,47 @@ const RandomChatComponent = () => {
     }, [userInfo, userId, navigate, blockedUsers, initialCheckComplete, chatRoomsData, roomsLoading]);
 
     // 소켓 이벤트 리스너 설정
+    // ✅ 수정: isWaiting 조건을 제거하여 리스너를 항상 등록
+    // 이유: setState는 비동기라서 socket.emit 전에 리스너가 등록되지 않는 타이밍 문제 해결
     useEffect(() => {
-        if (!socket || !isWaiting) return;
+        if (!socket) return;
 
         // 사용자가 방에 참가했을 때
         const handleRoomJoined = ({ roomId, activeUsers, capacity }) => {
-            if (roomId === waitingRoomId) {
-                setCurrentParticipants(activeUsers);
-                setWaitingCapacity(capacity);
+            console.log('🔔 [roomJoined 이벤트 수신]', { roomId, activeUsers: activeUsers?.length, capacity });
+            
+            // ⭐ 안전 장치: activeUsers가 배열인지 확인
+            const participants = Array.isArray(activeUsers) ? activeUsers : [];
+            
+            // 현재 대기 중인 방과 일치하는지 확인 (waitingRoomId는 클로저로 최신값 참조)
+            setWaitingRoomId(prevRoomId => {
+                if (roomId === prevRoomId) {
+                    console.log('✅ [roomJoined] 내 방 이벤트 - 참가자 업데이트');
+                    setCurrentParticipants(participants);
+                    setWaitingCapacity(capacity || 0);
 
-                // 방이 가득 찼으면 ChatRoom으로 이동
-                if (activeUsers.length >= capacity) {
-                    setIsWaiting(false);
-                    setShowWaitingModal(false);
-                    navigate(`/chat/${roomId}/${userId}`);
+                    // 방이 가득 찼으면 ChatRoom으로 이동
+                    if (participants.length >= (capacity || 0)) {
+                        console.log('🎉 [roomJoined] 방 가득 참! 채팅방으로 이동');
+                        setIsWaiting(false);
+                        setShowWaitingModal(false);
+                        navigate(`/chat/${roomId}/${userId}`);
+                    }
                 }
-            }
+                return prevRoomId; // 상태 변경 없음
+            });
         };
 
         // 사용자가 방을 떠났을 때
         const handleUserLeft = ({ roomId, activeUsers }) => {
-            if (roomId === waitingRoomId) {
-                setCurrentParticipants(activeUsers);
-            }
+            console.log('👋 [userLeft 이벤트 수신]', { roomId, activeUsers: activeUsers?.length });
+            
+            setWaitingRoomId(prevRoomId => {
+                if (roomId === prevRoomId) {
+                    setCurrentParticipants(Array.isArray(activeUsers) ? activeUsers : []);
+                }
+                return prevRoomId;
+            });
         };
 
         socket.on("roomJoined", handleRoomJoined);
@@ -168,7 +193,7 @@ const RandomChatComponent = () => {
             socket.off("roomJoined", handleRoomJoined);
             socket.off("userLeft", handleUserLeft);
         };
-    }, [socket, isWaiting, waitingRoomId, userId, navigate]);
+    }, [socket, userId, navigate]);
 
     // 유저 정보 호출 함수
     const fetchUserInfoAsync = async (userId) => {
@@ -567,7 +592,7 @@ const RandomChatComponent = () => {
 
                         <div className="mb-6">
                             <div className="text-3xl font-bold text-blue-600 mb-3">
-                                {currentParticipants.length} / {waitingCapacity}명
+                                {(currentParticipants || []).length} / {waitingCapacity || 0}명
                             </div>
                             <div className="text-sm text-gray-600 mb-4">
                                 다른 사용자를 기다리고 있습니다...

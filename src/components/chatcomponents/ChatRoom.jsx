@@ -166,10 +166,16 @@ const ChatRoom = ({roomId, userId}) => {
         // React Query 캐시에 메시지
         if (message.sender._id !== userId) {
             queryClient.setQueryData(['chat-messages', roomId], (old) => {
-                if (!old?.pages) return old;
+                if (!old?.pages) {
+                    console.log(`⚠️ [Socket] 캐시 없음 - 초기 구조 생성`);
+                    // 캐시가 없으면 초기 구조 생성
+                    return {
+                        pages: [{ messages: [message], nextCursor: null }],
+                        pageParams: [null]
+                    };
+                }
 
-                const newPages = [...old.pages];
-                const lastPage = newPages[newPages.length - 1];
+                const lastPage = old.pages[old.pages.length - 1];
 
                 // ✅ 중복 체크 (2단계)
                 if (lastPage.messages.some(m => m._id === message._id)) {
@@ -177,9 +183,18 @@ const ChatRoom = ({roomId, userId}) => {
                     return old;
                 }
 
-                lastPage.messages = [...lastPage.messages, message];
-                console.log(`✅ [Socket] 메시지 추가: ${message.text?.slice(0, 30)}...`);
+                // ✅ 불변성 유지: 새로운 객체로 생성
+                const newPages = old.pages.map((page, index) => {
+                    if (index === old.pages.length - 1) {
+                        return {
+                            ...page,
+                            messages: [...page.messages, message]
+                        };
+                    }
+                    return page;
+                });
 
+                console.log(`✅ [Socket] 메시지 추가: ${message.text?.slice(0, 30)}...`);
 
                 return { ...old, pages: newPages };
             });
@@ -402,16 +417,30 @@ const ChatRoom = ({roomId, userId}) => {
                     sender: { _id: userId, nickname: userName } // sender 정보를 프론트엔드 형식에 맞게 재구성
                 };
 
-                // ✅ React Query 캐시에 메시지 추가
+                // ✅ React Query 캐시에 메시지 추가 (불변성 유지)
                 queryClient.setQueryData(['chat-messages', roomId], (old) => {
-                    if (!old?.pages) return old;
-
-                    const newPages = [...old.pages];
-                    const lastPage = newPages[newPages.length - 1];
-
-                    if (!lastPage.messages.some(m => m._id === receivedMessage._id)) {
-                        lastPage.messages = [...lastPage.messages, receivedMessage];
+                    if (!old?.pages) {
+                        // ✅ 캐시가 없으면 초기 구조 생성
+                        return {
+                            pages: [{ messages: [receivedMessage], nextCursor: null }],
+                            pageParams: [null]
+                        };
                     }
+
+                    // ✅ 불변성 유지: 새로운 객체로 생성 (handleReceiveMessage와 동일한 방식)
+                    const newPages = old.pages.map((page, index) => {
+                        if (index === old.pages.length - 1) {
+                            // 중복 체크
+                            if (page.messages.some(m => m._id === receivedMessage._id)) {
+                                return page;
+                            }
+                            return {
+                                ...page,
+                                messages: [...page.messages, receivedMessage]
+                            };
+                        }
+                        return page;
+                    });
 
                     return { ...old, pages: newPages };
                 });
@@ -532,110 +561,133 @@ const ChatRoom = ({roomId, userId}) => {
 
 
     useEffect(() => {
-
-        if (socket) {
-            socket.emit("joinRoom", roomId, "random");
-            // 참가자 입장 시: ID → { _id, nickname } 형태로 변환
-            socket.on("roomJoined", async ({
-                                               roomId: eventRoomId,  // ✅ roomId를 eventRoomId로 rename
-                                               chatUsers,
-                                               activeUsers,
-                                               capacity,
-                                               isActive,
-                                               status
-                                           }) => {
-
-                try {
-                    if (eventRoomId !== roomId)  {
-                        console.log("⚠️ 다른 방의 이벤트 무시:", eventRoomId);
-                        return;
-                    } // ✅ roomId 검증
-
-                    console.log("✅ roomJoined 이벤트 수신:", {
-                        chatUsers: chatUsers?.length,
-                        activeUsers: activeUsers?.length,
-                        capacity,
-                        isActive,
-                        status
-                    });
-
-                    setRoomInfo({ chatUsers, activeUsers, capacity, isActive, status });
-
-                    // ✅ 캐시 활용: 먼저 캐시 확인, 없으면 API 호출
-                    const participantsWithNames = await Promise.all(
-                        activeUsers.map(async u => {
-                            const id = typeof u === "object" ? u._id : u;
-
-                            // 1️⃣ 캐시 확인
-                            const cachedUser = queryClient.getQueryData(['userMinimal', id]);
-
-                            if (cachedUser) {
-                                // ✅ 캐시 히트 - 즉시 반환
-                                console.log(`✅ [참가자-캐시히트] ${cachedUser.nickname}`);
-                                return {
-                                    _id: id,
-                                    nickname: cachedUser.nickname,
-                                    profilePhoto: cachedUser.profilePhoto
-                                };
-                            } else {
-                                // ⚠️ 캐시 미스 - API 호출
-                                console.log(`⚠️ [참가자-캐시미스] ${id} 조회 중`);
-                                const userInfo = await getUserBasic(id);
-
-                                // 2️⃣ 캐시에 저장
-                                queryClient.setQueryData(['userMinimal', id], {
-                                    _id: id,
-                                    nickname: userInfo.nickname,
-                                    profilePhoto: userInfo.profilePhoto
-                                });
-
-                                console.log(`💾 [참가자-캐시저장] ${userInfo.nickname}`);
-
-                                return {
-                                    _id: id,
-                                    nickname: userInfo.nickname || "알 수 없음",
-                                    profilePhoto: userInfo.profilePhoto
-                                };
-                            }
-                        })
-                    );
-
-                    setParticipants(participantsWithNames);
-                    setCapacity(capacity);
-                } catch (err) {
-                    console.error("참가자 정보 조회 오류:", err);
-                }
-            });
-            socket.on("receiveMessage", handleReceiveMessage);
-            socket.on("userLeft", handleUserLeft);
-            socket.on("systemMessage", handleSystemMessage);
-            socket.on("messageDeleted", ({messageId}) => {
-                queryClient.setQueryData(['chat-messages', roomId], (old) => {
-                    if (!old?.pages) return old;
-
-                    return {
-                        ...old,
-                        pages: old.pages.map(page => ({
-                            ...page,
-                            messages: page.messages.map(msg =>
-                                msg._id === messageId
-                                    ? { ...msg, isDeleted: true, text: '[삭제된 메시지입니다]' }
-                                    : msg
-                            ),
-                        })),
-                    };
-                });
-            });
-
-            return () => {
-                socket.off("roomJoined");
-                socket.off("receiveMessage", handleReceiveMessage);
-                socket.off("messageDeleted");
-                socket.off("userLeft", handleUserLeft);
-            };
+        // ✅ 소켓이 없으면 조기 반환
+        if (!socket) {
+            console.log('⚠️ [ChatRoom] 소켓 없음 - 이벤트 리스너 등록 대기');
+            return;
         }
 
-    }, [roomId, socket, userId]);
+        console.log('✅ [ChatRoom] 소켓 이벤트 리스너 등록 시작:', socket.id);
+
+        // ✅ 소켓 연결 시 방 참가 실행
+        const handleConnect = () => {
+            console.log('✅ [ChatRoom] 소켓 연결됨 - joinRoom 실행:', socket.id);
+            socket.emit("joinRoom", roomId, "random");
+        };
+
+        // ✅ 항상 connect 이벤트 리스너 등록 (재연결 대비)
+        socket.on('connect', handleConnect);
+
+        // ✅ 이미 연결된 상태라면 즉시 joinRoom 호출
+        if (socket.connected) {
+            socket.emit("joinRoom", roomId, "random");
+        }
+
+        // ✅ roomJoined 핸들러
+        const handleRoomJoined = async ({
+            roomId: eventRoomId,
+            chatUsers,
+            activeUsers,
+            capacity: roomCapacity,
+            isActive,
+            status
+        }) => {
+            try {
+                if (eventRoomId !== roomId) {
+                    console.log("⚠️ 다른 방의 이벤트 무시:", eventRoomId);
+                    return;
+                }
+
+                console.log("✅ roomJoined 이벤트 수신:", {
+                    chatUsers: chatUsers?.length,
+                    activeUsers: activeUsers?.length,
+                    capacity: roomCapacity,
+                    isActive,
+                    status
+                });
+
+                setRoomInfo({ chatUsers, activeUsers, capacity: roomCapacity, isActive, status });
+
+                // 캐시 활용: 먼저 캐시 확인, 없으면 API 호출
+                const participantsWithNames = await Promise.all(
+                    activeUsers.map(async u => {
+                        const id = typeof u === "object" ? u._id : u;
+
+                        // 1️⃣ 캐시 확인
+                        const cachedUser = queryClient.getQueryData(['userMinimal', id]);
+
+                        if (cachedUser) {
+                            return {
+                                _id: id,
+                                nickname: cachedUser.nickname,
+                                profilePhoto: cachedUser.profilePhoto
+                            };
+                        } else {
+                            const userInfo = await getUserBasic(id);
+
+                            // 2️⃣ 캐시에 저장
+                            queryClient.setQueryData(['userMinimal', id], {
+                                _id: id,
+                                nickname: userInfo.nickname,
+                                profilePhoto: userInfo.profilePhoto
+                            });
+
+                            return {
+                                _id: id,
+                                nickname: userInfo.nickname || "알 수 없음",
+                                profilePhoto: userInfo.profilePhoto
+                            };
+                        }
+                    })
+                );
+
+                setParticipants(participantsWithNames);
+                setCapacity(roomCapacity);
+            } catch (err) {
+                console.error("참가자 정보 조회 오류:", err);
+            }
+        };
+
+        // ✅ messageDeleted 핸들러
+        const handleMessageDeleted = ({ messageId }) => {
+            queryClient.setQueryData(['chat-messages', roomId], (old) => {
+                if (!old?.pages) return old;
+
+                return {
+                    ...old,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        messages: page.messages.map(msg =>
+                            msg._id === messageId
+                                ? { ...msg, isDeleted: true, text: '[삭제된 메시지입니다]' }
+                                : msg
+                        ),
+                    })),
+                };
+            });
+        };
+
+        // ✅ 이벤트 리스너 등록
+        socket.on("roomJoined", handleRoomJoined);
+        socket.on("receiveMessage", handleReceiveMessage);
+        socket.on("userLeft", handleUserLeft);
+        socket.on("systemMessage", handleSystemMessage);
+        socket.on("messageDeleted", handleMessageDeleted);
+
+        console.log('✅ [ChatRoom] 모든 이벤트 리스너 등록 완료');
+
+        // ✅ Cleanup: 소켓이 변경되거나 컴포넌트 언마운트 시
+        return () => {
+            console.log('🧹 [ChatRoom] 이벤트 리스너 정리:', socket.id);
+            socket.off('connect', handleConnect);
+            socket.off("roomJoined", handleRoomJoined);
+            socket.off("receiveMessage", handleReceiveMessage);
+            socket.off("userLeft", handleUserLeft);
+            socket.off("systemMessage", handleSystemMessage);
+            socket.off("messageDeleted", handleMessageDeleted);
+        };
+
+    }, [roomId, socket, userId, queryClient]);
 
 
     // 증분 동기화 (불변성 준수 + 소켓 재연결 감지 + 백업 폴링)
@@ -721,30 +773,19 @@ const ChatRoom = ({roomId, userId}) => {
         };
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 실행 시점 1: 마운트 시 또는 소켓 재연결 시
+        // 실행 시점: 마운트 시 (다른 페이지 갔다 돌아올 때)
+        // - 주기적 폴링 제거 (랜덤채팅은 소켓 실시간으로 충분)
+        // - 이벤트 리스너 해제 → 재등록 사이에 놓친 메시지만 동기화
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        console.log('🔄 [증분동기화] useEffect 실행 - 즉시 동기화');
+        console.log('🔄 [증분동기화] 컴포넌트 마운트 - 놓친 메시지 동기화');
         syncNewMessages();
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 실행 시점 2: 백업 타이머 (30초마다)
-        // 이유: 소켓이 연결되어 있어도 패킷 누락 가능성 대비
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const intervalId = setInterval(() => {
-            // 화면이 보일 때만 실행 (백그라운드 낭비 방지)
-            if (document.visibilityState === 'visible') {
-                console.log('⏰ [백업폴링] 30초 경과 - 증분 동기화 체크');
-                syncNewMessages();
-            }
-        }, 30000);  // 30초
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // Cleanup
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         return () => {
-            console.log('🧹 [증분동기화] Cleanup - 타이머 중지 & 플래그 설정');
+            console.log('🧹 [증분동기화] Cleanup');
             isCancelled = true;
-            clearInterval(intervalId);
         };
 
     }, [roomId, queryClient, socket?.connected]);
