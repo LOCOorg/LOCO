@@ -190,62 +190,90 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
     };
 
     useEffect(() => {
-        if (socket && roomId) {
+        // ✅ BUG 4 수정: 소켓 없으면 조기 반환
+        if (!socket || !roomId) return;
+
+        // ✅ BUG 4 수정: 재연결 시 자동으로 방 재참가 (ChatRoom.jsx와 동일 패턴)
+        const handleConnect = () => {
+            console.log('✅ [ChatOverlay] 소켓 연결됨 - joinRoom 실행:', socket.id);
             socket.emit("joinRoom", roomId, "friend");
+        };
 
-            const handleReceiveMessage = async (message) => {
-                if (message.chatRoom !== roomId) return;
+        socket.on('connect', handleConnect);
 
-                // ✅ sender가 문자열이면 캐시에서 사용자 정보 가져오기
-                if (typeof message.sender === "string") {
-                    const senderId = message.sender;
-
-                    // 캐시 확인
-                    const cachedUser = queryClient.getQueryData(['userMinimal', senderId]);
-
-                    if (cachedUser) {
-                        message.sender = { _id: senderId, ...cachedUser };
-                    } else {
-                        // 캐시 미스 - API 호출 및 저장
-                        const { getUserBasic } = await import('../../api/userLightAPI');
-                        const user = await getUserBasic(senderId);
-                        message.sender = { _id: senderId, ...user };
-                        queryClient.setQueryData(['userMinimal', senderId], user);
-                    }
-                }
-
-                const normalizedMessage = {
-                    ...message,
-                    sender: message.sender.id
-                        ? { _id: message.sender.id, name: message.sender.name, nickname: message.sender.nickname }
-                        : message.sender,
-                };
-                // ✅ React Query 캐시에 메시지 추가
-                queryClient.setQueryData(['chat-messages', roomId], (old) => {
-                    if (!old?.pages) return old;
-
-                    const newPages = [...old.pages];
-                    const lastPage = newPages[newPages.length - 1];
-
-                    // 중복 체크 후 추가
-                    if (!lastPage.messages.some(m => m._id === normalizedMessage._id)) {
-                        lastPage.messages = [...lastPage.messages, normalizedMessage];
-                    }
-
-                    return { ...old, pages: newPages };
-                });
-
-                const isFromOther = message.sender?._id !== senderId || message.sender?.id !== senderId;
-                if (isFromOther && document.hasFocus()) {
-                    // Debounced 읽음 처리 (1초에 1번만)
-                    debouncedMarkAsRead(roomId, senderId);
-                }
-                if (onMessageSent) onMessageSent(roomId);
-            };
-
-            socket.on("receiveMessage", handleReceiveMessage);
-            return () => socket.off("receiveMessage", handleReceiveMessage);
+        // ✅ 이미 연결된 상태라면 즉시 joinRoom
+        if (socket.connected) {
+            socket.emit("joinRoom", roomId, "friend");
         }
+
+        const handleReceiveMessage = async (message) => {
+            if (message.chatRoom !== roomId) return;
+
+            // ✅ sender가 문자열이면 캐시에서 사용자 정보 가져오기
+            if (typeof message.sender === "string") {
+                const msgSenderId = message.sender;
+
+                // 캐시 확인
+                const cachedUser = queryClient.getQueryData(['userMinimal', msgSenderId]);
+
+                if (cachedUser) {
+                    message.sender = { _id: msgSenderId, ...cachedUser };
+                } else {
+                    // 캐시 미스 - API 호출 및 저장
+                    const { getUserBasic } = await import('../../api/userLightAPI');
+                    const user = await getUserBasic(msgSenderId);
+                    message.sender = { _id: msgSenderId, ...user };
+                    queryClient.setQueryData(['userMinimal', msgSenderId], user);
+                }
+            }
+
+            const normalizedMessage = {
+                ...message,
+                sender: message.sender.id
+                    ? { _id: message.sender.id, name: message.sender.name, nickname: message.sender.nickname }
+                    : message.sender,
+            };
+            // ✅ BUG 2 수정: React Query 캐시 불변성 유지 (새 page 객체 생성)
+            queryClient.setQueryData(['chat-messages', roomId], (old) => {
+                if (!old?.pages) return old;
+
+                const lastIndex = old.pages.length - 1;
+                const lastPage = old.pages[lastIndex];
+
+                // 중복 체크
+                if (lastPage.messages.some(m => m._id === normalizedMessage._id)) {
+                    return old;
+                }
+
+                return {
+                    ...old,
+                    pages: old.pages.map((page, index) => {
+                        if (index === lastIndex) {
+                            return {
+                                ...page,
+                                messages: [...page.messages, normalizedMessage]
+                            };
+                        }
+                        return page;
+                    })
+                };
+            });
+
+            // ✅ BUG 3 수정: || → && (둘 다 불일치해야 타인 메시지)
+            const isFromOther = message.sender?._id !== senderId && message.sender?.id !== senderId;
+            if (isFromOther && document.hasFocus()) {
+                // Debounced 읽음 처리 (1초에 1번만)
+                debouncedMarkAsRead(roomId, senderId);
+            }
+            if (onMessageSent) onMessageSent(roomId);
+        };
+
+        socket.on("receiveMessage", handleReceiveMessage);
+
+        return () => {
+            socket.off('connect', handleConnect);
+            socket.off("receiveMessage", handleReceiveMessage);
+        };
     }, [socket, roomId, onMessageSent, senderId, debouncedMarkAsRead]);
 
 
@@ -400,18 +428,29 @@ function ChatOverlay({ roomId, isSidePanel = false, onMessageSent }) {
                                 ? { _id: response.message.sender.id, name: response.message.sender.name }
                                 : response.message.sender,
                         };
-                        // ✅ React Query 캐시에 메시지 추가
+                        // ✅ BUG 2 수정: React Query 캐시 불변성 유지 (새 page 객체 생성)
                         queryClient.setQueryData(['chat-messages', roomId], (old) => {
                             if (!old?.pages) return old;
 
-                            const newPages = [...old.pages];
-                            const lastPage = newPages[newPages.length - 1];
+                            const lastIndex = old.pages.length - 1;
+                            const lastPage = old.pages[lastIndex];
 
-                            if (!lastPage.messages.some(m => m._id === normalizedMessage._id)) {
-                                lastPage.messages = [...lastPage.messages, normalizedMessage];
+                            if (lastPage.messages.some(m => m._id === normalizedMessage._id)) {
+                                return old;
                             }
 
-                            return { ...old, pages: newPages };
+                            return {
+                                ...old,
+                                pages: old.pages.map((page, index) => {
+                                    if (index === lastIndex) {
+                                        return {
+                                            ...page,
+                                            messages: [...page.messages, normalizedMessage]
+                                        };
+                                    }
+                                    return page;
+                                })
+                            };
                         });
 
                         if (onMessageSent) onMessageSent(roomId);
