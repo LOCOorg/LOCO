@@ -43,6 +43,7 @@ const CommunityList = () => {
     const [selectedCategory, setSelectedCategory] = useState(initialCategory);
     const [selectedSort, setSelectedSort] = useState('최신순');
     const [keyword, setKeyword] = useState('');
+    const [searchKeyword, setSearchKeyword] = useState(''); // ✅ 실제 검색어 상태 분리
     const [searchType, setSearchType] = useState('title+content');
     const [selectedPeriod, setSelectedPeriod] = useState('전체');
 
@@ -64,7 +65,7 @@ const CommunityList = () => {
             ? currentUserId
             : null,
         sort: selectedSort,
-        keyword,
+        keyword: searchKeyword, // ✅ 실제 검색어 상태 사용
         searchType,
         period: selectedPeriod,
     });
@@ -101,8 +102,8 @@ const CommunityList = () => {
 
     // 이벤트 핸들러
     const handleSearch = () => {
+        setSearchKeyword(keyword); // ✅ 검색 버튼/엔터 클릭 시에만 검색어 반영
         setCurrentPage(1);
-
     };
 
     const handleCategoryClick = (category) => {
