@@ -174,53 +174,38 @@ const FriendChatSidePanel = () => {
 
         console.log('📬 [Socket] 안읽은 개수 업데이트:', data);
 
-        setRoomSummary(prev => {
-            const existing = prev[roomId];
+        // ✅ Zustand getState()로 현재 상태를 직접 읽기
+        const { roomSummaries } = useFriendChatStore.getState();
+        const existing = roomSummaries[roomId];
 
-            // 채팅방 정보가 없으면 무시
-            if (!existing) {
-                console.warn('⚠️ [Socket] 알 수 없는 채팅방:', roomId);
-                return prev;
-            }
+        // 채팅방 정보가 없으면 무시
+        if (!existing) {
+            console.warn('⚠️ [Socket] 알 수 없는 채팅방:', roomId);
+            return;
+        }
 
-            // reset: 읽음 처리로 0으로 리셋
-            if (reset) {
-                console.log(`✅ [Socket] ${roomId} 읽음 처리 (0으로 리셋)`);
-                return {
-                    ...prev,
-                    [roomId]: {
-                        ...existing,
-                        unreadCount: 0
-                    }
-                };
-            }
+        let newUnreadCount = existing.unreadCount;
 
-            // 🆕 increment: 개수 증가 (메시지 수신 시)
-            if (increment) {
-                const newCount = (existing.unreadCount || 0) + increment;
-                console.log(`✅ [Socket] ${roomId} 개수 증가: ${existing.unreadCount} → ${newCount}`);
-                return {
-                    ...prev,
-                    [roomId]: {
-                        ...existing,
-                        unreadCount: newCount
-                    }
-                };
-            }
+        // reset: 읽음 처리로 0으로 리셋
+        if (reset) {
+            console.log(`✅ [Socket] ${roomId} 읽음 처리 (0으로 리셋)`);
+            newUnreadCount = 0;
+        }
+        // 🆕 increment: 개수 증가 (메시지 수신 시)
+        else if (increment) {
+            newUnreadCount = (existing.unreadCount || 0) + increment;
+            console.log(`✅ [Socket] ${roomId} 개수 증가: ${existing.unreadCount} → ${newUnreadCount}`);
+        }
+        // unreadCount: 직접 값 설정 (주로 재연결 시)
+        else if (typeof unreadCount === 'number') {
+            console.log(`✅ [Socket] ${roomId} 개수 설정: ${unreadCount}`);
+            newUnreadCount = unreadCount;
+        }
 
-            // unreadCount: 직접 값 설정 (주로 재연결 시)
-            if (typeof unreadCount === 'number') {
-                console.log(`✅ [Socket] ${roomId} 개수 설정: ${unreadCount}`);
-                return {
-                    ...prev,
-                    [roomId]: {
-                        ...existing,
-                        unreadCount: unreadCount
-                    }
-                };
-            }
-
-            return prev;
+        // ✅ 올바른 시그니처: setRoomSummary(roomId, summary)
+        setRoomSummary(roomId, {
+            ...existing,
+            unreadCount: newUnreadCount
         });
     }, [setRoomSummary]);
 
