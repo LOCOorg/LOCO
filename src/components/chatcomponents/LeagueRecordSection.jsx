@@ -122,7 +122,7 @@ export default function LeagueRecordSection({ partnerRecords, loading, error }) 
 
                                 {/* 가로 스크롤 가능하도록 변경 및 마우스 휠 이벤트 추가 */}
                                 <div
-                                    className="flex overflow-x-auto gap-2 justify-start pb-2 custom-scrollbar"
+                                    className="flex overflow-x-auto gap-2 justify-start pb-2 custom-scrollbar max-w-[440px]"
                                     ref={(el) => (scrollRefs.current[index] = el)}
                                 >
                                     {record.leagueRecord.recentRanked.map((match, matchIndex) => (
