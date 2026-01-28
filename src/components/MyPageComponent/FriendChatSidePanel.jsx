@@ -719,6 +719,7 @@ const FriendChatSidePanel = () => {
     useEffect(() => {
         if (shouldOpenPanel && targetRoomId && user?._id) {
             setShowPanel(true);
+            setMobileTab('chats'); // ✅ 모바일 탭 채팅으로 전환
             const targetRoom = friendRooms?.find(room =>
                 room && room.roomId === targetRoomId
             );
