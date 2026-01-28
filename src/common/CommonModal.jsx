@@ -1,6 +1,6 @@
 
 // eslint-disable-next-line react/prop-types
-const CommonModal = ({ isOpen, onClose, title, children, onConfirm, showCancel = true, zIndex = 1500 }) => {
+const CommonModal = ({ isOpen, onClose, title, children, onConfirm, showCancel = true, zIndex = 1500, isLoading = false }) => {
     if (!isOpen) return null;
 
     return (
@@ -11,17 +11,19 @@ const CommonModal = ({ isOpen, onClose, title, children, onConfirm, showCancel =
                 <div className="flex justify-end space-x-2">
                     {showCancel && (
                         <button
-                            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={onClose}
+                            disabled={isLoading}
                         >
                             취소
                         </button>
                     )}
                     <button
-                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={onConfirm}
+                        disabled={isLoading}
                     >
-                        확인
+                        {isLoading ? '처리 중...' : '확인'}
                     </button>
                 </div>
             </div>
