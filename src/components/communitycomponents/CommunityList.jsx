@@ -253,19 +253,19 @@ const CommunityList = () => {
                             return (
                                 <li
                                     key={community._id}
-                                    className="flex flex-col-reverse sm:flex-row bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow gap-4"
+                                    onClick={() => navigate(`/community/${community._id}`)}
+                                    className="flex flex-col-reverse sm:flex-row bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow gap-4 cursor-pointer"
                                 >
 
                                     <div className="flex-1 flex flex-col justify-between min-w-0">
-                                        <button
-                                            onClick={() => navigate(`/community/${community._id}`)}
+                                        <div
                                             className="text-lg font-semibold text-blue-600 hover:underline text-left truncate w-full"
                                         >
                                             {community.communityTitle}{' '}
                                             <span className="text-sm text-gray-500 whitespace-nowrap">
                                                 ({community.communityCategory})
                                             </span>
-                                        </button>
+                                        </div>
 
                                         <div className="mt-3 text-xs text-gray-500 flex flex-wrap gap-y-1 gap-x-3 items-center">
                                             <span>
