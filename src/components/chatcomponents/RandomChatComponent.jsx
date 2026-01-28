@@ -19,6 +19,8 @@ import SimpleProfileModal from "../MyPageComponent/SimpleProfileModal.jsx";
 import useAuthStore from "../../stores/authStore.js";
 import useBlockedStore from "../../stores/useBlockedStore.js";
 
+const REFILL_MS = 20 * 60 * 1000; // 충전 주기: 20분 (서버와 동일)
+
 const RandomChatComponent = () => {
     const [capacity, setCapacity] = useState(2);
     const [matchedGender, setMatchedGender] = useState("any");
@@ -79,18 +81,24 @@ const RandomChatComponent = () => {
         });
     };
 
-    // ① 주기적 카운트다운
+    // ① 주기적 카운트다운 + 프론트 충전 계산
     useEffect(() => {
-        if (!userInfo?.nextRefillAt) return;
+        if (!userInfo?.nextRefillAt || !userInfo?.maxChatCount) return;
+        if (userInfo.numOfChat >= userInfo.maxChatCount) return; // 풀충전이면 타이머 불필요
 
         const tick = () => {
             const diff = new Date(userInfo.nextRefillAt) - Date.now();
             if (diff <= 0) {
+                // 타이머 만료 → 프론트에서 직접 +1 (API 호출 없음)
+                const newCount = Math.min(userInfo.numOfChat + 1, userInfo.maxChatCount);
+                const isFull = newCount >= userInfo.maxChatCount;
+
+                setUserInfo(prev => ({
+                    ...prev,
+                    numOfChat: newCount,
+                    nextRefillAt: isFull ? null : new Date(Date.now() + REFILL_MS).toISOString()
+                }));
                 setTimeLeft(null);
-                // 타이머가 만료되면 사용자 정보를 다시 불러와 횟수를 갱신합니다.
-                if (userId) {
-                    fetchUserInfoAsync(userId);
-                }
                 return;
             }
             const h = String(Math.floor(diff / 3_600_000)).padStart(2, "0");
@@ -101,7 +109,7 @@ const RandomChatComponent = () => {
         tick();                               // 최초 계산
         const id = setInterval(tick, 1_000);  // 1 초마다 갱신
         return () => clearInterval(id);       // 클린업
-    }, [userInfo?.nextRefillAt, userId]);
+    }, [userInfo?.nextRefillAt, userInfo?.numOfChat, userInfo?.maxChatCount]);
 
     useEffect(() => {
         const checkForActiveRandomChat =  () => {
