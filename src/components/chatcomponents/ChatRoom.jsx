@@ -65,6 +65,7 @@ const ChatRoom = ({roomId, userId}) => {
     const [alertMessage, setAlertMessage] = useState('');
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isLeaving, setIsLeaving] = useState(false);
     const { removeNotificationsByRoom } = useNotificationStore();
     const wordFilterEnabled = useNotificationStore(state => state.wordFilterEnabled);
 
@@ -233,6 +234,9 @@ const ChatRoom = ({roomId, userId}) => {
 
 
     const confirmLeaveRoom = async () => {
+        if (isLeaving) return; // 중복 실행 방지
+        setIsLeaving(true);
+
         try {
             /* 0) 현재 방 상태 재조회 ― 활성화됐는지 확인 */
             const isChatActive =
@@ -251,9 +255,8 @@ const ChatRoom = ({roomId, userId}) => {
                 );
             }
 
-            /* 2) 방 나가기 + 채팅 횟수 차감 (재시도 메커니즘 적용) */
-            // ✅ leaveChatRoom에도 재시도 로직 추가
-            const leaveRoomPromise = retryWithBackoff(
+            /* 2) 방 나가기 (핵심 동작) */
+            const leaveResponse = await retryWithBackoff(
                 () => leaveChatRoom(roomId, userId),
                 {
                     maxRetries: 3,
@@ -269,11 +272,11 @@ const ChatRoom = ({roomId, userId}) => {
                 }
             );
 
-            const promises = [leaveRoomPromise];
+            if (leaveResponse.success) {
+                if (socket) socket.emit("leaveRoom", { roomId, userId, status: roomInfo?.status || 'active' });
 
-            if (isChatActive) {
-                // 🔄 재시도 메커니즘 적용: 최대 3번, 1-2-3초 대기
-                promises.push(
+                /* 3) 채팅 횟수 차감 (실패해도 나가기에 영향 없음) */
+                if (isChatActive) {
                     retryWithBackoff(
                         () => decrementChatCount(userId),
                         {
@@ -284,23 +287,31 @@ const ChatRoom = ({roomId, userId}) => {
                                 console.warn(
                                     `🔄 채팅 횟수 차감 재시도 중... ` +
                                     `(${attempt}/${maxRetries}) ` +
-                                    `다음 재시도: ${delay}ms 후`+
-                                    `❌ 오류 원인: ${error.response?.data?.message || error.message || '알 수 없는 오류'}` // 이 로직 한줄 추가한거임 문제생기면 삭제
+                                    `다음 재시도: ${delay}ms 후` +
+                                    `❌ 오류 원인: ${error.response?.data?.message || error.message || '알 수 없는 오류'}`
                                 );
                             }
                         }
-                    )
-                );
-            }
+                    ).then(result => {
+                        // 차감 결과를 React Query 캐시에 반영 → 복귀 시 최신 데이터 표시
+                        if (result?.success) {
+                            queryClient.setQueryData(['chat-status', userId], (old) =>
+                                old ? { ...old, numOfChat: result.numOfChat, maxChatCount: result.maxChatCount, nextRefillAt: result.nextRefillAt } : old
+                            );
+                        }
+                    }).catch(err => {
+                        console.error('❌ 채팅 횟수 차감 최종 실패 (나가기는 완료됨):', err);
+                    });
+                }
 
-            const [leaveResponse] = await Promise.all(promises);
+                // 채팅방 목록 캐시 제거 (RandomChatComponent의 자동 리다이렉트 방지)
+                queryClient.removeQueries({ queryKey: ['chat-rooms'] });
 
-            if (leaveResponse.success) {
-                if (socket) socket.emit("leaveRoom", { roomId, userId });
+                setIsModalOpen(false);
                 navigate("/chat", { replace: true });
             }
         } catch (error) {
-            // ✅ 이 시점에 도달했다는 건 이미 3번 재시도 후 최종 실패!
+            // ✅ 이 시점에 도달했다는 건 leaveChatRoom이 3번 재시도 후 최종 실패!
             console.error("❌ [최종 실패] 채팅방 나가기 실패:", error);
 
             const errorCode = error.response?.data?.errorCode;
@@ -331,7 +342,9 @@ const ChatRoom = ({roomId, userId}) => {
                 case 'ALREADY_LEFT':
                     // ✅ 이미 퇴장 - 성공으로 간주 (재시도 불필요)
                     console.log('✅ [이미 퇴장] 성공으로 간주');
-                    if (socket) socket.emit("leaveRoom", { roomId, userId });
+                    if (socket) socket.emit("leaveRoom", { roomId, userId, status: roomInfo?.status || 'active' });
+                    queryClient.removeQueries({ queryKey: ['chat-rooms'] });
+                    setIsModalOpen(false);
                     navigate("/chat", { replace: true });
                     return;
 
@@ -391,8 +404,10 @@ const ChatRoom = ({roomId, userId}) => {
                         setIsAlertOpen(true);
                     }
             }
+            // ❌ 에러 시 모달을 닫지 않음 — 사용자가 다시 "확인"을 누를 수 있도록 유지
+        } finally {
+            setIsLeaving(false);
         }
-        setIsModalOpen(false);
     };
 
 
@@ -539,12 +554,20 @@ const ChatRoom = ({roomId, userId}) => {
         queryClient.setQueryData(['chat-messages', roomId], (old) => {
             if (!old?.pages) return old;
 
-            const newPages = [...old.pages];
-            const lastPage = newPages[newPages.length - 1];
-
-            if (!lastPage.messages.some(m => m._id === msg._id)) {
-                lastPage.messages = [...lastPage.messages, msg];
-            }
+            const newPages = old.pages.map((page, index) => {
+                if (index === old.pages.length - 1) {
+                    // 중복 체크
+                    if (page.messages.some(m => m._id === msg._id)) {
+                        return page;
+                    }
+                    // 새 페이지 객체 생성 (불변성 유지)
+                    return {
+                        ...page,
+                        messages: [...page.messages, msg]
+                    };
+                }
+                return page;
+            });
 
             return { ...old, pages: newPages };
         });
@@ -1060,6 +1083,7 @@ const ChatRoom = ({roomId, userId}) => {
                         : "채팅 종료"
                 }
                 onConfirm={confirmLeaveRoom}
+                isLoading={isLeaving}
             >
                 {evaluationUsers.filter((user) => {
                     const participantId = typeof user === "object" ? user._id : user;
