@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import {useEffect, useState} from 'react';
 import CommonModal from '../../common/CommonModal.jsx';
 import { useNotifications, useMarkAsReadAndDelete } from '../../hooks/queries/useNotificationQueries';
 import useAuthStore from '../../stores/authStore.js';
@@ -15,13 +15,14 @@ const NotificationModal = () => {
         error
     } = useNotifications(user?._id, {
         enabled: !!user?._id,
-        onSuccess: (data) => {
-            // 알림이 있으면 모달 열기
-            if (data && data.length > 0) {
-                setIsModalOpen(true);
-            }
-        }
     });
+
+    // 🆕 React Query v5에서는 onSuccess가 지원되지 않으므로 useEffect 사용
+    useEffect(() => {
+        if (notifications && notifications.length > 0 && !isModalOpen) {
+            setIsModalOpen(true);
+        }
+    }, [notifications, isModalOpen]);
 
     // 🆕 삭제 Mutation Hook
     const markAsReadAndDeleteMutation = useMarkAsReadAndDelete();
