@@ -67,7 +67,7 @@ export const useMarkAsReadAndDelete = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (notificationId) => markNotificationAsReadAndDelete(notificationId),
+        mutationFn: ({ notificationId }) => markNotificationAsReadAndDelete(notificationId),
 
         // 🆕 낙관적 업데이트: API 호출 전 즉시 UI 업데이트
         onMutate: async ({ userId, notificationId }) => {
