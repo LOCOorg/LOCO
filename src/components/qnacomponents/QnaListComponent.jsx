@@ -252,7 +252,7 @@ function QnaListComponent() {
                             className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-xl transform hover:scale-105 transition p-6 cursor-pointer"
                         >
                             <h3 className="text-xl font-semibold text-gray-800 mb-2">{hide ? '비공개 게시글입니다.' : qna.qnaTitle}</h3>
-                            <p className="text-sm text-gray-500 mb-4">작성자: {showNickname ? (qna.userNickname || qna.userId?.nickname || "알 수 없음") : '익명'}</p>
+                            <p className="text-sm text-gray-500 mb-4">작성자: {showNickname ? (qna.userId?.nickname || "알 수 없음") : '익명'}</p>
                             <p className="text-gray-600 leading-relaxed mb-6">
                                 {hide ? <i>비공개</i> : qna.qnaContents.substring(0, 100) + '…'}
                             </p>
@@ -334,8 +334,8 @@ function QnaListComponent() {
                         >
                             <h3 className="text-xl font-semibold text-gray-800 mb-2">{hide ? '비공개 게시글입니다.' : qna.qnaTitle}</h3>
                             <p className="text-sm text-gray-500 mb-4">
-                                작성자: {showNickname ? (qna.userNickname || qna.userId?.nickname || "알 수 없음") : '익명'}
-                                <span className="ml-4">답변자: {qna.answerUserNickname || "알 수 없음"}</span>
+                                작성자: {showNickname ? (qna.userId?.nickname || "알 수 없음") : '익명'}
+                                <span className="ml-4">답변자: {qna.answerUserId?.nickname || "알 수 없음"}</span>
                             </p>
                             <p className="text-gray-600 leading-relaxed mb-6">
                                 {hide ? <i>비공개</i> : qna.qnaContents.substring(0, 100) + '…'}

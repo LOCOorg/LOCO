@@ -177,7 +177,7 @@ const NewsPageComponent = () => {
                                     </h3>
                                     
                                     <div className="flex items-center text-sm text-gray-600">
-                                        <span>작성자: {item.authorNickname}</span>
+                                        <span>작성자: {item.author?.nickname}</span>
                                         <span className="mx-2">·</span>
                                         <span>조회수: {item.views}</span>
                                     </div>

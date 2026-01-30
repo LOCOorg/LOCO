@@ -14,6 +14,9 @@ import {
     addComment,
     addReply,
     addSubReply,
+    updateComment,
+    updateReply,
+    updateSubReply,
     deleteComment,
     deleteReply,
     deleteSubReply
@@ -917,6 +920,57 @@ export const useDeleteSubReply = () => {
                 queryClient.setQueryData(['comments', variables.postId], context.previousComments);
             }
             console.error('❌ [Mutation] 대대댓글 삭제 실패:', error);
+        },
+    });
+};
+
+/**
+ * 댓글 수정 Mutation
+ */
+export const useUpdateComment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ postId, commentId, updateData }) => updateComment(commentId, updateData),
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['comments', variables.postId] });
+            console.log('✅ [Mutation] 댓글 수정 완료');
+        },
+        onError: (error) => {
+            console.error('❌ [Mutation] 댓글 수정 실패:', error);
+        },
+    });
+};
+
+/**
+ * 답글 수정 Mutation
+ */
+export const useUpdateReply = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ postId, replyId, updateData }) => updateReply(replyId, updateData),
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['comments', variables.postId] });
+            console.log('✅ [Mutation] 답글 수정 완료');
+        },
+        onError: (error) => {
+            console.error('❌ [Mutation] 답글 수정 실패:', error);
+        },
+    });
+};
+
+/**
+ * 대대댓글 수정 Mutation
+ */
+export const useUpdateSubReply = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ postId, subReplyId, updateData }) => updateSubReply(subReplyId, updateData),
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['comments', variables.postId] });
+            console.log('✅ [Mutation] 대대댓글 수정 완료');
+        },
+        onError: (error) => {
+            console.error('❌ [Mutation] 대대댓글 수정 실패:', error);
         },
     });
 };
