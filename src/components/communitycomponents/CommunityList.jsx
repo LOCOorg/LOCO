@@ -87,15 +87,12 @@ const CommunityList = () => {
     const getDisplayNickname = (item) => {
         if (item.isAnonymous) return '익명';
 
-        // userNickname이 있으면 사용
-        if (item.userNickname) return item.userNickname;
-
         // userId가 객체(populated)인 경우 처리
         if (typeof item.userId === 'object' && item.userId !== null) {
             return item.userId.nickname || '알 수 없음';
         }
 
-        return item.userId || '알 수 없음';
+        return '알 수 없음';
     };
 
 

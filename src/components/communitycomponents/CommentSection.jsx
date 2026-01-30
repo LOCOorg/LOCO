@@ -317,6 +317,7 @@ const CommentSection = ({
     const handleCommentReport = (comment) => {
         setReportTarget({
             nickname: getDisplayNickname(comment),
+            offenderId: typeof comment.userId === 'object' ? comment.userId._id : comment.userId,
             anchor: {type: 'comment', parentId: comment.postId, targetId: comment._id}
         });
         setReportModalOpen(true);
@@ -325,6 +326,7 @@ const CommentSection = ({
     const handleReplyReport = (reply, postId) => {
         setReportTarget({
             nickname: getDisplayNickname(reply),
+            offenderId: typeof reply.userId === 'object' ? reply.userId._id : reply.userId,
             anchor: {type: 'reply', parentId: postId, targetId: reply._id}
         });
         setReportModalOpen(true);
@@ -333,6 +335,7 @@ const CommentSection = ({
     const handleSubReplyReport = (subReply, postId) => {
         setReportTarget({
             nickname: getDisplayNickname(subReply),
+            offenderId: typeof subReply.userId === 'object' ? subReply.userId._id : subReply.userId,
             anchor: {type: 'subReply', parentId: postId, targetId: subReply._id}
         });
         setReportModalOpen(true);
@@ -380,7 +383,10 @@ const CommentSection = ({
                         </button>
                         <ReportForm
                             onClose={() => setReportModalOpen(false)}
-                            reportedUser={{nickname: reportTarget.nickname}}
+                            reportedUser={{
+                                nickname: reportTarget.nickname,
+                                _id: reportTarget.offenderId
+                            }}
                             anchor={reportTarget.anchor}
                             defaultArea="커뮤니티"
                         />
