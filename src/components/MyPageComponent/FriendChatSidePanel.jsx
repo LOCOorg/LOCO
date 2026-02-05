@@ -8,7 +8,6 @@ import {
     markRoomAsRead,
     // getUnreadCount,
     getUnreadCountsBatch,
-    recordRoomEntry,
     fetchLastMessagesBatch
 } from '../../api/chatAPI';
 import { useSocket } from '../../hooks/useSocket';
@@ -110,19 +109,17 @@ const FriendChatSidePanel = () => {
 
     // Debounce 함수 생성 (컴포넌트 최상단, hooks 다음)
     const debouncedMarkAsRead = useRef(
-        debounce((roomId, userId) => {
+        debounce((roomId) => {
             if (socket && socket.connected) {
-                // Socket 우선 사용
-                socket.emit('markAsRead', { roomId, userId }, (response) => {
+                socket.emit('markAsRead', { roomId }, (response) => {
                     if (response.success) {
-                        console.log(`✅ [Debounce] ${response.readCount}개 읽음`);
+                        console.log(`✅ [Debounce] 읽음 처리 완료`);
                     }
                 });
             } else {
-                // Fallback: HTTP
-                markRoomAsRead(roomId, userId).catch(console.error);
+                markRoomAsRead(roomId).catch(console.error);
             }
-        }, 1000)  // 1초 대기
+        }, 1000)
     ).current;
 
 
@@ -175,12 +172,17 @@ const FriendChatSidePanel = () => {
         console.log('📬 [Socket] 안읽은 개수 업데이트:', data);
 
         // ✅ Zustand getState()로 현재 상태를 직접 읽기
-        const { roomSummaries } = useFriendChatStore.getState();
+        const { roomSummaries, selectedRoomId } = useFriendChatStore.getState();
         const existing = roomSummaries[roomId];
 
         // 채팅방 정보가 없으면 무시
         if (!existing) {
             console.warn('⚠️ [Socket] 알 수 없는 채팅방:', roomId);
+            return;
+        }
+
+        // 현재 보고 있는 채팅방이면 increment 무시 (깜빡임 방지)
+        if (increment && roomId === selectedRoomId) {
             return;
         }
 
@@ -191,7 +193,7 @@ const FriendChatSidePanel = () => {
             console.log(`✅ [Socket] ${roomId} 읽음 처리 (0으로 리셋)`);
             newUnreadCount = 0;
         }
-        // 🆕 increment: 개수 증가 (메시지 수신 시)
+        // increment: 개수 증가 (메시지 수신 시)
         else if (increment) {
             newUnreadCount = (existing.unreadCount || 0) + increment;
             console.log(`✅ [Socket] ${roomId} 개수 증가: ${existing.unreadCount} → ${newUnreadCount}`);
@@ -273,7 +275,7 @@ const FriendChatSidePanel = () => {
             // ⚡ 병렬 실행 (20ms) - 50% 빠름!
             const [{ messages }, unreadCounts] = await Promise.all([
                 fetchLastMessagesBatch(roomIds),
-                getUnreadCountsBatch(roomIds, user._id)
+                getUnreadCountsBatch(roomIds)
             ]);
 
             // 🆕 4. 결과 매핑
@@ -415,16 +417,26 @@ const FriendChatSidePanel = () => {
                     roomId: r._id,
                     friend: r.chatUsers?.find((u) => u?._id !== user._id),
                 }))
-                .filter(room => room && room.friend && room.roomId);
+                .filter(room => room && room.friend && room.roomId)
+                // 🆕 3. 친구인 사람만 필터링 (친구 삭제 시 목록에서 제외)
+                .filter(room => {
+                    const friendId = room.friend?._id;
+                    if (!friendId || !user?.friends) return false;
 
-            // 3. Zustand Store에 저장
+                    // user.friends 배열에 해당 친구가 있는지 확인
+                    return user.friends.some(fid =>
+                        fid?.toString() === friendId?.toString() || fid === friendId
+                    );
+                });
+
+            // 4. Zustand Store에 저장
             setFriendRooms(mapped);
 
-            console.log(`✅ [React Query] ${mapped.length}개 채팅방 로드 완료`);
+            console.log(`✅ [React Query] ${mapped.length}개 채팅방 로드 완료 (친구만 필터링)`);
         } catch (e) {
             console.error('❌ [React Query] 채팅방 처리 실패:', e);
         }
-    }, [chatRoomsData, user?._id, setFriendRooms]);
+    }, [chatRoomsData, user?._id, user?.friends, setFriendRooms]);
 
 
     // 친구 요청 로드
@@ -482,15 +494,6 @@ const FriendChatSidePanel = () => {
         }
     }, [user?._id, friendRequestListData, notifications, removeNotification]);
 
-    // // 메시지 전송 시 콜백
-    // const handleMessageSent = useCallback((roomId) => {
-    //     if (!roomId) return;
-    //
-    //     setTimeout(() => {
-    //         updateRoomSummary(roomId);
-    //     }, 100);
-    // }, [updateRoomSummary]);
-
     // ✅ handleSelectChat을 useEffect들보다 먼저 정의 (호이스팅 문제 해결)
     const handleSelectChat = useCallback(async (room) => {
         if (!room || !room.roomId || !user?._id) return;
@@ -499,25 +502,16 @@ const FriendChatSidePanel = () => {
         setActiveRightTabLocal('chat');
 
         try {
-            // ✅ 1번 Socket 호출 (최적화)
             if (socket && socket.connected) {
-                socket.emit('enterRoom', {
-                    roomId: room.roomId,
-                    userId: user._id
-                }, (response) => {
+                socket.emit('enterRoom', { roomId: room.roomId }, (response) => {
                     if (response && response.success) {
-                        console.log(`✅ [Socket] 입장 완료: ${response.readCount}개 읽음`);
+                        console.log(`✅ [Socket] 입장 완료`);
                         markRoomAsReadStore(room.roomId);
                     } else {
                         console.error('❌ [Socket] 입장 실패:', response?.error || '알 수 없는 오류');
-
-                        // HTTP Fallback
-                        Promise.all([
-                            recordRoomEntry(room.roomId, user._id),
-                            markRoomAsRead(room.roomId, user._id)
-                        ])
+                        markRoomAsRead(room.roomId)
                             .then(() => {
-                                console.log('✅ [Fallback] 입장 성공');
+                                console.log('✅ [Fallback] 읽음 처리 성공');
                                 markRoomAsReadStore(room.roomId);
                             })
                             .catch((error) => {
@@ -526,13 +520,9 @@ const FriendChatSidePanel = () => {
                     }
                 });
             } else {
-                // ⚠️ Fallback: Socket 없으면 HTTP 사용
                 console.warn('⚠️ [Fallback] Socket 없음 - HTTP 사용');
-                await Promise.all([
-                    recordRoomEntry(room.roomId, user._id),
-                    markRoomAsRead(room.roomId, user._id)
-                ]);
-                console.log('✅ [HTTP] 입장 + 읽음 처리 완료');
+                await markRoomAsRead(room.roomId);
+                console.log('✅ [HTTP] 읽음 처리 완료');
                 markRoomAsReadStore(room.roomId);
             }
         } catch (error) {
@@ -579,62 +569,6 @@ const FriendChatSidePanel = () => {
         };
     }, [socket]);
 
-    // // 실시간 메시지 수신 처리
-    // useEffect(() => {
-    //     if (!socket || !user?._id || !friendRooms) return;
-    //
-    //     const handleReceiveMessage = (message) => {
-    //         if (!message || !message.chatRoom) return;
-    //
-    //         const isFromFriendRoom = friendRooms.some(room =>
-    //             room && room.roomId === message.chatRoom
-    //         );
-    //
-    //         if (isFromFriendRoom) {
-    //             const senderId = message.sender?._id || message.sender?.id;
-    //             const isFromOther = senderId !== user._id;
-    //
-    //             // ✅ 현재 선택된 채팅방인지 확인
-    //             const isCurrentRoom = selectedRoom?.roomId === message.chatRoom &&
-    //                 activeRightTab === 'chat';
-    //
-    //             if (isCurrentRoom && isFromOther) {
-    //                 // 1. Debounced 읽음 처리 (1초간 모아서 1번만 호출)
-    //                 debouncedMarkAsRead(message.chatRoom, user._id);
-    //
-    //                 // 2. Store 즉시 업데이트 (UI 반영)
-    //                 markRoomAsReadStore(message.chatRoom);
-    //
-    //                 // 3. 요약 정보 업데이트
-    //                 setTimeout(() => {
-    //                     updateRoomSummary(message.chatRoom);
-    //                 }, 100);
-    //
-    //                 // 읽음 처리된 메시지로 업데이트 (unreadCount 증가 안함)
-    //                 updateRoomMessage(message.chatRoom, {
-    //                     text: message.text || '',
-    //                     timestamp: message.textTime || Date.now(),
-    //                     isFromOther: false // 읽음 처리했으므로 false
-    //                 });
-    //             } else {
-    //                 // 다른 채팅방의 메시지면 정상적으로 unreadCount 증가
-    //                 updateRoomMessage(message.chatRoom, {
-    //                     text: message.text || '',
-    //                     timestamp: message.textTime || Date.now(),
-    //                     isFromOther: isFromOther
-    //                 });
-    //             }
-    //         }
-    //     };
-    //
-    //     socket.on("receiveMessage", handleReceiveMessage);
-    //
-    //     return () => {
-    //         socket.off("receiveMessage", handleReceiveMessage);
-    //     };
-    // }, [socket, user?._id, friendRooms, updateRoomMessage, selectedRoom, activeRightTab, debouncedMarkAsRead, markRoomAsReadStore, updateRoomSummary]);
-
-
     // 실시간 메시지 수신 처리
     useEffect(() => {
         if (!socket || !user?._id || !friendRooms) return;
@@ -655,7 +589,7 @@ const FriendChatSidePanel = () => {
 
             // ✅ 현재 채팅방이면 읽음 처리만
             if (isCurrentRoom && isFromOther) {
-                debouncedMarkAsRead(message.chatRoom, user._id);
+                debouncedMarkAsRead(message.chatRoom);
                 markRoomAsReadStore(message.chatRoom);
             }
 
@@ -731,24 +665,14 @@ const FriendChatSidePanel = () => {
                 setSelectedRoom(newRoom);
                 setActiveRightTabLocal('chat');
 
-                // ✅ Socket 사용!
                 if (socket && socket.connected) {
-                    socket.emit('enterRoom', {
-                        roomId: targetRoomId,
-                        userId: user._id
-                    }, (response) => {
+                    socket.emit('enterRoom', { roomId: targetRoomId }, (response) => {
                         if (response && response.success) {
-                            console.log(`✅ [외부신호-Socket] ${response.readCount}개 읽음`);
+                            console.log(`✅ [외부신호-Socket] 읽음 처리 완료`);
                             markRoomAsReadStore(targetRoomId);
-                        }else {
-                            // ✅ 추가된 부분
+                        } else {
                             console.error('❌ [외부신호-Socket] 실패:', response?.error || '알 수 없는 오류');
-                            console.log('🔄 [외부신호-Fallback] HTTP로 재시도');
-
-                            Promise.all([
-                                recordRoomEntry(targetRoomId, user._id),
-                                markRoomAsRead(targetRoomId, user._id)
-                            ])
+                            markRoomAsRead(targetRoomId)
                                 .then(() => {
                                     console.log('✅ [외부신호-Fallback] 성공');
                                     markRoomAsReadStore(targetRoomId);
@@ -759,11 +683,7 @@ const FriendChatSidePanel = () => {
                         }
                     });
                 } else {
-                    // ⚠️ Fallback
-                    Promise.all([
-                        recordRoomEntry(targetRoomId, user._id),
-                        markRoomAsRead(targetRoomId, user._id)
-                    ])
+                    markRoomAsRead(targetRoomId)
                         .then(() => {
                             console.log('✅ [외부신호-HTTP] 완료');
                             markRoomAsReadStore(targetRoomId);

@@ -49,22 +49,20 @@ export const useChatRoomInfo = (roomId) => {
  * 안읽은 메시지 개수 배치 조회 (N+1 문제 해결)
  *
  * @param {string[]} roomIds - 채팅방 ID 배열
- * @param {string} userId
  * @returns {UseQueryResult} - { [roomId]: count } 형태
  */
-export const useUnreadCountsBatch = (roomIds, userId) => {
+export const useUnreadCountsBatch = (roomIds) => {
     return useQuery({
-        queryKey: ['unread-counts-batch', roomIds, userId],
-        queryFn: () => getUnreadCountsBatch(roomIds, userId),
+        queryKey: ['unread-counts-batch', roomIds],
+        queryFn: () => getUnreadCountsBatch(roomIds),
 
-        // ✅ 최적화된 설정
-        staleTime: 30000,         // 30초 (5초 → 30초)
-        gcTime: 300000,           // 5분 (1분 → 5분)
-        refetchInterval: false,   // 비활성화 (10초 → false)
-        refetchOnWindowFocus: true,  // 포커스 시에만
-        refetchOnMount: false,    // 마운트 시 재조회 안함
+        staleTime: 30000,
+        gcTime: 300000,
+        refetchInterval: false,
+        refetchOnWindowFocus: true,
+        refetchOnMount: false,
 
-        enabled: roomIds.length > 0 && !!userId,
+        enabled: roomIds.length > 0,
     });
 };
 
@@ -91,7 +89,7 @@ export const useMarkRoomAsRead = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ roomId, userId }) => markRoomAsRead(roomId, userId),
+        mutationFn: ({ roomId }) => markRoomAsRead(roomId),
         onSuccess: () => {
             // 안읽은 개수 캐시 무효화
             queryClient.invalidateQueries(['unread-counts-batch']);
