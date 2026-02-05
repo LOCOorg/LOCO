@@ -2,7 +2,7 @@ import React, {useMemo, useState, useEffect} from 'react';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
 import useAuthStore from '../../stores/authStore';
 import {sendFriendRequest, blockUserMinimal, unblockUserMinimal } from "../../api/userAPI.js";
-import { useDeleteFriend } from '../../hooks/queries/useFriendQueries';
+import { useDeleteFriend, useAcceptFriendRequest, useDeclineFriendRequest } from '../../hooks/queries/useFriendQueries';
 import CommonModal from '../../common/CommonModal.jsx';
 import PhotoGallery from './PhotoGallery.jsx';
 import { useNavigate } from 'react-router-dom';
@@ -11,14 +11,20 @@ import useBlockedStore from "../../stores/useBlockedStore.js";
 import {createPortal} from "react-dom";
 import useFriendChatStore from "../../stores/useFriendChatStore.js";
 import {CheckIcon, XMarkIcon} from "@heroicons/react/24/solid";
+import { useQueryClient } from '@tanstack/react-query';
 
 
 const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requestId, onAccept, onDecline }) => {
     const authUser = useAuthStore(state => state.user);
     const blockedUsers = useBlockedStore(state => state.blockedUsers);
+    const queryClient = useQueryClient();
 
     // 🆕 친구 삭제 Mutation Hook
     const deleteFriendMutation = useDeleteFriend();
+
+    // 🆕 친구 요청 수락/거절 Mutation Hooks
+    const acceptMutation = useAcceptFriendRequest();
+    const declineMutation = useDeclineFriendRequest();
 
     const isOwnProfile = authUser && profile._id === authUser._id; // 내 프로필인지 확인
     const isBlocked = blockedUsers.some(blocked => blocked._id === profile._id); // 차단된 사용자인지 확인
@@ -34,33 +40,55 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
     const removeBlockedUser = useBlockedStore((s) => s.removeBlockedUser);
     const setUser    = useAuthStore((s) => s.setUser);
 
-    const friends = useFriendListStore((s) => s.friends);              // 추가
+    const friends = useFriendListStore((s) => s.friends);
 
-
+    // ✅ 친구 여부 확인 (두 소스 통합)
     const isFriend = useMemo(() => {
-        if (!profile?._id || !authUser?.friends) return false;
+        if (!profile?._id) return false;
 
         const profileIdStr = profile._id.toString();
 
-        // ✅ authUser.friends 배열에서 확인
-        const result = authUser.friends.some(id => {
+        // 1️⃣ authUser.friends에서 확인
+        const inAuthStore = authUser?.friends?.some(id => {
             if (!id) return false;
             return id.toString() === profileIdStr;
-        });
+        }) || false;
+
+        // 2️⃣ useFriendListStore.friends에서도 확인
+        const inFriendStore = friends.some(f => f._id?.toString() === profileIdStr);
+
+        const result = inAuthStore || inFriendStore;
 
         console.log('🔍 [isFriend 계산]', {
             profileId: profileIdStr,
             profileNickname: profile.nickname,
-            result,
-            friendsCount: authUser.friends.length
+            inAuthStore,
+            inFriendStore,
+            result
         });
 
         return result;
-    }, [authUser?.friends, profile?._id, profile?.nickname]);
+    }, [authUser?.friends, friends, profile?._id, profile?.nickname]);
 
+    // ✅ 받은 친구 요청 확인 (React Query 캐시에서)
+    const incomingRequest = useMemo(() => {
+        if (!profile?._id || !authUser?._id) return null;
 
+        const pendingRequests = queryClient.getQueryData(['friendRequestList', authUser._id]) || [];
+        const found = pendingRequests.find(req => req.sender?._id === profile._id);
 
-    const needAccept = !!requestId;
+        console.log('🔍 [받은 친구 요청 확인]', {
+            profileId: profile._id,
+            found: !!found,
+            requestId: found?._id
+        });
+
+        return found;
+    }, [profile?._id, authUser?._id, queryClient]);
+
+    // ✅ 수락/거절 버튼 표시 여부 (prop으로 받은 requestId 또는 캐시에서 찾은 요청)
+    const needAccept = !!requestId || !!incomingRequest;
+    const effectiveRequestId = requestId || incomingRequest?._id;
 
     const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
@@ -68,37 +96,7 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
 
     const { closeFriendChat } = useFriendChatStore();
 
-// ✅✅✅ 여기에 디버깅 코드 추가! ✅✅✅
-    useEffect(() => {
-        if (!profile?._id) return;
-
-        console.log('=== 🔍 SimpleProfileModal 디버깅 ===');
-        console.log('프로필 대상:', profile.nickname, '(', profile._id, ')');
-        console.log('\n--- authUser.friends 확인 ---');
-        console.log('전체:', authUser?.friends);
-        console.log('포함 여부:', authUser?.friends?.includes(profile._id));
-        console.log('포함 여부 (toString):', authUser?.friends?.some(id => id?.toString() === profile._id?.toString()));
-
-        console.log('\n--- useFriendListStore.friends 확인 ---');
-        console.log('전체:', friends.map(f => ({ _id: f._id, nickname: f.nickname })));
-        console.log('포함 여부:', friends.some(f => f._id === profile._id));
-        console.log('포함 여부 (toString):', friends.some(f => f._id?.toString() === profile._id?.toString()));
-
-        console.log('\n--- 타입 확인 ---');
-        console.log('profile._id 타입:', typeof profile._id);
-        console.log('authUser.friends[0] 타입:', typeof authUser?.friends?.[0]);
-        console.log('friends[0]._id 타입:', typeof friends?.[0]?._id);
-
-        console.log('\n--- isFriend 계산 결과 ---');
-        const byStore = friends.some(f => f._id?.toString() === profile._id?.toString());
-        const byAuth = authUser?.friends?.some(id => id?.toString() === profile._id?.toString());
-        console.log('byStore:', byStore);
-        console.log('byAuth:', byAuth);
-        console.log('isFriend (최종):', byStore || byAuth);
-        console.log('=========================================\n');
-    }, [profile?._id, authUser?.friends, friends]);
-
-    // 초기값 설정
+// 초기값 설정
     useEffect(() => {
         if (!profile?._id || !authUser?.friends) {
             setLocalIsFriend(false);
@@ -131,6 +129,51 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
             setAlertModalMessage(error.response?.data?.message || error.message);
         }
         setAlertModalOpen(true);
+    };
+
+    // ✅ 친구 요청 수락 핸들러 (내부용)
+    const handleAcceptRequest = async () => {
+        if (!authUser?._id || !effectiveRequestId) return;
+
+        try {
+            await acceptMutation.mutateAsync({
+                userId: authUser._id,
+                requestId: effectiveRequestId
+            });
+
+            // 친구 목록에 추가
+            useFriendListStore.getState().addFriend(profile);
+            setUser({
+                ...authUser,
+                friends: [...(authUser.friends || []), profile._id]
+            });
+
+            setAlertModalMessage(`${profile.nickname}님과 친구가 되었습니다.`);
+            setAlertModalOpen(true);
+        } catch (error) {
+            console.error('❌ 친구 요청 수락 실패:', error);
+            setAlertModalMessage(error.response?.data?.message || '친구 요청 수락에 실패했습니다.');
+            setAlertModalOpen(true);
+        }
+    };
+
+    // ✅ 친구 요청 거절 핸들러 (내부용)
+    const handleDeclineRequest = async () => {
+        if (!authUser?._id || !effectiveRequestId) return;
+
+        try {
+            await declineMutation.mutateAsync({
+                userId: authUser._id,
+                requestId: effectiveRequestId
+            });
+
+            setAlertModalMessage('친구 요청을 거절했습니다.');
+            setAlertModalOpen(true);
+        } catch (error) {
+            console.error('❌ 친구 요청 거절 실패:', error);
+            setAlertModalMessage(error.response?.data?.message || '친구 요청 거절에 실패했습니다.');
+            setAlertModalOpen(true);
+        }
     };
 
     const handleDeleteFriend = () => {
@@ -326,10 +369,10 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
                             )}
 
                             {/* 수락 : 인디고  /  거절 : 주황 */}
-                            {needAccept && (
+                            {needAccept && !isFriend && (
                                 <>
                                     <button
-                                        onClick={onDecline}
+                                        onClick={onDecline || handleDeclineRequest}
                                         className="inline-flex items-center justify-center gap-1 rounded-md
                        bg-amber-500 px-4 py-2 text-sm font-medium text-white
                        shadow-sm transition hover:bg-amber-600 active:scale-95">
@@ -337,7 +380,7 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
                                         거절
                                     </button>
                                     <button
-                                        onClick={onAccept}
+                                        onClick={onAccept || handleAcceptRequest}
                                         className="inline-flex items-center justify-center gap-1 rounded-md
                        bg-indigo-600 px-4 py-2 text-sm font-medium text-white
                        shadow-sm transition hover:bg-indigo-700 active:scale-95">

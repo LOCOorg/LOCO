@@ -1,6 +1,6 @@
 // src/components/ui/myMenus.jsx
-import {useState, useEffect} from 'react';
-import { getUserMinimal } from '../../api/userProfileLightAPI.js'; // 아바타용 경량 API: profilePhoto만 필요
+import {useState} from 'react';
+import { useUserMinimal } from '../../hooks/queries/useUserQueries.js';
 import useAuthStore from '../../stores/authStore.js';
 import { FiUser } from 'react-icons/fi';
 
@@ -13,34 +13,26 @@ export default function MyMenus({
                                     className = ''              // 추가 클래스
                                 }) {
     const authUser = useAuthStore(state => state.user);
-    const [profile, setProfile] = useState(externalProfile);
     const [imgError, setImgError] = useState(false);
 
+    // fetch 할 사용자 ID 결정 (externalProfile → externalUserId → authUser)
+    const targetUserId = externalProfile?._id || externalUserId || authUser?._id;
+
+    // 🆕 React Query 캐싱 적용 (10분 캐싱)
+    // overrideSrc가 있으면 API 호출 건너뛰기
+    const { data: fetchedProfile } = useUserMinimal(targetUserId, {
+        enabled: !!targetUserId && !overrideSrc
+    });
+
+    // 프로필 데이터 우선순위: externalProfile → fetchedProfile
+    const profile = externalProfile || fetchedProfile;
+
+    // 표시할 이미지 URL 결정
     const photoUrl =
         overrideSrc ||
         profile?.profilePhoto ||
         profile?.photo?.[0] ||
         null;
-
-
-    useEffect(() => {
-        // fetch 할 사용자 ID 결정 (externalProfile → externalUserId → authUser)
-        const id = externalProfile?._id || externalUserId || authUser?._id;
-        if (!id) return;
-
-        let cancelled = false;
-        getUserMinimal(id)
-            .then(data => {
-                if (!cancelled) setProfile(data);
-            })
-            .catch(err => console.error('Avatar 프로필 로드 오류:', err));
-
-        return () => {
-            cancelled = true;
-        };
-    }, [externalProfile, externalUserId, authUser]);
-
-    // 표시할 이미지 URL 결정
 
     const dimClasses = `w-${size} h-${size}`;
     const transformClasses = 'transform transition-transform duration-150 ease-out hover:scale-110';
