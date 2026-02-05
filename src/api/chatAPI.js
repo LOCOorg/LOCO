@@ -215,110 +215,47 @@ export const fetchChatRoomHistory = async (params = {}) => {
 //=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
 
 
-// 1. 메시지 읽음 처리
-export const markRoomAsRead = async (roomId, userId) => {
+// 1. 메시지 읽음 처리 (인증 토큰에서 userId 자동 추출)
+export const markRoomAsRead = async (roomId) => {
     try {
-        const response = await instance.patch(`/api/chat/rooms/${roomId}/read`, {
-            userId: userId
-        });
-
-        return {
-            success: true,
-            readAt: response.data.readAt || Date.now(),
-            modifiedCount: response.data.modifiedCount || 0
-        };
+        await instance.patch(`/api/chat/rooms/${roomId}/read`);
+        return { success: true };
     } catch (error) {
         console.error("메시지 읽음 처리 중 오류 발생:", error);
         throw error;
     }
 };
-//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
 
-
-// 2. 안읽은 메시지 개수 조회
-export const getUnreadCount = async (roomId, userId) => {
+// 2. 안읽은 메시지 개수 조회 (인증 토큰에서 userId 자동 추출)
+export const getUnreadCount = async (roomId) => {
     try {
-        const response = await instance.get(`/api/chat/rooms/${roomId}/unread`, {
-            params: { userId: userId }
-        });
-
-        return {
-            unreadCount: response.data.unreadCount || 0
-        };
+        const response = await instance.get(`/api/chat/rooms/${roomId}/unread`);
+        return { unreadCount: response.data.unreadCount || 0 };
     } catch (error) {
         console.error("안읽은 메시지 개수 조회 중 오류 발생:", error);
         return { unreadCount: 0 };
     }
 };
-//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
 
 /**
- * 🆕 여러 채팅방의 안읽은 메시지 개수 일괄 조회 (N+1 문제 해결)
+ * 여러 채팅방의 안읽은 메시지 개수 일괄 조회 (인증 토큰에서 userId 자동 추출)
  * @param {string[]} roomIds - 조회할 채팅방 ID 배열 (최대 100개)
- * @param {string} userId - 사용자 ID
  * @returns {Promise<Object>} { roomId: unreadCount } 형태의 객체
  */
-// 새로 추가한 함수
-export const getUnreadCountsBatch = async (roomIds, userId) => {
+export const getUnreadCountsBatch = async (roomIds) => {
     try {
-        // 입력 검증
-        if (!Array.isArray(roomIds) || roomIds.length === 0) {
-            console.warn('getUnreadCountsBatch: roomIds가 유효하지 않음');
-            return {};
-        }
+        if (!Array.isArray(roomIds) || roomIds.length === 0) return {};
+        if (roomIds.length > 100) return {};
 
-        if (roomIds.length > 100) {
-            console.warn('getUnreadCountsBatch: 최대 100개까지만 조회 가능');
-            return {};
-        }
-
-        console.log(`📊 [배치조회] ${roomIds.length}개 채팅방 안읽은 개수 조회`);
-
-        // POST 요청으로 배열 데이터 전송
         const response = await instance.post('/api/chat/rooms/unread-batch', {
-            roomIds: roomIds,
-            userId: userId
+            roomIds: roomIds
         });
-
-        console.log(`✅ [배치조회] 성공`);
 
         return response.data.counts || {};
 
     } catch (error) {
         console.error('❌ [배치조회] 실패:', error);
-
-        // 에러 발생 시 빈 객체 반환 (UI 깨짐 방지)
         return {};
-    }
-};
-//=====프롬프트 변경=====캐싱추가=====Request/Response확인====countDocuments 적용 가능성====
-
-/**
- * ⚠️ DEPRECATED: Socket enterRoom 사용 권장
- *
- * 채팅방 입장 시간 기록 (Fallback용)
- * - 주용도: Socket 연결 실패 시 대체 수단
- * - 성능: HTTP 2번 호출 (~100ms)
- * - 권장: socket.emit('enterRoom') 사용 (~5ms)
- */
-// 3. 채팅방 입장 시간 기록
-export const recordRoomEntry = async (roomId, userId) => {
-    try {
-        const response = await instance.post(`/api/chat/rooms/${roomId}/entry`, {
-            userId: userId,
-            // entryTime: new Date().toISOString()
-        });
-
-        // // 입장과 동시에 읽음 처리
-        // await markRoomAsRead(roomId, userId);
-
-        return {
-            success: true,
-            entryTime: response.data.entryTime || Date.now()
-        };
-    } catch (error) {
-        console.error("채팅방 입장 시간 기록 중 오류 발생:", error);
-        throw error;
     }
 };
 

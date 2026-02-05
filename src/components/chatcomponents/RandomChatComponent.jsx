@@ -353,9 +353,19 @@ const RandomChatComponent = () => {
                             });
 
                             if (result.success) {
-                                // 4️⃣ 성공 - 대기 모달 표시
-                                console.log(`✅ ${result.action === 'joined' ? '기존 방 참가' : '새 방 생성'}`);
+                                // 4️⃣ 성공 처리
+                                console.log(`✅ ${result.action === 'joined' ? '기존 방 참가' : result.action === 'rejoined' ? '기존 방 재접속' : '새 방 생성'}`);
 
+                                // 🆕 재접속인 경우: 바로 채팅방으로 이동
+                                if (result.action === 'rejoined') {
+                                    if (socket) {
+                                        socket.emit("joinRoom", result.room._id, "random");
+                                    }
+                                    navigate(`/chat/${result.room._id}/${userId}`);
+                                    return;
+                                }
+
+                                // 새 방 생성/참가: 대기 모달 표시
                                 setIsWaiting(true);
                                 setWaitingRoomId(result.room._id);
                                 setShowWaitingModal(true);
