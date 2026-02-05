@@ -2,6 +2,7 @@
 import {createContext, useContext, useEffect, useRef, useState} from 'react';
 import { io } from 'socket.io-client';
 import useFriendListStore from '../stores/useFriendListStore';
+import useFriendChatStore from '../stores/useFriendChatStore';
 import authStore from '../stores/authStore';
 import { setSocket as registerSocket } from '../../socket.js';
 
@@ -86,13 +87,13 @@ export const SocketProvider = ({ children }) => {
                 const timeSinceLastBeat = now - lastHeartbeatRef.current;
 
                 if (timeSinceLastBeat > 60000) {
-                    console.error('💔 [SocketContext] Heartbeat 타임아웃');
+                    console.warn('💔 [SocketContext] Heartbeat 타임아웃 - Socket.IO 내장 재연결에 위임');
                     setConnectionState(prev => ({
                         ...prev,
                         isReallyConnected: false
                     }));
-                    newSocket.disconnect();
-                    newSocket.connect();
+                    // Socket.IO 내장 pingTimeout(20초)이 자동으로 감지하고 재연결 처리
+                    // 수동 disconnect/connect는 메시지 유실 위험이 있으므로 제거
                 } else {
                     newSocket.emit('ping');
                 }
@@ -177,6 +178,7 @@ export const SocketProvider = ({ children }) => {
 
         const handleFriendDeleted = (data) => {
             if (data.friendId) {
+                // 1️⃣ 친구 목록에서 제거
                 removeFriend(data.friendId);
                 setUser((prevUser) => {
                     if (!prevUser) return prevUser;
@@ -186,6 +188,14 @@ export const SocketProvider = ({ children }) => {
                         friends: currentFriends.filter(id => id !== data.friendId)
                     };
                 });
+
+                // 2️⃣ 채팅방 목록에서도 제거
+                const { friendRooms, removeFriendRoom } = useFriendChatStore.getState();
+                const targetRoom = friendRooms.find(r => r.friend?._id === data.friendId);
+                if (targetRoom) {
+                    removeFriendRoom(targetRoom.roomId);
+                    console.log(`🗑️ [SocketContext] 친구 삭제로 채팅방 제거: ${targetRoom.roomId}`);
+                }
             }
         };
 
