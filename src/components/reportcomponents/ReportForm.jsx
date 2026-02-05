@@ -55,11 +55,21 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '프
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            // 가해자 별칭으로 해당 사용자를 조회하여 offenderId를 얻음
-            const offenderUser = await getUserByNickname(newReport.offenderNickname);
-            if (!offenderUser || !offenderUser.nickname) {
-                throw new Error("해당 별칭을 가진 사용자를 찾을 수 없습니다.");
+            let offenderId = reportedUser?._id;
+
+            // 만약 reportedUser._id가 없다면 (드문 경우지만) 기존처럼 닉네임으로 조회 시도
+            if (!offenderId && newReport.offenderNickname) {
+                const offenderUser = await getUserByNickname(newReport.offenderNickname);
+                if (!offenderUser || !offenderUser._id) {
+                    throw new Error("해당 별칭을 가진 사용자를 찾을 수 없습니다.");
+                }
+                offenderId = offenderUser._id;
             }
+
+            if (!offenderId) {
+                throw new Error("가해자 정보를 확인할 수 없습니다.");
+            }
+
             // 신고 데이터에 offenderId를 할당 (offenderNickname은 전송하지 않음)
             const reportData = {
                 reportTitle: newReport.reportTitle,
@@ -67,7 +77,7 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '프
                 reportCategory: newReport.reportCategory,
                 reportContants: newReport.reportContants,
                 reportErId: newReport.reportErId,
-                offenderId: offenderUser._id,
+                offenderId: offenderId,
                 ...(anchor ? { anchor } : {})                // 🔑 있을 때만 포함
             };
 

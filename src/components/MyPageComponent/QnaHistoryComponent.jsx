@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getQnaPageByStatus } from '../../api/qnaAPI.js';
+import { useUpdateQnA } from '../../hooks/queries/useQnAQueries';
 
 const QnaHistoryComponent = ({ profile }) => {
     const [qnaHistory, setQnaHistory] = useState([]);
@@ -8,6 +9,40 @@ const QnaHistoryComponent = ({ profile }) => {
     const [hasMore, setHasMore] = useState(true);
     const [loading, setLoading] = useState(false);
     const pageSize = 5;
+
+    // 수정 관련 상태
+    const [isEditingId, setIsEditingId] = useState(null);
+    const [editTitle, setEditTitle] = useState('');
+    const [editContents, setEditContents] = useState('');
+    const updateQnAMutation = useUpdateQnA();
+
+    const handleEditStart = (qna) => {
+        setIsEditingId(qna._id);
+        setEditTitle(qna.qnaTitle);
+        setEditContents(qna.qnaContents);
+    };
+
+    const handleUpdate = (qnaId) => {
+        if (!editTitle.trim() || !editContents.trim()) return;
+
+        updateQnAMutation.mutate(
+            {
+                id: qnaId,
+                updateData: {
+                    qnaTitle: editTitle,
+                    qnaContents: editContents
+                }
+            },
+            {
+                onSuccess: (updated) => {
+                    setQnaHistory(prev => prev.map(item => 
+                        item._id === qnaId ? { ...item, qnaTitle: updated.qnaTitle, qnaContents: updated.qnaContents } : item
+                    ));
+                    setIsEditingId(null);
+                }
+            }
+        );
+    };
 
     const fetchQnaHistory = async (page) => {
         if (!profile?._id || loading) return;
@@ -85,13 +120,22 @@ const QnaHistoryComponent = ({ profile }) => {
                                 >
                                     {/* 카드 헤더 */}
                                     <button
-                                        onClick={() => handleToggle(qna._id)}
-                                        className="w-full text-left p-5 flex items-start justify-between gap-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200"
+                                        onClick={() => isEditingId !== qna._id && handleToggle(qna._id)}
+                                        className={`w-full text-left p-5 flex items-start justify-between gap-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200 ${isEditingId === qna._id ? 'cursor-default' : ''}`}
                                     >
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="font-semibold text-gray-800 text-lg mb-2 line-clamp-2">
-                                                {qna.qnaTitle}
-                                            </h4>
+                                            {isEditingId === qna._id ? (
+                                                <input
+                                                    className="w-full font-semibold text-gray-800 text-lg mb-2 p-2 border border-blue-300 rounded-lg focus:outline-none"
+                                                    value={editTitle}
+                                                    onChange={(e) => setEditTitle(e.target.value)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            ) : (
+                                                <h4 className="font-semibold text-gray-800 text-lg mb-2 line-clamp-2">
+                                                    {qna.qnaTitle}
+                                                </h4>
+                                            )}
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <span className={`
                                                     px-3 py-1 rounded-full text-xs font-medium
@@ -138,11 +182,47 @@ const QnaHistoryComponent = ({ profile }) => {
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                         </svg>
                                                         <div className="flex-1">
-                                                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">질문 내용</p>
-                                                            <p className="text-gray-700 leading-relaxed text-sm">{qna.qnaContents}</p>
+                                                            <div className="flex justify-between items-center mb-1">
+                                                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">질문 내용</p>
+                                                                {!isAnswered && !isEditingId && (
+                                                                    <button
+                                                                        onClick={() => handleEditStart(qna)}
+                                                                        className="text-xs text-blue-500 hover:underline"
+                                                                    >
+                                                                        수정하기
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            {isEditingId === qna._id ? (
+                                                                <textarea
+                                                                    className="w-full h-32 p-2 border border-blue-300 rounded-lg focus:outline-none resize-none text-sm"
+                                                                    value={editContents}
+                                                                    onChange={(e) => setEditContents(e.target.value)}
+                                                                />
+                                                            ) : (
+                                                                <p className="text-gray-700 leading-relaxed text-sm">{qna.qnaContents}</p>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                {isEditingId === qna._id && (
+                                                    <div className="flex justify-end gap-2">
+                                                        <button
+                                                            onClick={() => handleUpdate(qna._id)}
+                                                            disabled={updateQnAMutation.isPending}
+                                                            className="px-4 py-1.5 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 disabled:opacity-50"
+                                                        >
+                                                            {updateQnAMutation.isPending ? '수정 중...' : '수정 완료'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setIsEditingId(null)}
+                                                            className="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300"
+                                                        >
+                                                            취소
+                                                        </button>
+                                                    </div>
+                                                )}
 
                                                 <div className={`
                                                     rounded-xl p-4 border

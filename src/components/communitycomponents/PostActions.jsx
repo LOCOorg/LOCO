@@ -18,7 +18,9 @@ const PostActions = ({
 
     if (!community) return null;
 
-    const isAuthor = community.userId === currentUserId;
+    const isAuthor = (typeof community.userId === 'object' 
+        ? community.userId?._id 
+        : community.userId) === currentUserId;
 
     return (
         <div>

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import ProfileButton from '../MyPageComponent/ProfileButton.jsx';
 import SubReply from './SubReply.jsx';
 import { fetchSubRepliesByReplyId } from '../../api/communityApi.js';
+import { useUpdateReply } from '../../hooks/queries/useCommunityQueries';
 
 const Reply = ({
                    reply,
@@ -30,12 +31,28 @@ const Reply = ({
     const [subReplyPage, setSubReplyPage] = useState(1);
     const [hasMoreSubReplies, setHasMoreSubReplies] = useState(false);
 
+    // 수정 관련 상태
+    const [isEditing, setIsEditing] = useState(false);
+    const [editValue, setEditValue] = useState(reply.commentContents);
+    const updateReplyMutation = useUpdateReply();
+
     useEffect(() => {
         if (reply.subReplies) {
             setSubReplies(reply.subReplies);
             setHasMoreSubReplies(reply.subReplies.length < reply.totalSubReplies);
         }
     }, [reply.subReplies]);
+
+    const handleUpdate = () => {
+        if (!editValue.trim()) return;
+        updateReplyMutation.mutate({
+            postId: community._id,
+            replyId: reply._id,
+            updateData: { commentContents: editValue }
+        }, {
+            onSuccess: () => setIsEditing(false)
+        });
+    };
 
     const loadMoreSubReplies = async () => {
         const nextPage = subReplyPage + 1;
@@ -67,7 +84,7 @@ const Reply = ({
                         {/* 프로필 버튼 */}
                         {!isReplyDeleted && !reply.isAnonymous ? (
                             <ProfileButton
-                                profile={{ _id: reply.userId }}
+                                profile={{ _id: typeof reply.userId === 'object' ? reply.userId._id : reply.userId }}
                                 area="프로필"
                                 size="w-8 h-8 sm:w-10 sm:h-10"
                             />
@@ -79,7 +96,7 @@ const Reply = ({
 
                         <div className="flex flex-col">
                             <span className={`text-sm font-bold text-gray-900 ${
-                                !isReplyDeleted && reply.userId === community.userId ? 'text-blue-600' : ''
+                                !isReplyDeleted && (typeof reply.userId === 'object' ? reply.userId._id : reply.userId) === (typeof community.userId === 'object' ? community.userId._id : community.userId) ? 'text-blue-600' : ''
                             }`}>
                                 {isReplyDeleted ? "삭제된 사용자" : getDisplayNickname(reply)}
                             </span>
@@ -92,13 +109,23 @@ const Reply = ({
                     {/* 액션 버튼들 */}
                     {!isReplyDeleted && (
                         <div className="flex items-center gap-2">
-                            {reply.userId === currentUserId || isAdmin ? (
-                                <button
-                                    onClick={() => openReplyDeleteModal(community._id, commentId, reply._id)}
-                                    className="text-gray-400 hover:text-red-500 text-xs transition-colors p-1"
-                                >
-                                    삭제
-                                </button>
+                            {(typeof reply.userId === 'object' ? reply.userId._id : reply.userId) === currentUserId || isAdmin ? (
+                                <>
+                                    {(typeof reply.userId === 'object' ? reply.userId._id : reply.userId) === currentUserId && (
+                                        <button
+                                            onClick={() => setIsEditing(!isEditing)}
+                                            className="text-gray-400 hover:text-blue-500 text-xs transition-colors p-1"
+                                        >
+                                            {isEditing ? '취소' : '수정'}
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => openReplyDeleteModal(community._id, commentId, reply._id)}
+                                        className="text-gray-400 hover:text-red-500 text-xs transition-colors p-1"
+                                    >
+                                        삭제
+                                    </button>
+                                </>
                             ) : (
                                 <button
                                     onClick={() => handleReplyReport(reply, postId)}
@@ -113,13 +140,32 @@ const Reply = ({
 
                 {/* 대댓글 내용 */}
                 <div className="pl-1 sm:pl-0">
-                    <p className="text-gray-800 break-words whitespace-pre-wrap text-sm md:text-base leading-relaxed" id={`reply-${reply._id}`}>
-                        {isReplyDeleted ? (
-                            <span className="text-gray-500 italic">삭제된 답글입니다.</span>
-                        ) : (
-                            reply.commentContents
-                        )}
-                    </p>
+                    {isEditing ? (
+                        <div className="mt-2 space-y-2">
+                            <textarea
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded-lg resize-none text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all"
+                                rows="3"
+                            />
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={handleUpdate}
+                                    className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
+                                >
+                                    수정완료
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-gray-800 break-words whitespace-pre-wrap text-sm md:text-base leading-relaxed" id={`reply-${reply._id}`}>
+                            {isReplyDeleted ? (
+                                <span className="text-gray-500 italic">삭제된 답글입니다.</span>
+                            ) : (
+                                reply.commentContents
+                            )}
+                        </p>
+                    )}
 
                     {/* 대댓글 이미지 */}
                     {!isReplyDeleted && reply.replyImage && (

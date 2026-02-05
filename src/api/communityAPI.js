@@ -192,6 +192,39 @@ export const addSubReply = async (communityId, commentId, replyId, subReplyData)
     }
 };
 
+// 댓글 수정 API 호출 함수
+export const updateComment = async (commentId, updateData) => {
+    try {
+        const response = await instance.put(`/api/communities/comments/${commentId}`, updateData);
+        return response.data;
+    } catch (error) {
+        console.error("updateComment error:", error);
+        throw error;
+    }
+};
+
+// 답글 수정 API 호출 함수
+export const updateReply = async (replyId, updateData) => {
+    try {
+        const response = await instance.put(`/api/communities/replies/${replyId}`, updateData);
+        return response.data;
+    } catch (error) {
+        console.error("updateReply error:", error);
+        throw error;
+    }
+};
+
+// 대대댓글 수정 API 호출 함수
+export const updateSubReply = async (subReplyId, updateData) => {
+    try {
+        const response = await instance.put(`/api/communities/subreplies/${subReplyId}`, updateData);
+        return response.data;
+    } catch (error) {
+        console.error("updateSubReply error:", error);
+        throw error;
+    }
+};
+
 // 댓글 삭제 API 호출 함수
 export const deleteComment = async (communityId, commentId) => {
     try {

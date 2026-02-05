@@ -4,6 +4,7 @@ import ProfileButton from '../MyPageComponent/ProfileButton.jsx';
 import CommentPollManager from "./CommentPollManager.jsx";
 import Reply from './Reply.jsx';
 import { fetchRepliesByCommentId } from '../../api/communityApi.js';
+import { useUpdateComment } from '../../hooks/queries/useCommunityQueries';
 
 const Comment = ({
                      comment,
@@ -39,12 +40,28 @@ const Comment = ({
     const [replyPage, setReplyPage] = useState(1);
     const [hasMoreReplies, setHasMoreReplies] = useState(false);
 
+    // 수정 관련 상태
+    const [isEditing, setIsEditing] = useState(false);
+    const [editValue, setEditValue] = useState(comment.commentContents);
+    const updateCommentMutation = useUpdateComment();
+
     useEffect(() => {
         if (comment.replies) {
             setReplies(comment.replies);
             setHasMoreReplies(comment.replies.length < comment.totalReplies);
         }
     }, [comment.replies]);
+
+    const handleUpdate = () => {
+        if (!editValue.trim()) return;
+        updateCommentMutation.mutate({
+            postId: community._id,
+            commentId: comment._id,
+            updateData: { commentContents: editValue }
+        }, {
+            onSuccess: () => setIsEditing(false)
+        });
+    };
 
     const loadMoreReplies = async () => {
         const nextPage = replyPage + 1;
@@ -79,7 +96,7 @@ const Comment = ({
                         {/* 프로필 버튼 */}
                         {!isCommentDeleted && !comment.isAnonymous ? (
                             <ProfileButton
-                                profile={{ _id: comment.userId }}
+                                profile={{ _id: typeof comment.userId === 'object' ? comment.userId._id : comment.userId }}
                                 area="프로필"
                                 size="w-8 h-8 sm:w-10 sm:h-10"
                             />
@@ -91,7 +108,7 @@ const Comment = ({
 
                         <div className="flex flex-col">
                             <span className={`text-sm font-bold text-gray-900 ${
-                                !isCommentDeleted && comment.userId === community.userId ? 'text-blue-600' : ''
+                                !isCommentDeleted && (typeof comment.userId === 'object' ? comment.userId._id : comment.userId) === (typeof community.userId === 'object' ? community.userId._id : community.userId) ? 'text-blue-600' : ''
                             }`}>
                                 {isCommentDeleted ? "삭제된 사용자" : getDisplayNickname(comment)}
                             </span>
@@ -104,14 +121,24 @@ const Comment = ({
                     {/* 액션 버튼들 */}
                     {!isCommentDeleted && (
                         <div className="flex items-center gap-2">
-                            {comment.userId === currentUserId || isAdmin ? (
-                                <button
-                                    onClick={() => openCommentDeleteModal(community._id, comment._id)}
-                                    className="text-gray-400 hover:text-red-500 text-xs transition-colors p-1"
-                                    title="삭제"
-                                >
-                                    삭제
-                                </button>
+                            {(typeof comment.userId === 'object' ? comment.userId._id : comment.userId) === currentUserId || isAdmin ? (
+                                <>
+                                    {(typeof comment.userId === 'object' ? comment.userId._id : comment.userId) === currentUserId && (
+                                        <button
+                                            onClick={() => setIsEditing(!isEditing)}
+                                            className="text-gray-400 hover:text-blue-500 text-xs transition-colors p-1"
+                                        >
+                                            {isEditing ? '취소' : '수정'}
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => openCommentDeleteModal(community._id, comment._id)}
+                                        className="text-gray-400 hover:text-red-500 text-xs transition-colors p-1"
+                                        title="삭제"
+                                    >
+                                        삭제
+                                    </button>
+                                </>
                             ) : (
                                 <button
                                     onClick={() => handleCommentReport(comment)}
@@ -127,13 +154,32 @@ const Comment = ({
 
                 {/* 댓글 내용 */}
                 <div className="pl-1 sm:pl-0">
-                    <p className="text-gray-800 break-words whitespace-pre-wrap text-sm md:text-base leading-relaxed" id={`comment-${comment._id}`}>
-                        {isCommentDeleted ? (
-                            <span className="text-gray-500 italic">삭제된 댓글입니다.</span>
-                        ) : (
-                            comment.commentContents
-                        )}
-                    </p>
+                    {isEditing ? (
+                        <div className="mt-2 space-y-2">
+                            <textarea
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded-lg resize-none text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all"
+                                rows="3"
+                            />
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={handleUpdate}
+                                    className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
+                                >
+                                    수정완료
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-gray-800 break-words whitespace-pre-wrap text-sm md:text-base leading-relaxed" id={`comment-${comment._id}`}>
+                            {isCommentDeleted ? (
+                                <span className="text-gray-500 italic">삭제된 댓글입니다.</span>
+                            ) : (
+                                comment.commentContents
+                            )}
+                        </p>
+                    )}
 
                     {/* 댓글 이미지 */}
                     {!isCommentDeleted && comment.commentImage && (

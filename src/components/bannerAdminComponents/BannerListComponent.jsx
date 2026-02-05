@@ -162,7 +162,7 @@ const BannerListComponent = () => {
                                         )}
                                         
                                         <div className="flex items-center text-sm text-gray-500 space-x-4">
-                                            <span>작성자: {banner.authorNickname}</span>
+                                            <span>작성자: {banner.author?.nickname}</span>
                                             <span>생성일: {formatDate(banner.createdAt)}</span>
                                             <span>클릭수: {banner.views}회</span>
                                             {banner.linkUrl && (

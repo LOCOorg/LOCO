@@ -116,7 +116,7 @@ const NewsDetailComponent = () => {
                 
                 <div className="flex items-center justify-between text-sm text-gray-600 border-b pb-4">
                     <div className="flex items-center gap-4">
-                        <span>작성자: {news.authorNickname}</span>
+                        <span>작성자: {news.author?.nickname}</span>
                         <span>작성일: {formatDate(news.createdAt)}</span>
                         {news.updatedAt !== news.createdAt && (
                             <span>수정일: {formatDate(news.updatedAt)}</span>
