@@ -2,7 +2,7 @@
 // QnA 관련 React Query Hooks
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getQnaPageByStatus, deleteQna, createQna, updateQna, addQnaAnswer } from '../../api/qnaAPI.js';
+import { getQnaPageByStatus, deleteQna, createQna, updateQna } from '../../api/qnaAPI.js';
 
 /**
  * QnA 목록 조회
@@ -109,30 +109,6 @@ export const useUpdateQnA = () => {
 
         onError: (error) => {
             console.error('❌ [Mutation] QnA 수정 실패:', error);
-        }
-    });
-};
-
-/**
- * QnA 답변 작성 Mutation (관리자 전용)
- * @returns {UseMutationResult}
- */
-export const useAddQnAAnswer = () => {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: ({ id, answer }) => addQnaAnswer(id, answer),
-
-        onSuccess: () => {
-            // 목록 갱신 (상태 변경 반영)
-            queryClient.invalidateQueries({
-                queryKey: ['qna', 'list']
-            });
-            console.log('✅ [Mutation] QnA 답변 작성 완료');
-        },
-
-        onError: (error) => {
-            console.error('❌ [Mutation] QnA 답변 작성 실패:', error);
         }
     });
 };

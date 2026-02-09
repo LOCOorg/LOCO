@@ -1,14 +1,13 @@
 import {createBrowserRouter} from "react-router-dom";
 
 import AuthGuard from '../components/authComponent/AuthGuard.jsx';
-import SignupGuard from '../components/authComponent/SignupGuard.jsx';
 import BasicLayout from "../layout/BasicLayout.jsx";
 
 import IndexPage from "../pages/IndexPage.jsx";
 import ChatRouter from "./ChatRouter.jsx";
 
 import CommunityRouter from "./CommunityRouter.jsx";
-import SignupPage from "../pages/signupPage/SignupPage.jsx";
+import SignupPage from "../pages/signupPage/SignupPage.jsx";  // SignupPage 페이지 추가
 
 import LoginHandler from "../components/authComponent/LoginHandler.jsx";
 import NaverLoginHandler from "../components/authComponent/NaverLoginHandler.jsx";
@@ -36,7 +35,7 @@ const MainRouter = createBrowserRouter([
         </AuthGuard>,
         children: [
             { index: true,                     element: <IndexPage /> },
-            { path: "signupPage",              element: <SignupGuard><SignupPage /></SignupGuard> },
+            { path: "signupPage",              element: <SignupPage /> },
             { path: "auth/callback",           element: <LoginHandler /> },
             { path: "auth/naver/callback",     element: <NaverLoginHandler /> },
             CommunityRouter,

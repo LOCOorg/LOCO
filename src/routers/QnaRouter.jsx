@@ -1,8 +1,8 @@
+
 import QnaIndexPage from "../pages/qnapages/QnaIndexPage.jsx";
 import QnaListPage from "../pages/qnapages/QnaListPage.jsx";
 import QnaModalPage from "../pages/qnapages/QnaModalPage.jsx";
 import QnaWritePage from "../pages/qnapages/QnaWritePage.jsx";
-import AuthRequiredGuard from "../components/authComponent/AuthRequiredGuard.jsx";
 
 const QnaRouter = {
     path: "/qna",
@@ -10,21 +10,18 @@ const QnaRouter = {
     children: [
         {
             path: "",
-            element: <QnaListPage/>  // 공개
+            element: <QnaListPage/>
         },
         {
             path: ":id",
-            element: <QnaModalPage/>  // 공개
+            element: <QnaModalPage/>
         },
         {
             path: "new",
-            element: (
-                <AuthRequiredGuard>
-                    <QnaWritePage/>
-                </AuthRequiredGuard>
-            )
+            element: <QnaWritePage/>
         }
     ]
+
 }
 
 export default QnaRouter;
