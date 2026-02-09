@@ -54,7 +54,7 @@ function ChatOverlay({ roomId, friend, isSidePanel = false, onMessageSent }) {
         const readTime = new Date(partnerLastReadAt).getTime();
         for (let i = messages.length - 1; i >= 0; i--) {
             const msg = messages[i];
-            if (msg.sender?._id === senderId && new Date(msg.textTime).getTime() <= readTime) {
+            if (msg.sender?._id === senderId && new Date(msg.createdAt).getTime() <= readTime) {
                 return msg._id;
             }
         }
@@ -145,21 +145,21 @@ function ChatOverlay({ roomId, friend, isSidePanel = false, onMessageSent }) {
         };
     }, [socket, friend?._id, friend?.nickname]);
 
-    const formatTime = (textTime) => {
-        if (!textTime) return "";
-        const date = new Date(textTime);
+    const formatTime = (dateTime) => {
+        if (!dateTime) return "";
+        const date = new Date(dateTime);
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-    const formatDate = (textTime) => {
-        if (!textTime) return "";
-        const date = new Date(textTime);
+    const formatDate = (dateTime) => {
+        if (!dateTime) return "";
+        const date = new Date(dateTime);
         return date.toLocaleDateString();
     };
 
     const groupMessagesByDate = (messages) => {
         return messages.reduce((groups, message) => {
-            const date = formatDate(message.textTime);
+            const date = formatDate(message.createdAt);
             if (!groups[date]) {
                 groups[date] = [];
             }
@@ -453,7 +453,7 @@ function ChatOverlay({ roomId, friend, isSidePanel = false, onMessageSent }) {
                                                         </button>
                                                     )}
                                                 </div>
-                                                <span className="text-xs text-gray-500 px-1 whitespace-nowrap">{formatTime(message.textTime)}</span>
+                                                <span className="text-xs text-gray-500 px-1 whitespace-nowrap">{formatTime(message.createdAt)}</span>
                                             </div>
                                             {isMyMessage && message._id === lastReadMessageId && (
                                                 <span className="text-xs text-gray-400 pr-1">읽음</span>

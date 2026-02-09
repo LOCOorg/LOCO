@@ -84,7 +84,7 @@ const useFriendChatStore = create((set, get) => ({
 
             const newSummary = {
                 lastMessage: messageData.text || currentSummary.lastMessage,
-                lastMessageTime: messageData.timestamp || messageData.textTime || Date.now(),
+                lastMessageTime: messageData.timestamp || messageData.createdAt || Date.now(),
                 // ✅ isFromOther가 true일 때만 unreadCount 증가
                 // unreadCount: messageData.isFromOther ?
                 //     (currentSummary.unreadCount + 1) :

@@ -36,11 +36,14 @@ banners
 =====================================================================
 불변 데이터베이스   -   creatAt 하나만 있으면 됨 updateAt 삭제
 =====================================================================
-chatrommexit(언제 나갔는지) - 시간중복 2
-genderhistories - 시간중복2
-nicknamehistories - 시간중복2 / 체인지바이 유저아이디 나오는데 체인지 바이는 관리자 변경 가능해서 그럼
-chatroomexits 시간 두개
-chatroom - 시간 두개
+chatrommexit(언제 나갔는지) - 시간중복 2  ✅
+
+genderhistories - 시간중복2 ✅
+
+nicknamehistories - 시간중복2 / 체인지바이 유저아이디 나오는데 체인지 바이는 관리자 변경 가능해서 그럼 ✅
+
+
+chatroom - 시간 두개    ✅
 
 
 =====================================================================
@@ -65,6 +68,7 @@ qna
 replies 대댓? - 닉네임 빼야함
  - subreplies 대대댓? 닉네임 빼야함
  - users 크리에이트 엣 업데이트 엣 -> 자기소개 따로 히스토리 빼야하나?
+banner
 
 ====================================================================
 수정 필요 할 것 같은 느낌
@@ -77,11 +81,11 @@ reports - creatAt reportDate updateAt 3개가 있음 -> 관리자가 제재를 �
 reportMessageBackup -> 시간 중복 업데이트 엣 하나 뺄것
 
 
-chatmessages - creatAt, expirersAt, textAt, updateAt 시간 4개, -> expirersAt메세지 삭제를 위해 있음 textAt, updateAt삭제
+chatmessages - creatAt, expirersAt, textAt, updateAt 시간 4개, -> expirersAt메세지 삭제를 위해 있음 textAt, updateAt삭제 ✅
 신고하면 expirersAt 사라지고 reportMessageBackup으로 이동하는지 확인
  평문도 저장(삭제),
  mataData 안나오는 이유 -> 메타데이터 필요한지 아니면 채팅방에서만 필요한지 또는 로그인할때만 필요한지
 
- - db RoomEntry(읽음 처리) 시간만 4번 기록 아래처럼 수정
+ - db RoomEntry(읽음 처리) 시간만 4번 기록 아래처럼 수정 ✅
  2. '마지막 읽은 메시지 ID' 추적 방식 (가장 많이 쓰임)
  각 유저가 해당 채팅방에서 **어디까지 읽었는지(Last Read Message ID)**만 기록하는 방식입니다.//gemini 기록 있음

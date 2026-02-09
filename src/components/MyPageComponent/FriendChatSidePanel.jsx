@@ -289,7 +289,7 @@ const FriendChatSidePanel = () => {
                 if (messageData && messageData.lastMessage) {
                     summaries[roomId] = {
                         lastMessage: messageData.lastMessage.text || '',
-                        lastMessageTime: messageData.lastMessage.textTime || null,
+                        lastMessageTime: messageData.lastMessage.createdAt || null,
                         unreadCount: unreadCount
                     };
                 } else {
@@ -596,7 +596,7 @@ const FriendChatSidePanel = () => {
             // ✅ 메시지 내용만 업데이트 (Socket이 개수 관리)
             updateRoomMessage(message.chatRoom, {
                 text: message.text || '',
-                timestamp: message.textTime || Date.now(),
+                timestamp: message.createdAt || Date.now(),
                 isFromOther: isCurrentRoom ? false : isFromOther
             });
         };
