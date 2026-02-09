@@ -96,9 +96,9 @@ const ChatRoom = ({roomId, userId}) => {
     }, [roomId, removeNotificationsByRoom]);
 
     // 메시지 전송 시간을 포맷하는 헬퍼 함수 (시간:분 형식)
-    const formatTime = (textTime) => {
-        if (!textTime) return "";
-        const date = new Date(textTime);
+    const formatTime = (dateTime) => {
+        if (!dateTime) return "";
+        const date = new Date(dateTime);
         return date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
     };
 
@@ -956,7 +956,7 @@ const ChatRoom = ({roomId, userId}) => {
                                 const isMe = msg.sender._id === userId;
                                 return (
                                     <div
-                                        key={`${msg._id}-${msg.textTime}`}
+                                        key={`${msg._id}-${msg.createdAt}`}
                                         className={`flex items-start gap-3 ${isMe ? 'justify-end' : 'justify-start'}`}
                                     >
                                         {/* 프로필 */}
@@ -998,7 +998,7 @@ const ChatRoom = ({roomId, userId}) => {
                                                     )}
                                                 </div>
                                                 <span className="text-xs text-gray-400 pb-1">
-                                                    {formatTime(msg.textTime)}
+                                                    {formatTime(msg.createdAt)}
                                                 </span>
                                             </div>
                                         </div>

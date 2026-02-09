@@ -58,7 +58,7 @@ const ChatMessageView = ({
     // 날짜별 메시지 그룹화
     const groupMessagesByDate = (messages) => {
         return messages.reduce((groups, message) => {
-            const date = formatDate(new Date(message.textTime));
+            const date = formatDate(new Date(message.createdAt));
             if (!groups[date]) {
                 groups[date] = [];
             }
@@ -117,7 +117,7 @@ const ChatMessageView = ({
                                         <div key={msg._id} className="text-center my-4">
                                             <div className="inline-block bg-gray-200 text-gray-600 text-sm px-4 py-2 rounded-full">
                                                 <div className="text-xs text-gray-500 mb-1">
-                                                    {formatTime(new Date(msg.textTime))}
+                                                    {formatTime(new Date(msg.createdAt))}
                                                 </div>
                                                 <div>
                                                     {msg.text}
@@ -210,7 +210,7 @@ const ChatMessageView = ({
                                                 
                                                 {/* 시간 표시 */}
                                                 <div className="text-xs text-gray-500 whitespace-nowrap self-end mb-1">
-                                                    {formatTime(new Date(msg.textTime))}
+                                                    {formatTime(new Date(msg.createdAt))}
                                                 </div>
                                             </div>
                                         </div>
