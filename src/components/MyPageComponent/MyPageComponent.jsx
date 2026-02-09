@@ -2,8 +2,9 @@
 import {useEffect, useRef, useState} from 'react';
 import { Link } from 'react-router-dom';
 import {uploadFile} from "../../api/fileUploadAPI";
+// import { updateUserPrefs } from '../../api/userAPI'; // ❌ 제거
 import useAuthStore from '../../stores/authStore';
-import { useUpdateUserProfile, useUserForEdit } from '../../hooks/queries/useUserQueries';
+import { useUpdateUserProfile, useUserForEdit, useUpdateUserPrefs } from '../../hooks/queries/useUserQueries'; // ✅ Hook 추가
 import ProfilePhotoSection from './ProfilePhotoSection';
 import ProfileDetailSection from './ProfileDetailSection';
 import {toast, ToastContainer, Zoom} from "react-toastify";
@@ -14,7 +15,8 @@ const MyPageContent = ({overrideProfile}) => {
     const setUser = useAuthStore((state) => state.setUser);  // 🔥 이 줄 추가
 
     // Mutation Hook
-    const updateProfileMutation = useUpdateUserProfile()
+    const updateProfileMutation = useUpdateUserProfile();
+    const updatePrefsMutation = useUpdateUserPrefs(); // ✅ Mutation 사용
 
     //  Query Hook 추가
     const {
@@ -48,10 +50,12 @@ const MyPageContent = ({overrideProfile}) => {
                 battleNickname: overrideProfile.battleNickname || '',
                 profilePhoto: overrideProfile.profilePhoto || '',
                 photo: overrideProfile.photo || [],
+                isPublicPR: overrideProfile.isPublicPR ?? true, // ✅ 추가
             });
         } else if (profileData) {  // ⭐ Hook에서 받은 데이터 사용
             setProfile(profileData);
-            setFormData({
+            setFormData(prev => ({ // ✅ 기존 입력값 유지하면서 서버 데이터 반영
+                ...prev,
                 nickname: profileData.nickname || '',
                 info: profileData.info || '',
                 gender: profileData.gender || '',
@@ -60,9 +64,35 @@ const MyPageContent = ({overrideProfile}) => {
                 battleNickname: profileData.battleNickname || '',
                 profilePhoto: profileData.profilePhoto || '',
                 photo: profileData.photo || [],
-            });
+                isPublicPR: profileData.isPublicPR ?? true,
+            }));
         }
     }, [profileData, overrideProfile]);  // ⭐ 의존성 변경
+
+    // ✅ 공개 설정 토글 핸들러
+    const handlePrivacyToggle = async () => {
+        const newValue = !formData.isPublicPR;
+        
+        // 1. 상태 먼저 업데이트 (Optimistic Update) - UI 즉시 반영
+        setFormData(prev => ({ ...prev, isPublicPR: newValue }));
+
+        try {
+            // 2. Mutation 실행 (서버 동기화 + 캐시 갱신)
+            await updatePrefsMutation.mutateAsync({ 
+                userId: authUser._id, 
+                prefs: { isPublicPR: newValue } 
+            });
+
+            // 3. 성공 알림
+            toast.success(`명예의 전당 공개가 ${newValue ? '켜졌습니다' : '꺼졌습니다'}.`);
+            
+        } catch (error) {
+            console.error('공개 설정 변경 실패:', error);
+            // 실패 시 롤백
+            setFormData(prev => ({ ...prev, isPublicPR: !newValue }));
+            toast.error('설정 변경에 실패했습니다.');
+        }
+    };
 
 
     if (isLoading) return <div>로딩 중...</div>;
@@ -297,6 +327,7 @@ const MyPageContent = ({overrideProfile}) => {
                     handleInputChange={handleInputChange}
                     handleSave={handleSave}
                     setEditMode={setEditMode}
+                    handlePrivacyToggle={handlePrivacyToggle} // ✅ 추가
                 />
             </div>
 

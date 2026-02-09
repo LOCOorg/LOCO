@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {getUserMinimal, getUserFullProfile, getUserForEdit} from '../../api/userProfileLightAPI';
-import { updateUserProfile } from '../../api/userAPI';
+import { updateUserProfile, updateUserPrefs } from '../../api/userAPI';
 
 /**
  * 최소 프로필 조회 (프로필 사진, 닉네임, ID)
@@ -105,5 +105,27 @@ export const useUpdateUserProfile = () => {
 
             console.log('✅ [Mutation] 프로필 수정 완료 - 전체 캐시 무효화');
         },
+    });
+};
+
+/**
+ * 사용자 설정(공개 여부 등) 변경 Mutation
+ */
+export const useUpdateUserPrefs = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ userId, prefs }) => updateUserPrefs(userId, prefs),
+        
+        onSuccess: (data, variables) => {
+            // ✅ PR 관련 캐시 무효화 (랭킹 리스트 갱신)
+            queryClient.invalidateQueries({ queryKey: ['pr', 'top-users'] });
+            queryClient.invalidateQueries({ queryKey: ['pr', 'user-list'] });
+
+            // ✅ 내 프로필 정보 갱신
+            queryClient.invalidateQueries({ queryKey: ['userForEdit', variables.userId] });
+            
+            console.log('✅ [Mutation] 설정 변경 완료 - 캐시 갱신');
+        }
     });
 };
