@@ -8,6 +8,7 @@ import PRProfileGrid from "./PRProfileCardGrid";
 import PRLoadMore from "./PRLoadMore";
 import SimpleProfileModal from "../MyPageComponent/SimpleProfileModal.jsx"
 import { useOnlineStatus } from "../../hooks/useOnlineStatus.js";
+import { Link } from 'react-router-dom';
 
 const PRPageComponent = () => {
     // const [topUsers, setTopUsers] = useState([]);
@@ -159,6 +160,23 @@ const PRPageComponent = () => {
                         </svg>
                         <span className="font-medium">필터</span>
                     </button>
+                </div>
+
+                {/* ✅ 공개 설정 안내 문구 추가 */}
+                <div className="bg-white border-l-4 border-purple-500 p-4 mb-6 rounded-r-lg shadow-sm flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                        <span className="text-2xl">✨</span>
+                        <div>
+                            <p className="text-gray-700 font-medium">내 프로필이 보이지 않나요?</p>
+                            <p className="text-sm text-gray-500 mt-0.5">명예의 전당 공개 여부는 마이페이지에서 설정할 수 있습니다.</p>
+                        </div>
+                    </div>
+                    <Link
+                        to="/myPage" 
+                        className="text-purple-600 font-semibold hover:text-purple-800 hover:underline px-4 py-2 bg-purple-50 rounded-lg transition-colors"
+                    >
+                        설정하러 가기
+                    </Link>
                 </div>
 
                 {/* 상단 슬라이더 (전체 폭) */}
