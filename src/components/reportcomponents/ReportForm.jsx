@@ -150,8 +150,8 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '프
                         <option value="욕설, 모욕, 혐오발언">욕설, 모욕, 혐오발언</option>
                         <option value="스팸, 도배, 거짓정보">스팸, 도배, 거짓정보</option>
                         <option value="부적절한 메세지(성인/도박/마약 등)">부적절한 메세지(성인/도박/마약 등)</option>
-                        <option value="규칙에 위반되는 프로필/모욕성 닉네임">규칙에 위반되는 프로필/모욕성 닉네임</option>
-                        <option value="음란물 (이미지)">음란물 (이미지)</option>
+                        <option value="부적절한 닉네임 / 모욕성 닉네임">부적절한 닉네임 / 모욕성 닉네임</option>
+                        <option value="부적절한 프로필 이미지 / 음란물 (이미지)">부적절한 프로필 이미지 / 음란물 (이미지)</option>
                     </select>
                 </div>
                 <div className="mb-4">

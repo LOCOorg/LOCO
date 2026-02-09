@@ -198,18 +198,18 @@ const ReportListComponent = () => {
                 >
                     부적절 메시지
                 </button>
-                <button
-                    onClick={() => handleCategoryFilterChange("규칙에 위반되는 프로필/모욕성 닉네임")}
-                    className={`px-3 py-1 rounded ${filterCategory === "규칙에 위반되는 프로필/모욕성 닉네임" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-                >
-                    프로필
-                </button>
-                <button
-                    onClick={() => handleCategoryFilterChange("음란물 배포(이미지)")}
-                    className={`px-3 py-1 rounded ${filterCategory === "음란물 배포(이미지)" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                    <button
+                        onClick={() => handleCategoryFilterChange("부적절한 닉네임 / 모욕성 닉네임")}
+                        className={`px-3 py-1 rounded ${filterCategory === "부적절한 닉네임 / 모욕성 닉네임" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                     >
-                    음란물
-                </button>
+                        부적절한 닉네임
+                    </button>
+                    <button
+                        onClick={() => handleCategoryFilterChange("부적절한 프로필 이미지 / 음란물 (이미지)")}
+                        className={`px-3 py-1 rounded ${filterCategory === "부적절한 프로필 이미지 / 음란물 (이미지)" ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                    >
+                        음란물
+                    </button>
             </div>
 
             {/* 신고 상태 필터 버튼 */}
