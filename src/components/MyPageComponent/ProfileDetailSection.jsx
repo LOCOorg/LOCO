@@ -12,6 +12,7 @@ export default function ProfileDetailSection({
                                                  handleInputChange,
                                                  handleSave,
                                                  //setEditMode,
+                                                 handlePrivacyToggle, // ✅ 추가
 
                                              }) {
     // 닉네임 중복 체크 관련 상태
@@ -200,8 +201,36 @@ export default function ProfileDetailSection({
 
     return (
         <div className="bg-white rounded-2xl p-8 space-y-6 shadow-md">
-            <p className="mb-4">로코 코인: {profile.coinLeft}</p>
-            <p className="mb-4">내 별점: {profile.star}</p>
+            {/*<p className="mb-4">로코 코인: {profile.coinLeft}</p>*/}
+
+
+            {/* ✅ 공개 설정 섹션 (본인 프로필일 때만 표시) */}
+            {isOwnProfile && (
+                <div>
+                    <strong className="block mb-2 text-lg">공개 설정</strong>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <span className="font-medium text-gray-700">명예의 전당 공개</span>
+                            <p className="text-sm text-gray-500">
+                                {formData.isPublicPR ? '명예의 전당 및 랭킹에 내 프로필이 표시됩니다.' : '명예의 전당 및 랭킹에 내 프로필이 표시되지 않습니다.'}
+                            </p>
+                        </div>
+                        <button
+                            onClick={handlePrivacyToggle}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                                formData.isPublicPR ? 'bg-purple-600' : 'bg-gray-200'
+                            }`}
+                        >
+                            <span
+                                className={`${
+                                    formData.isPublicPR ? 'translate-x-6' : 'translate-x-1'
+                                } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                            />
+                        </button>
+                    </div>
+                </div>
+            )}
+            <p  className="mb-4 pt-4 border-t border-gray-200">내 별점: {profile.star}</p>
 
             {/* 닉네임 (제한 표시 추가) */}
             <div className="mb-4">
@@ -292,13 +321,13 @@ export default function ProfileDetailSection({
             </div>
 
             {/* 게임 닉네임들 */}
-            {['lolNickname', 'suddenNickname', 'battleNickname'].map((key) => (
+            {['lolNickname', /*'suddenNickname', 'battleNickname'*/].map((key) => (
                 <div key={key} className="mb-4">
                     <strong className="w-32">
                         {{
                             lolNickname: '롤/TFT 닉네임',
-                            suddenNickname: '서든닉네임',
-                            battleNickname: '배틀그라운드 닉네임'
+                            // suddenNickname: '서든닉네임',
+                            // battleNickname: '배틀그라운드 닉네임'
                         }[key]}
                     </strong>
                     {isOwnProfile ? (

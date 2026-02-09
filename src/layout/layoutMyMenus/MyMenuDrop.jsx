@@ -75,28 +75,7 @@ export default function MyMenuDrop({ user }) {
                                 마이 페이지
                             </Link>
                         </li>
-                        <li>
-                            <Link
-                                to="/wallet"
-                                className="block px-4 py-2 hover:bg-gray-100 transition"
-                            >
-                                지갑
-                            </Link>
-                        </li>
-                        <li>
-                            <Link
-                                to="/settings"
-                                className="block px-4 py-2 hover:bg-gray-100 transition"
-                            >
-                                설정
-                            </Link>
-                        </li>
                         <LogoutButton/>
-                        {/*<li onClick={logout}*/}
-                        {/*    className="block px-4 py-2 hover:bg-gray-100 transition"*/}
-                        {/*    role="button">*/}
-                        {/*        로그아웃*/}
-                        {/*</li>*/}
                     </ul>
                 </DropdownTransition>
         </div>
