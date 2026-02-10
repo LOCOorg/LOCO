@@ -1,7 +1,120 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
+import { useRefreshLeagueRecord } from '../../hooks/queries/useLeagueQueries';
 
-export default function LeagueRecordSection({ partnerRecords, loading, error }) {
+/**
+ * 갱신 버튼 컴포넌트
+ * - 5분 쿨타임 적용
+ * - 실시간 카운트다운 표시
+ */
+function RefreshButton({ gameName, tagLine, lastUpdatedAt, onRefreshSuccess }) {
+    const [cooldown, setCooldown] = useState(0);
+    const { mutate: refresh, isPending } = useRefreshLeagueRecord();
+
+    // 쿨타임 계산 (5분 = 300초)
+    const calculateCooldown = useCallback(() => {
+        if (!lastUpdatedAt) return 0;
+        const elapsed = Date.now() - new Date(lastUpdatedAt).getTime();
+        const remaining = Math.max(0, 5 * 60 - Math.floor(elapsed / 1000));
+        return remaining;
+    }, [lastUpdatedAt]);
+
+    // 1초마다 쿨타임 업데이트
+    useEffect(() => {
+        setCooldown(calculateCooldown());
+
+        const timer = setInterval(() => {
+            const remaining = calculateCooldown();
+            setCooldown(remaining);
+            if (remaining <= 0) {
+                clearInterval(timer);
+            }
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [calculateCooldown]);
+
+    // 쿨타임 포맷 (M:SS)
+    const formatCooldown = (seconds) => {
+        const min = Math.floor(seconds / 60);
+        const sec = seconds % 60;
+        return `${min}:${sec.toString().padStart(2, '0')}`;
+    };
+
+    const handleRefresh = () => {
+        if (cooldown > 0 || isPending) return;
+
+        refresh(
+            { gameName, tagLine },
+            {
+                onSuccess: (data) => {
+                    // 쿨타임 리셋
+                    setCooldown(5 * 60);
+                    // 부모에게 갱신 성공 알림
+                    if (onRefreshSuccess) {
+                        onRefreshSuccess(gameName, tagLine, data);
+                    }
+                }
+            }
+        );
+    };
+
+    const isDisabled = isPending || cooldown > 0;
+
+    return (
+        <button
+            onClick={handleRefresh}
+            disabled={isDisabled}
+            className={`px-3 py-1 text-xs rounded-full transition-all duration-200 ${
+                isDisabled
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-500 text-white hover:bg-blue-600 active:scale-95'
+            }`}
+        >
+            {isPending ? (
+                <span className="flex items-center gap-1">
+                    <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    갱신 중
+                </span>
+            ) : cooldown > 0 ? (
+                `${formatCooldown(cooldown)} 후`
+            ) : (
+                '전적 갱신'
+            )}
+        </button>
+    );
+}
+
+RefreshButton.propTypes = {
+    gameName: PropTypes.string.isRequired,
+    tagLine: PropTypes.string.isRequired,
+    lastUpdatedAt: PropTypes.string,
+    onRefreshSuccess: PropTypes.func,
+};
+
+/**
+ * 마지막 갱신 시간 포맷
+ */
+function formatLastUpdated(lastUpdatedAt) {
+    if (!lastUpdatedAt) return null;
+
+    const now = Date.now();
+    const updated = new Date(lastUpdatedAt).getTime();
+    const diffMs = now - updated;
+    const diffMin = Math.floor(diffMs / (1000 * 60));
+    const diffHour = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDay = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMin < 1) return '방금 전';
+    if (diffMin < 60) return `${diffMin}분 전`;
+    if (diffHour < 24) return `${diffHour}시간 전`;
+    return `${diffDay}일 전`;
+}
+
+export default function LeagueRecordSection({ partnerRecords, loading, error, onRecordUpdate }) {
     const scrollRefs = useRef([]);
 
     useEffect(() => {
@@ -69,22 +182,44 @@ export default function LeagueRecordSection({ partnerRecords, loading, error }) 
             {partnerRecords.map((record, index) => {
                 const hasLeagueRecord = record.leagueRecord && typeof record.leagueRecord === 'object';
                 const hasUserInfo = record.userInfo && typeof record.userInfo === 'object';
+                const gameName = hasUserInfo ? record.userInfo.riotGameName : null;
+                const tagLine = hasUserInfo ? record.userInfo.riotTagLine : null;
+                const lastUpdatedAt = hasLeagueRecord ? record.leagueRecord.lastUpdatedAt : null;
 
                 return (
                     <div key={index} className="bg-white rounded-lg p-4 mb-4 shadow-sm">
                         <div className="mb-4 pb-3 border-b border-gray-200">
-                            {/* 닉네임과 라이엇 ID를 한 줄에 정렬 */}
-                            <div className="flex items-center gap-3 mb-2">
-                                <h3 className="text-base font-bold text-gray-800">
-                                    {hasUserInfo ? record.userInfo.nickname : `파트너 ${index + 1}`}
-                                </h3>
+                            {/* 헤더: 닉네임 + Riot ID + 갱신 버튼 */}
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-base font-bold text-gray-800">
+                                        {hasUserInfo ? record.userInfo.nickname : `파트너 ${index + 1}`}
+                                    </h3>
 
-                                {hasUserInfo && record.userInfo.riotGameName && (
-                                    <span className="text-sm text-gray-500">
-                {record.userInfo.riotGameName}#{record.userInfo.riotTagLine}
-            </span>
+                                    {gameName && tagLine && (
+                                        <span className="text-sm text-gray-500">
+                                            {gameName}#{tagLine}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* 갱신 버튼 */}
+                                {gameName && tagLine && (
+                                    <RefreshButton
+                                        gameName={gameName}
+                                        tagLine={tagLine}
+                                        lastUpdatedAt={lastUpdatedAt}
+                                        onRefreshSuccess={onRecordUpdate}
+                                    />
                                 )}
                             </div>
+
+                            {/* 마지막 갱신 시간 */}
+                            {lastUpdatedAt && (
+                                <div className="text-xs text-gray-400 mb-2">
+                                    {formatLastUpdated(lastUpdatedAt)} 갱신됨
+                                </div>
+                            )}
 
                             {/* 에러가 있는 경우 에러 메시지 표시 */}
                             {record.error && (
@@ -95,15 +230,15 @@ export default function LeagueRecordSection({ partnerRecords, loading, error }) 
 
                             {hasLeagueRecord ? (
                                 <div className="flex gap-3 flex-wrap text-sm">
-            <span className="font-bold text-blue-600">
-                {record.leagueRecord.tier || 'Unranked'} {record.leagueRecord.rank || ''}
-            </span>
+                                    <span className="font-bold text-blue-600">
+                                        {record.leagueRecord.tier || 'Unranked'} {record.leagueRecord.rank || ''}
+                                    </span>
                                     <span className="text-gray-600">
-                {record.leagueRecord.leaguePoints || 0} LP
-            </span>
+                                        {record.leagueRecord.leaguePoints || 0} LP
+                                    </span>
                                     <span className="text-green-600 font-medium">
-                {record.leagueRecord.overallWinRate || 0}%
-            </span>
+                                        {record.leagueRecord.overallWinRate || 0}%
+                                    </span>
                                 </div>
                             ) : (
                                 <div className="text-gray-500 text-sm">
@@ -185,4 +320,5 @@ LeagueRecordSection.propTypes = {
     partnerRecords: PropTypes.array.isRequired,
     loading: PropTypes.bool.isRequired,
     error: PropTypes.string,
+    onRecordUpdate: PropTypes.func,  // 갱신 성공 시 부모에게 알림
 };
