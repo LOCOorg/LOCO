@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../api/axiosInstance";
 import { checkNickname } from "../../api/userAPI";
 import { getActiveTerms } from "../../api/termAPI"; // 약관 API 추가
+import { verifyIdentity } from "../../api/identityAPI"; // 본인인증 API 추가
 import {validateNicknameClient} from "../../utils/nicknameValidator.js";
 import CommonModal from "../../common/CommonModal";
 
@@ -34,9 +35,15 @@ const SignupForm = () => {
     const [modalTitle, setModalTitle] = useState("");
     const [modalContent, setModalContent] = useState(null);
 
+    // 본인인증 상태
+    const [identityVerified, setIdentityVerified] = useState(false);
+    const [identityLoading, setIdentityLoading] = useState(false);
+    const [identityName, setIdentityName] = useState("");
+
     // 알림 모달 상태 추가
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState("");
+    const [alertRedirect, setAlertRedirect] = useState(false); // 모달 확인 시 메인으로 이동 여부
     
     // 회원가입 성공 모달 상태 추가
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
@@ -180,8 +187,61 @@ const SignupForm = () => {
         );
     };
 
+    // 포트원 본인인증 요청
+    const handleIdentityVerification = async () => {
+        if (identityVerified) {
+            setAlertMessage("이미 본인인증이 완료되었습니다.");
+            setIsAlertOpen(true);
+            return;
+        }
+
+        setIdentityLoading(true);
+        setErrorMessage("");
+
+        try {
+            const identityVerificationId = `identity-${crypto.randomUUID()}`;
+
+            const response = await window.PortOne.requestIdentityVerification({
+                storeId: import.meta.env.VITE_PORTONE_STORE_ID,
+                identityVerificationId,
+                channelKey: import.meta.env.VITE_PORTONE_CHANNEL_KEY,
+            });
+
+            // 사용자가 인증창을 닫은 경우
+            if (response.code !== undefined) {
+                setAlertMessage(response.message || "본인인증이 취소되었습니다.");
+                setIsAlertOpen(true);
+                setIdentityLoading(false);
+                return;
+            }
+
+            // 서버에 인증 결과 검증 요청
+            const verifyResult = await verifyIdentity(identityVerificationId);
+
+            if (verifyResult.success) {
+                setIdentityVerified(true);
+                setIdentityName(verifyResult.data.name || "");
+                setAlertMessage("본인인증이 완료되었습니다.");
+                setIsAlertOpen(true);
+            }
+        } catch (error) {
+            const errorCode = error.response?.data?.error;
+            const message = error.response?.data?.message || "본인인증 처리 중 오류가 발생했습니다.";
+            setAlertMessage(message);
+            setAlertRedirect(errorCode === 'UNDER_AGE');
+            setIsAlertOpen(true);
+        } finally {
+            setIdentityLoading(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!identityVerified) {
+            setErrorMessage("본인인증을 먼저 완료해주세요.");
+            return;
+        }
 
         if (nicknameStatus.available !== true) {
             setErrorMessage("닉네임을 확인해주세요.");
@@ -374,16 +434,20 @@ const SignupForm = () => {
 
                 <div className="mb-4">
                     <label className="block text-gray-700 mb-2">본인 인증</label>
-                    <button
-                        type="button"
-                        className="w-full px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
-                        onClick={() => {
-                            setAlertMessage("PASS 인증 처리 (구현 예정)");
-                            setIsAlertOpen(true);
-                        }}
-                    >
-                        PASS 인증하기
-                    </button>
+                    {identityVerified ? (
+                        <div className="w-full px-4 py-2 bg-green-50 text-green-700 border border-green-300 rounded-lg text-center">
+                            본인인증 완료{identityName && ` (${identityName})`}
+                        </div>
+                    ) : (
+                        <button
+                            type="button"
+                            className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            onClick={handleIdentityVerification}
+                            disabled={identityLoading}
+                        >
+                            {identityLoading ? "인증 처리 중..." : "본인인증하기"}
+                        </button>
+                    )}
                 </div>
 
                 <button
@@ -406,9 +470,15 @@ const SignupForm = () => {
 
             <CommonModal
                 isOpen={isAlertOpen}
-                onClose={() => setIsAlertOpen(false)}
+                onClose={() => {
+                    setIsAlertOpen(false);
+                    if (alertRedirect) navigate("/");
+                }}
                 title="알림"
-                onConfirm={() => setIsAlertOpen(false)}
+                onConfirm={() => {
+                    setIsAlertOpen(false);
+                    if (alertRedirect) navigate("/");
+                }}
                 showCancel={false}
             >
                 {alertMessage}
