@@ -187,7 +187,7 @@ export default function LeagueRecordSection({ partnerRecords, loading, error, on
                 const lastUpdatedAt = hasLeagueRecord ? record.leagueRecord.lastUpdatedAt : null;
 
                 return (
-                    <div key={index} className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                    <div key={record.participantId || index} className="bg-white rounded-lg p-4 mb-4 shadow-sm">
                         <div className="mb-4 pb-3 border-b border-gray-200">
                             {/* 헤더: 닉네임 + Riot ID + 갱신 버튼 */}
                             <div className="flex items-center justify-between mb-2">
