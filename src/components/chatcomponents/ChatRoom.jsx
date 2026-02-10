@@ -6,7 +6,8 @@ import { useUserMinimal } from '../../hooks/queries/useUserQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import PropTypes from "prop-types";
 import {useNavigate} from "react-router-dom";
-import {decrementChatCount,  rateUser, getLeagueRecord} from "../../api/userAPI.js";
+import {decrementChatCount,  rateUser} from "../../api/userAPI.js";
+import { getLeagueRecord } from "../../api/riotAPI.js";  // 라이엇 전적 API (DB 캐싱)
 import { getUserNickname, getUserBasic , getUserRiotInfo  } from "../../api/userLightAPI.js";  // 경량 API
 import CommonModal from "../../common/CommonModal.jsx";
 import ProfileButton from "../../components/MyPageComponent/ProfileButton.jsx";
@@ -1141,6 +1142,18 @@ const ChatRoom = ({roomId, userId}) => {
                 partnerRecords={partnerRecords}
                 loading={recordsLoading}
                 error={recordsError}
+                onRecordUpdate={(gameName, tagLine, newData) => {
+                    // 갱신된 데이터로 partnerRecords 상태 업데이트
+                    setPartnerRecords(prev => prev.map(record => {
+                        if (record.userInfo?.riotGameName === gameName &&
+                            record.userInfo?.riotTagLine === tagLine) {
+                            return { ...record, leagueRecord: newData };
+                        }
+                        return record;
+                    }));
+                    // React Query 캐시도 업데이트
+                    queryClient.setQueryData(['league-record', gameName, tagLine], newData);
+                }}
             />
             <CommonModal
                 isOpen={isAlertOpen}
