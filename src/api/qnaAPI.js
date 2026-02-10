@@ -67,3 +67,20 @@ export async function deleteQna(id) {
         throw new Error('Failed to delete QnA');
     }
 }
+
+/**
+ * QnA에 답변을 추가합니다. (관리자 전용)
+ * @param {string} id - QnA ID
+ * @param {string} answer - 답변 내용
+ * @returns {Promise<Object>} 업데이트된 QnA 객체
+ */
+export async function addQnaAnswer(id, answer) {
+    try {
+        const response = await instance.post(`/api/qna/${id}/answer`, { answer }, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to add answer');
+    }
+}

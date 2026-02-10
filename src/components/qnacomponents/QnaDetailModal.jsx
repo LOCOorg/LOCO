@@ -1,9 +1,8 @@
 // QnaDetailModal.jsx
 import { useState } from 'react';
 import useAuthStore from '../../stores/authStore';
-// import { updateQna } from '../../api/qnaAPI'; // 직접 호출 제거
-import { useUpdateQnA, useDeleteQnA } from '../../hooks/queries/useQnAQueries.js'; // 훅 추가
-import CommonModal from '../../common/CommonModal.jsx'; // 모달 추가
+import { useUpdateQnA, useDeleteQnA, useAddQnAAnswer } from '../../hooks/queries/useQnAQueries.js';
+import CommonModal from '../../common/CommonModal.jsx';
 
 function QnaDetailModal({ qna, onClose }) {
     const { user } = useAuthStore();
@@ -17,10 +16,11 @@ function QnaDetailModal({ qna, onClose }) {
     const [error, setError] = useState('');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // 삭제 모달 상태
 
-    const updateQnAMutation = useUpdateQnA(); // Mutation Hook
+    const updateQnAMutation = useUpdateQnA(); // 질문 수정용
+    const addAnswerMutation = useAddQnAAnswer(); // 답변 작성용 (관리자 전용)
     const deleteQnAMutation = useDeleteQnA(); // 삭제 Mutation Hook
 
-    const isAdmin = user?.role === 'admin' || user?.userLv >= 2;
+    const isAdmin = user?.role === 'admin' || user?.userLv >= 3; // 관리자 Lv 3 이상
     const isOwner = user && (
         String(user._id) === String(qna.userId) ||
         String(user._id) === String(qna.userId?._id)
@@ -31,22 +31,23 @@ function QnaDetailModal({ qna, onClose }) {
 
 
     const handleAnswerSubmit = () => {
+        if (!answerText.trim()) {
+            setError('답변 내용을 입력해주세요.');
+            return;
+        }
         setError('');
-        
-        updateQnAMutation.mutate(
+
+        addAnswerMutation.mutate(
             {
                 id: qna._id,
-                updateData: {
-                    qnaAnswer: answerText,
-                    answerUserId: user._id,
-                    qnaStatus: 'Answered',
-                }
+                answer: answerText
             },
             {
                 onSuccess: (updated) => {
                     // 로컬 UI 업데이트
                     qna.qnaAnswer = updated.qnaAnswer;
                     qna.qnaStatus = updated.qnaStatus;
+                    qna.answerUserId = updated.answerUserId;
                     setIsEditing(false);
                 },
                 onError: (err) => {
@@ -96,7 +97,7 @@ function QnaDetailModal({ qna, onClose }) {
         });
     };
 
-    const loading = updateQnAMutation.isPending;
+    const loading = updateQnAMutation.isPending || addAnswerMutation.isPending;
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50">
@@ -214,8 +215,8 @@ function QnaDetailModal({ qna, onClose }) {
                         </button>
                     )}
 
-                    {/* 답변 작성/수정 버튼 */}
-                    {user?.userLv >= 2 && (
+                    {/* 답변 작성/수정 버튼 (관리자 Lv≥3 전용) */}
+                    {user?.userLv >= 3 && (
                         <>
                             {!isEditing ? (
                                 <button
