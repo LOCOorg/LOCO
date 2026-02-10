@@ -247,25 +247,8 @@ export const getBlockedUsers = async (userId) => {
 
 //=========== 프롬프트 변경=========캐싱추가==========Request/Response확인============countDocuments 적용 가능성==============================================
 
-
-/**
- * Riot ID(gameName, tagLine)로 PUUID 기반 전적 조회
- * @param {string} gameName – Riot ID의 게임명 부분
- * @param {string} tagLine – Riot ID의 태그라인 부분
- */
-export const getLeagueRecord = async (gameName, tagLine) => {
-    try {
-        const encodedGameName = encodeURIComponent(gameName);
-        const encodedTagLine = encodeURIComponent(tagLine);
-        const response = await instance.get(
-            `/api/user/lol/${encodedGameName}/${encodedTagLine}`
-        );
-        return response.data.data; // { summoner: {...}, matches: [...] }
-    } catch (error) {
-        console.error("getLeagueRecord API 호출 중 오류:", error);
-        throw new Error("전적을 불러오는 데 실패했습니다.");
-    }
-};
+// ⚠️ getLeagueRecord는 riotAPI.js로 이동됨
+// import { getLeagueRecord, refreshLeagueRecord } from './riotAPI.js';
 
 export const getFriendsPage = async (userId, offset = 0, limit = 20, online) => {
     try {
