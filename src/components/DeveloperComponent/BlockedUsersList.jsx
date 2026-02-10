@@ -24,8 +24,10 @@ const BlockedUsersList = ({ userId, className = "" }) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await instance.get(`/api/developer/user/${userId}/blocked`);
-            setBlockedUsers(response.data.blockedUsers || []);
+            const response = await instance.get(`/api/developer/users/${userId}/blocked`);
+            // populate 결과로 null이 올 수 있으므로 필터링
+            const validUsers = (response.data.blockedUsers || []).filter(u => u && u._id);
+            setBlockedUsers(validUsers);
 
             if (response.data.metadata) {
                 console.log('📊 차단 목록 조회 메타데이터:', response.data.metadata);
@@ -73,7 +75,7 @@ const BlockedUsersList = ({ userId, className = "" }) => {
     // 사용자 차단
     const blockUser = async (targetUserId) => {
         try {
-            await instance.post(`/api/developer/user/${userId}/block/${targetUserId}/minimal`);
+            await instance.post(`/api/developer/users/${userId}/block/${targetUserId}/minimal`);
 
 
 
@@ -123,7 +125,7 @@ const BlockedUsersList = ({ userId, className = "" }) => {
 
         setIsDirectBlocking(true);
         try {
-            await instance.post(`/api/developer/user/${userId}/block/${directBlockId.trim()}/minimal`);
+            await instance.post(`/api/developer/users/${userId}/block/${directBlockId.trim()}/minimal`);
 
 
 
@@ -151,7 +153,7 @@ const BlockedUsersList = ({ userId, className = "" }) => {
     // 사용자 차단 해제
     const unblockUser = async (targetUserId) => {
         try {
-            await instance.delete(`/api/developer/user/${userId}/block/${targetUserId}/minimal`);
+            await instance.delete(`/api/developer/users/${userId}/block/${targetUserId}/minimal`);
 
             
             // 차단 해제 성공 시 목록에서 제거
@@ -221,8 +223,8 @@ const BlockedUsersList = ({ userId, className = "" }) => {
                     {searchResults.length > 0 && (
                         <div className="mt-3 space-y-2">
                             <div className="text-sm text-gray-600">검색 결과:</div>
-                            {searchResults.map(user => (
-                                <div key={user._id} className="flex items-center justify-between bg-white p-2 rounded border">
+                            {searchResults.map((user, idx) => (
+                                <div key={user._id || idx} className="flex items-center justify-between bg-white p-2 rounded border">
                                     <div className="flex items-center space-x-2">
                                         {user.profilePhoto && (
                                             <img 
@@ -285,8 +287,8 @@ const BlockedUsersList = ({ userId, className = "" }) => {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {blockedUsers.map(user => (
-                            <div key={user._id} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        {blockedUsers.map((user, idx) => (
+                            <div key={user._id || idx} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-3">
                                         {user.profilePhoto ? (

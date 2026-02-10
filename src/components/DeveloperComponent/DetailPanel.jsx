@@ -49,6 +49,27 @@ const modes = [
 
 
 const DetailPanel = ({ user, view, setView }) => {
+    const [formData, setFormData] = useState(user || {});
+    const [productNames, setProductNames] = useState([]);
+
+    // 알림 모달 상태 추가
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+
+    // 마운트 시에 /api/product/names 호출
+    useEffect(() => {
+        axios
+            .get("/api/product/names")
+            .then(res => setProductNames(res.data))
+            .catch(err => console.error(err));
+    }, []);
+
+    useEffect(() => {
+        if (user) {
+            setFormData(user);
+        }
+    }, [user]);
+
     if (!user) {
         return (
             <div className="w-1/3 p-6 overflow-y-auto">
@@ -57,27 +78,6 @@ const DetailPanel = ({ user, view, setView }) => {
             </div>
         );
     }
-
-    const [formData, setFormData] = useState(user);
-    const [productNames, setProductNames] = useState([]);
-
-    // 알림 모달 상태 추가
-    const [isAlertOpen, setIsAlertOpen] = useState(false);
-    const [alertMessage, setAlertMessage] = useState('');
-
-
-    // 마운트 시에 /api/product/names 호출
-    useEffect(() => {
-        axios
-            .get("/api/product/names")
-            .then(res => setProductNames(res.data))
-            .catch(err => console.error(err));
-        }, []);
-
-
-    useEffect(() => {
-        setFormData(user);
-    }, [user]);
 
     // 입력 필드 변경 이벤트 처리
     const handleChange = (e) => {

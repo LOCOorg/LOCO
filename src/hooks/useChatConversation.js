@@ -24,7 +24,11 @@ export function useChatConversation(chatUser, mode) {
                     const activeRes = await axios.get('/api/chat/rooms', {
                         params: { chatUsers: chatUser._id }
                     });
-                    const activeRooms = (activeRes.data || []).map(r => ({
+                    
+                    // 백엔드가 { rooms: [...], pagination: {...} } 형태로 반환하므로 .rooms를 사용해야 함
+                    const activeRoomsData = Array.isArray(activeRes.data) ? activeRes.data : (activeRes.data?.rooms || []);
+                    
+                    const activeRooms = activeRoomsData.map(r => ({
                         ...r,
                         timestamp: r.updatedAt || r.createdAt,
                         source: 'active'

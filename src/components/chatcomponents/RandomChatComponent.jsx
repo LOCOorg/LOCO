@@ -561,9 +561,9 @@ const RandomChatComponent = () => {
             >
                 {(blockedUsers || []).length > 0 ? (
                     <ul className="space-y-3 max-h-64 overflow-y-auto">
-                        {(blockedUsers || []).map(u => (
+                        {(blockedUsers || []).filter(u => u && u._id).map((u, idx) => (
                             <li
-                                key={u._id}
+                                key={u._id || idx}
                                 className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm
                          hover:bg-gray-50 transition cursor-pointer"
                                 onClick={() => handleProfileClick(u)}
