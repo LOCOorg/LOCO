@@ -537,18 +537,19 @@ const FriendChatSidePanel = () => {
         };
     }, []);
 
+    // 친구 삭제 이벤트 처리 (통합 - 기존 2개 useEffect를 1개로 병합)
     useEffect(() => {
         if (!socket) return;
 
-        const handleFriendDeleted = ({ friendId, roomId }) => {
+        const handleFriendDeleted = ({ friendId }) => {
             const { user, setUser } = useAuthStore.getState();
             const { removeFriend } = useFriendListStore.getState();
-            const { removeFriendRoom } = useFriendChatStore.getState();
+            const { friendRooms, removeFriendRoom, selectedRoomId, setSelectedRoomId } = useFriendChatStore.getState();
 
-            // 1. Remove from global friend list
+            // 1. 친구 목록에서 제거
             removeFriend(friendId);
 
-            // 2. Remove from user object in auth store
+            // 2. authStore user.friends에서 제거
             if (user && user.friends) {
                 setUser({
                     ...user,
@@ -556,10 +557,18 @@ const FriendChatSidePanel = () => {
                 });
             }
 
-            // 3. If a chat room was associated, remove it from the chat store
-            if (roomId) {
-                removeFriendRoom(roomId);
+            // 3. store에서 해당 친구의 채팅방 조회 후 제거
+            //    (서버는 roomId를 보내지 않으므로 store에서 직접 조회)
+            const targetRoom = friendRooms.find(r => r.friend?._id === friendId);
+            if (targetRoom) {
+                removeFriendRoom(targetRoom.roomId);
+                if (selectedRoomId === targetRoom.roomId) {
+                    setSelectedRoomId(null);
+                }
             }
+
+            // 4. 채팅방 목록 캐시 무효화
+            queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
         };
 
         socket.on('friendDeleted', handleFriendDeleted);
@@ -567,7 +576,7 @@ const FriendChatSidePanel = () => {
         return () => {
             socket.off('friendDeleted', handleFriendDeleted);
         };
-    }, [socket]);
+    }, [socket, queryClient]);
 
     // 실시간 메시지 수신 처리
     useEffect(() => {
@@ -607,39 +616,6 @@ const FriendChatSidePanel = () => {
             socket.off("receiveMessage", handleReceiveMessage);
         };
     }, [socket, user?._id, friendRooms, updateRoomMessage, selectedRoom, activeRightTab, debouncedMarkAsRead, markRoomAsReadStore]);
-
-
-    useEffect(() => {
-        if (!socket) return;
-
-        const handleFriendDeleted = ({ friendId, roomId }) => {
-            const { user, setUser } = useAuthStore.getState();
-            const { removeFriend } = useFriendListStore.getState();
-            const { removeFriendRoom, selectedRoomId, setSelectedRoomId } = useFriendChatStore.getState();
-
-            removeFriend(friendId);
-
-            if (user && user.friends) {
-                setUser({
-                    ...user,
-                    friends: user.friends.filter(id => id !== friendId)
-                });
-            }
-
-            if (roomId) {
-                removeFriendRoom(roomId);
-                if (selectedRoomId === roomId) {
-                    setSelectedRoomId(null);
-                }
-            }
-        };
-
-        socket.on('friendDeleted', handleFriendDeleted);
-
-        return () => {
-            socket.off('friendDeleted', handleFriendDeleted);
-        };
-    }, [socket]);
 
     const { selectedRoomId: storeSelectedRoomId } = useFriendChatStore();
     useEffect(() => {
@@ -802,8 +778,10 @@ const FriendChatSidePanel = () => {
                 queryClient.invalidateQueries({
                     queryKey: ['friendRequestCount', user._id]
                 });
-                console.log('✅ [Socket] 친구 요청 개수 캐시 무효화 완료');
             }
+
+            // 3. 채팅방 목록 캐시 무효화 (재연결 시 최신 상태 동기화)
+            queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
         };
 
         socket.on('connect', handleReconnect);
