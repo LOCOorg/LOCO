@@ -276,11 +276,7 @@ export function useCacheStatus() {
     }, []);
 
     useEffect(() => {
-        fetchCacheStatus();
-        
-        // 30초마다 캐시 상태 업데이트
-        const interval = setInterval(fetchCacheStatus, 30000);
-        return () => clearInterval(interval);
+        fetchCacheStatus(); // 최초 1회만 조회 (수동 refresh로 갱신)
     }, [fetchCacheStatus]);
 
     return {
