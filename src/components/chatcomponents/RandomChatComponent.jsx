@@ -7,6 +7,7 @@ import {
 } from "../../api/userAPI";
 import { getUserChatStatus } from '../../api/userProfileLightAPI.js';
 import { useChatRooms } from "../../hooks/queries/useChatQueries";
+import { useQueryClient } from '@tanstack/react-query';
 import {
     //createChatRoom,
     //joinChatRoom,
@@ -42,6 +43,7 @@ const RandomChatComponent = () => {
     const [initialCheckComplete, setInitialCheckComplete] = useState(false);
 
     const socket = useSocket(); // 소켓 연결
+    const queryClient = useQueryClient();
 
     const blockedUsers          = useBlockedStore((s) => s.blockedUsers);
     const setBlockedUsersStore  = useBlockedStore((s) => s.setBlockedUsers);
@@ -159,10 +161,13 @@ const RandomChatComponent = () => {
         // 사용자가 방에 참가했을 때
         const handleRoomJoined = ({ roomId, activeUsers, capacity }) => {
             console.log('🔔 [roomJoined 이벤트 수신]', { roomId, activeUsers: activeUsers?.length, capacity });
-            
+
+            // 채팅방 목록 캐시 무효화 (polling 대체)
+            queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
+
             // ⭐ 안전 장치: activeUsers가 배열인지 확인
             const participants = Array.isArray(activeUsers) ? activeUsers : [];
-            
+
             // 현재 대기 중인 방과 일치하는지 확인 (waitingRoomId는 클로저로 최신값 참조)
             setWaitingRoomId(prevRoomId => {
                 if (roomId === prevRoomId) {
@@ -185,7 +190,10 @@ const RandomChatComponent = () => {
         // 사용자가 방을 떠났을 때
         const handleUserLeft = ({ roomId, activeUsers }) => {
             console.log('👋 [userLeft 이벤트 수신]', { roomId, activeUsers: activeUsers?.length });
-            
+
+            // 채팅방 목록 캐시 무효화 (polling 대체)
+            queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
+
             setWaitingRoomId(prevRoomId => {
                 if (roomId === prevRoomId) {
                     setCurrentParticipants(Array.isArray(activeUsers) ? activeUsers : []);
@@ -201,7 +209,7 @@ const RandomChatComponent = () => {
             socket.off("roomJoined", handleRoomJoined);
             socket.off("userLeft", handleUserLeft);
         };
-    }, [socket, userId, navigate]);
+    }, [socket, userId, navigate, queryClient]);
 
     // 유저 정보 호출 함수
     const fetchUserInfoAsync = async (userId) => {
