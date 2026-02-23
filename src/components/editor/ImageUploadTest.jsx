@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { editorService } from '../../api/editorAPI';
 import { toast } from 'react-toastify';
 

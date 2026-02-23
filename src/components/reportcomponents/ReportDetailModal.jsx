@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
 import { replyToReport, fetchSingleReportedMessage, fetchReportedMessagePlaintext, fetchReportById } from '../../api/reportAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
-import useAuthStore from '../../stores/authStore.js';
-import {useNavigate} from "react-router-dom";
 
 // eslint-disable-next-line react/prop-types
 const ReportDetailModal = ({ reportId, onClose, onUpdateReport }) => {
-    const { user } = useAuthStore();
     const [replyContent, setReplyContent] = useState('');
     const [suspensionDays, setSuspensionDays] = useState('');
     const [selectedStopDetail, setSelectedStopDetail] = useState('');
@@ -20,8 +17,6 @@ const ReportDetailModal = ({ reportId, onClose, onUpdateReport }) => {
     const [singleMessageData, setSingleMessageData] = useState(null);
     const [allMessagesData, setAllMessagesData] = useState(null);
     const [totalReportedMessagesCount, setTotalReportedMessagesCount] = useState(0); // 추가된 상태
-
-    const navigate = useNavigate();
 
     // ✅ 이미지 경로 처리 헬퍼 함수
     const getImgSrc = (path) => {

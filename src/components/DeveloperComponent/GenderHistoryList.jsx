@@ -1,5 +1,5 @@
 // src/components/DeveloperComponent/GenderHistoryList.jsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import instance from '../../api/axiosInstance';
 
 const GenderHistoryList = ({ userId, className = "" }) => {

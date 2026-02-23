@@ -1,6 +1,4 @@
 // src/components/AuthGuard.jsx
-
-import React from 'react';
 import { useLv } from '../../hooks/useLv.js';
 
 

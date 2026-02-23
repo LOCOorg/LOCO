@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import { createQna } from '../../api/qnaAPI.js'; // 직접 API 호출 제거
 import { useCreateQnA } from '../../hooks/queries/useQnAQueries.js'; // 훅 추가
 import useAuthStore from '../../stores/authStore';
-// import { getUserInfo } from '../../api/userAPI';
 import CommonModal from '../../common/CommonModal.jsx';
 
 /**
@@ -19,23 +17,13 @@ function QnaWriteComponent() {
         isAnonymous: false,
         isAdminOnly: false,
     });
-    // const [loading, setLoading] = useState(false); // 훅의 isPending 사용
     const [error, setError] = useState('');
-    // const [userData, setUserData] = useState(null);
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
     // Mutation Hook 사용
     const createQnAMutation = useCreateQnA();
-
-    // useEffect(() => {
-    //     if (user && user._id) {
-    //         getUserInfo(user._id)
-    //             .then((data) => setUserData(data))
-    //             .catch((err) => console.error(err));
-    //     }
-    // }, [user]);
 
     const handleChange = (e) => {
         const { name, type, value, checked } = e.target;

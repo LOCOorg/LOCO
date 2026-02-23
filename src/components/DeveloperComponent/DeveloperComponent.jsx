@@ -1,6 +1,6 @@
 // File: src/components/DeveloperComponent/DeveloperComponent.jsx
 // 관리자 페이지
-import React, {useState, useEffect} from "react";
+import {useState, useEffect} from "react";
 import {useDeveloperSearch} from "../../hooks/useDeveloperSearch.js";
 import SearchPanel from "./SearchPanel.jsx";
 import DetailPanel from "./DetailPanel.jsx";
@@ -9,8 +9,6 @@ import ChatUserSearchPanel from "./chatcomponents/ChatUserSearchPanel.jsx";
 import ChatRoomListPanel from "./chatcomponents/ChatRoomListPanel.jsx";
 import ChatMessageView from "./chatcomponents/ChatMessageView.jsx";
 import {useChatConversation} from "../../hooks/useChatConversation";
-import {useLv} from "../../hooks/useLv";
-import {Navigate} from "react-router-dom";
 import HistoryPanel from "./HistoryPanel.jsx";
 import {useSocket} from "../../hooks/useSocket.js";
 import axios from "axios";
@@ -19,7 +17,6 @@ import ProfanityManager from './ProfanityManager.jsx'; // 비속어 관리 컴�
 const PAGE_SIZE = 30;
 
 const DeveloperComponent = () => {
-
 
     // 1) 개발자 전용 사용자 검색 훅 (복호화 지원)
     const {

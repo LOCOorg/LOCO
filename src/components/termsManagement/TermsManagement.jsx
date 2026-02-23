@@ -1,15 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAllTerms, createTerm, deleteTerm, updateTerm } from '../../api/termAPI';
 import TipTapAdvancedEditor from '../editor/TipTapAdvancedEditor';
 import { toast } from 'react-toastify';
 import moment from 'moment';
-import useAuthStore from '../../stores/authStore';
-import { useNavigate } from 'react-router-dom';
 
 const TermsManagement = () => {
-    const { user } = useAuthStore();
-    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const editorRef = useRef(null);
 

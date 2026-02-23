@@ -1,19 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSocket } from "../../hooks/useSocket.js";
-import {
-    getBlockedUsers,
-    unblockUserMinimal
-} from "../../api/userAPI";
+import { getBlockedUsers, unblockUserMinimal } from "../../api/userAPI";
 import { getUserChatStatus } from '../../api/userProfileLightAPI.js';
 import { useChatRooms } from "../../hooks/queries/useChatQueries";
-import {
-    //createChatRoom,
-    //joinChatRoom,
-    // fetchChatRooms,
-    //fetchUserLeftRooms,
-    leaveChatRoom, findOrCreateChatRoom
-} from "../../api/chatAPI";
+import { leaveChatRoom, findOrCreateChatRoom } from "../../api/chatAPI";
 import CommonModal from "../../common/CommonModal";
 import SimpleProfileModal from "../MyPageComponent/SimpleProfileModal.jsx";
 import useAuthStore from "../../stores/authStore.js";

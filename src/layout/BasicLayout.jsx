@@ -6,8 +6,6 @@ import FriendChatSidePanel from '../components/MyPageComponent/FriendChatSidePan
 import FriendRequestNotification from '../components/MyPageComponent/FriendRequestNotification.jsx';
 import LoginModal from "../components/loginComponent/LoginModal.jsx";
 import {useEffect, useRef, useState} from "react";
-//import LogoutButton from '../components/authComponent/LogoutButton.jsx';
-//import MyMenus from './layoutMyMenus/MyMenus.jsx';
 import MyMenuDrop from "./layoutMyMenus/MyMenuDrop.jsx";
 import DropdownTransition from './css/DropdownTransition.jsx';
 import NotificationToggleButton from "./setting/NotificationToggleButton.jsx";
@@ -83,12 +81,6 @@ const BasicLayout = ({ children }) => {
                     </ul>
 
                 </nav>
-
-
-
-
-
-
 
 
 
