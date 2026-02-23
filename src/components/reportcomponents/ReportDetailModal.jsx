@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { replyToReport, fetchSingleReportedMessage, fetchReportedMessagePlaintext, fetchReportById } from '../../api/reportAPI.js';
 import CommonModal from '../../common/CommonModal.jsx';
 
-// eslint-disable-next-line react/prop-types
 const ReportDetailModal = ({ reportId, onClose, onUpdateReport }) => {
     const [replyContent, setReplyContent] = useState('');
     const [suspensionDays, setSuspensionDays] = useState('');

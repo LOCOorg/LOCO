@@ -4,7 +4,7 @@ import { getUserByNickname } from '../../api/userAPI.js';
 import useAuthStore from '../../stores/authStore.js';
 import CommonModal from '../../common/CommonModal.jsx';
 
-// eslint-disable-next-line react/prop-types
+
 const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '프로필', anchor }) => {
     // authStore에서 로그인한 사용자 정보 가져오기
     const { user } = useAuthStore();
@@ -15,7 +15,6 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '프
         reportArea: defaultArea,
         reportCategory: '욕설, 모욕, 혐오발언',
         reportContants: '',
-        // eslint-disable-next-line react/prop-types
         offenderNickname: reportedUser ? (reportedUser.nickname || reportedUser.name || '') : '',
         reportErId: user ? user._id : ''
     });
@@ -39,7 +38,6 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '프
         if (reportedUser) {
             setNewReport(prev => ({
                 ...prev,
-                // eslint-disable-next-line react/prop-types
                 offenderNickname: reportedUser.nickname || reportedUser.name || ''
             }));
         }
@@ -90,7 +88,6 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '프
                 reportArea: '프로필',
                 reportCategory: '욕설, 모욕, 혐오발언',
                 reportContants: '',
-                // eslint-disable-next-line react/prop-types
                 offenderNickname: reportedUser ? (reportedUser.nickname || reportedUser.name || '') : '',
                 reportErId: user ? user._id : ''
             });
