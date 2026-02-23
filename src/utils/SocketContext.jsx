@@ -37,9 +37,22 @@ export const SocketProvider = ({ children }) => {
     const socketRef = useRef(null);  // 🆕 소켓 인스턴스 ref
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 1️⃣ 소켓 초기화 - 한 번만 실행 (의존성 없음)
+    // 1️⃣ 소켓 초기화 - 로그인 상태에서만 연결
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     useEffect(() => {
+        // 비로그인 상태에서는 소켓 연결하지 않음
+        if (!user?._id) {
+            // 기존 소켓이 있으면 정리
+            if (socketRef.current) {
+                console.log('🔌 [SocketContext] 비로그인 상태 - 소켓 연결 해제');
+                socketRef.current.disconnect();
+                socketRef.current = null;
+                setSocket(null);
+                registerSocket(null);
+            }
+            return;
+        }
+
         // 이미 소켓이 있으면 재생성 안 함
         if (socketRef.current) {
             console.log('✅ [SocketContext] 기존 소켓 재사용');
@@ -149,13 +162,19 @@ export const SocketProvider = ({ children }) => {
             }));
         });
 
-        // 🆕 연결 오류
+        // 🆕 연결 오류 - 인증 실패 시 재연결 중단
         newSocket.on('connect_error', (error) => {
             console.error('❌ [SocketContext] 연결 오류:', error.message);
             setConnectionState(prev => ({
                 ...prev,
                 lastError: error.message
             }));
+
+            // 인증 실패인 경우 무한 재연결 방지
+            if (error.message === '인증이 필요합니다.' || error.message?.includes('인증')) {
+                console.warn('🛑 [SocketContext] 인증 실패 - 재연결 중단');
+                newSocket.disconnect();
+            }
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -238,35 +257,30 @@ export const SocketProvider = ({ children }) => {
             socketRef.current = null;
             registerSocket(null);
         };
-    }, []);  // 🆕 의존성 없음 - 한 번만 실행
+    }, [user?._id]);  // 로그인/로그아웃 시 소켓 연결/해제
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 2️⃣ 사용자 변경 시 register만 다시 호출
+    // 2️⃣ 사용자 등록 (초기 연결 + 재연결 통합)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     useEffect(() => {
-        if (socket && socket.connected && user?._id) {
+        if (!socket || !user?._id) return;
+
+        // 이미 연결된 상태면 즉시 register
+        if (socket.connected) {
             socket.emit('register', user._id);
             console.log(`📝 [SocketContext] 사용자 등록: ${user._id}`);
         }
-    }, [socket, user?._id]);
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 3️⃣ 소켓 재연결 시 사용자 재등록
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    useEffect(() => {
-        if (!socket) return;
-
-        const handleReconnect = () => {
-            if (user?._id) {
-                socket.emit('register', user._id);
-                console.log(`📝 [SocketContext] 재연결 후 사용자 재등록: ${user._id}`);
-            }
+        // 재연결 시 register
+        const handleConnect = () => {
+            socket.emit('register', user._id);
+            console.log(`📝 [SocketContext] 재연결 후 사용자 재등록: ${user._id}`);
         };
 
-        socket.on('connect', handleReconnect);
+        socket.on('connect', handleConnect);
 
         return () => {
-            socket.off('connect', handleReconnect);
+            socket.off('connect', handleConnect);
         };
     }, [socket, user?._id]);
 
