@@ -6,6 +6,7 @@ import FriendChatSidePanel from '../components/MyPageComponent/FriendChatSidePan
 import FriendRequestNotification from '../components/MyPageComponent/FriendRequestNotification.jsx';
 import LoginModal from "../components/loginComponent/LoginModal.jsx";
 import {useEffect, useRef, useState} from "react";
+import {ToastContainer, Zoom} from "react-toastify";
 //import LogoutButton from '../components/authComponent/LogoutButton.jsx';
 //import MyMenus from './layoutMyMenus/MyMenus.jsx';
 import MyMenuDrop from "./layoutMyMenus/MyMenuDrop.jsx";
@@ -165,6 +166,16 @@ const BasicLayout = ({ children }) => {
             />
             <ReactivationModal />
             <TermConsentModal />
+            <ToastContainer
+                position="top-center"
+                autoClose={1500}
+                hideProgressBar={false}
+                newestOnTop={true}
+                closeOnClick
+                pauseOnHover
+                pauseOnFocusLoss
+                transition={Zoom}
+            />
         </div>
     );
 };
