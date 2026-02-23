@@ -21,9 +21,15 @@ const instance = axios.create({
 let isRefreshing = false;
 let subscribers  = [];
 
-// 토큰 갱신 후 대기 중인 요청에 헤더 심어주기
-function onRefreshed(token) {
-    subscribers.forEach((cb) => cb(token));
+// 토큰 갱신 후 대기 중인 요청 재시도
+function onRefreshed() {
+    subscribers.forEach((cb) => cb(null));
+    subscribers = [];
+}
+
+// 리프레시 실패 시 대기 중인 요청 모두 reject
+function onRefreshFailed(err) {
+    subscribers.forEach((cb) => cb(err));
     subscribers = [];
 }
 
@@ -47,10 +53,13 @@ instance.interceptors.response.use(
                     onRefreshed();
 
                 } catch (err) {
-                    // ③ 리프레시 실패 시, 큐를 비우고 로그아웃
-                    subscribers = [];
-                    useAuthStore.getState().logout();
-                    // window.location.href = '/';
+                    // 리프레시 실패 시, 대기 중인 요청 모두 reject 후 비로그인 상태로 전환
+                    onRefreshFailed(err);
+                    // logout() 대신 상태만 직접 리셋
+                    // logout()은 logoutAPI()를 호출하는데, 이것이 다시 401 → refresh 실패
+                    // → logout() → logoutAPI() → 401 ... 체인 반응을 일으킴
+                    // 만료된 쿠키는 서버에서 자동으로 무효화되므로 별도 정리 불필요
+                    useAuthStore.setState({ user: null, accessToken: null, isLoading: false });
                     return Promise.reject(err);
                 } finally {
                     isRefreshing = false;
@@ -60,10 +69,15 @@ instance.interceptors.response.use(
 
             // ④ 이미 isRefreshing이 true인 경우, 큐에 콜백만 등록
             // 기존 요청은 Promise에 묶어 두었다가 토큰 갱신 후 재시도
-            return new Promise((resolve) => {
-                addSubscriber(() => {
-                    // config.headers.Authorization = `Bearer ${token}`;
-                    resolve(instance(config));
+            return new Promise((resolve, reject) => {
+                addSubscriber((err) => {
+                    if (err) {
+                        // 리프레시 실패 → 큐에 있던 요청도 reject
+                        reject(err);
+                    } else {
+                        // 리프레시 성공 → 원래 요청 재시도
+                        resolve(instance(config));
+                    }
                 });
             });
         }
