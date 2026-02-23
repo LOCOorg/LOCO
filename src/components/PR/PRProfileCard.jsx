@@ -1,5 +1,4 @@
 // src/components/pr/PRProfileCard.jsx
-import React from "react";
 import {CARD_W} from "./prCardSize.js";
 
 const DEFAULT_PROFILE_IMAGE = import.meta.env.VITE_DEFAULT_PROFILE_IMAGE;

@@ -1,5 +1,5 @@
 // File: src/components/DeveloperComponent/UserFriendList.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { getFriendsPage } from "../../api/userAPI.js";
 

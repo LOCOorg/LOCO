@@ -8,10 +8,8 @@ export default function ProfileDetailSection({
                                                  profile,
                                                  formData,
                                                  isOwnProfile,
-                                                 //editMode,
                                                  handleInputChange,
                                                  handleSave,
-                                                 //setEditMode,
                                                  handlePrivacyToggle, // ✅ 추가
 
                                              }) {
@@ -201,8 +199,6 @@ export default function ProfileDetailSection({
 
     return (
         <div className="bg-white rounded-2xl p-8 space-y-6 shadow-md">
-            {/*<p className="mb-4">로코 코인: {profile.coinLeft}</p>*/}
-
 
             {/* ✅ 공개 설정 섹션 (본인 프로필일 때만 표시) */}
             {isOwnProfile && (
@@ -321,13 +317,11 @@ export default function ProfileDetailSection({
             </div>
 
             {/* 게임 닉네임들 */}
-            {['lolNickname', /*'suddenNickname', 'battleNickname'*/].map((key) => (
+            {['lolNickname'].map((key) => (
                 <div key={key} className="mb-4">
                     <strong className="w-32">
                         {{
                             lolNickname: '롤/TFT 닉네임',
-                            // suddenNickname: '서든닉네임',
-                            // battleNickname: '배틀그라운드 닉네임'
                         }[key]}
                     </strong>
                     {isOwnProfile ? (

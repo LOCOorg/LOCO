@@ -209,3 +209,6 @@ MyPageButton.jsx - 사용 안되고 있음, 불필요
 
 
 reportAPI - fetchReportChatlog
+
+- 친구 채팅 안읽은 메시지 재 로그인시에는 안읽은 메시지 표시가 안뜸
+- queries 사용 안되고 있는 코드들 사용 여부 체크

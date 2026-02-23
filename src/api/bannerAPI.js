@@ -113,5 +113,3 @@ export const bannerService = {
         }
     }
 };
-
-export default bannerService;

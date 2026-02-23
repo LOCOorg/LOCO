@@ -6,7 +6,6 @@ import {
     voteCommentPoll,
     cancelCommentVote,
     deleteCommentPoll,
-    getCommentUserVoteStatus,
     getCommentPollResults
 } from '../api/communityApi.js';
 

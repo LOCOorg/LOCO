@@ -1,5 +1,4 @@
 // src/components/pr/PRFilter.jsx
-import React from "react";
 import {
     sortOptions,
     genderOptions,

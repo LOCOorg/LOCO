@@ -1,5 +1,5 @@
 // src/components/pr/PRProfileCardGrid.jsx
-import React, {useEffect, useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import PRProfileCard from "./PRProfileCard";
 
 const GAP_PX = 24;         // 카드 간격

@@ -1,6 +1,5 @@
 // src/components/pr/PRPageComponent.jsx
-import React, {useState} from "react";
-// import {getPRTopUsers, getPRUserList} from "../../api/prAPI";
+import { useState } from "react";
 import { usePRTopUsers, usePRUserList } from "../../hooks/queries/usePRQueries";
 import PRTopSlider from "./PRTopSlider";
 import PRFilter from "./PRFilter";
@@ -11,13 +10,10 @@ import { useOnlineStatus } from "../../hooks/useOnlineStatus.js";
 import { Link } from 'react-router-dom';
 
 const PRPageComponent = () => {
-    // const [topUsers, setTopUsers] = useState([]);
-    // const [allUsers, setAllUsers] = useState([]);
     const [sort, setSort] = useState("star|desc");
     const [tier, setTier] = useState([]);
     const [gender, setGender] = useState("all");
     const limit = 5;             // ← 한 번에 5개씩
-    // const [loading, setLoading] = useState(false);
     const [selectedProfile, setSelectedProfile] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
@@ -46,40 +42,15 @@ const PRPageComponent = () => {
     const allUserIds = [...topUsers, ...allUsers].map(user => user._id).filter(Boolean);
     const { onlineStatus } = useOnlineStatus(allUserIds);
 
-
-
-    // // Top 10 불러오기 (unchanged)
-    // useEffect(() => {
-    //     getPRTopUsers()
-    //         .then(res => setTopUsers(res.data || []))
-    //         .catch(console.error);
-    // }, []);
-    //
-    // // allUsers 불러오기 (sort, gender, page 바뀔 때마다)
-    // useEffect(() => {
-    //     setLoading(true);
-    //     getPRUserList({sort, gender, tier, page, limit})
-    //         .then(res => {
-    //             const next = res.data || [];
-    //             setAllUsers(prev => page === 1 ? next : [...prev, ...next]);
-    //         })
-    //         .catch(console.error)
-    //         .finally(() => setLoading(false));
-    // }, [sort, gender, tier, page]);
-
-
     // 핸들러
     const handleSortChange = e => {
-        // setPage(1);
         setSort(e.target.value);
     };
     const handleGenderChange = e => {
-        // setPage(1);
         setGender(e.target.value);
     };
     const handleTierChange = e => {
         const {value, checked} = e.target;
-        // setPage(1);
         setTier(prev => checked
             ? [...prev, value]
             : prev.filter(g => g !== value)

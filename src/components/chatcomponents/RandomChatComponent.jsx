@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSocket } from "../../hooks/useSocket.js";
-import {
-    getBlockedUsers,
-    unblockUserMinimal
-} from "../../api/userAPI";
+import { getBlockedUsers, unblockUserMinimal } from "../../api/userAPI";
 import { getUserChatStatus } from '../../api/userProfileLightAPI.js';
 import { useChatRooms } from "../../hooks/queries/useChatQueries";
 import { useQueryClient } from '@tanstack/react-query';

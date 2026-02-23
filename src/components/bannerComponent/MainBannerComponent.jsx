@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { bannerService } from '../../api/bannerAPI.js';
-import { toast } from 'react-toastify';
 
 const MainBannerComponent = () => {
     const [banners, setBanners] = useState([]);
@@ -148,11 +147,6 @@ const MainBannerComponent = () => {
 
     const currentBanner = banners[currentIndex];
     const imageUrl = getImageUrl(currentBanner.image?.path);
-    
-    // // 디버깅 로그
-    // console.log('현재 배너:', currentBanner);
-    // console.log('원본 이미지 경로:', currentBanner.image?.path);
-    // console.log('생성된 이미지 URL:', imageUrl);
 
     return (
         <div 

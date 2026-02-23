@@ -1,7 +1,6 @@
 // src/components/communitycomponents/CommunityList.jsx
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-//import { fetchCommunities } from '../../api/communityApi.js';
 import { useCommunities } from '../../hooks/queries/useCommunityQueries';
 import useSidebarData from '../../hooks/useSidebarData.js';
 import PageComponent from '../../common/pageComponent.jsx';

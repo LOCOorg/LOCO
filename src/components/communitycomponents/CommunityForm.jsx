@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    fetchTopCommented,
-    fetchTopViewed,
-} from '../../api/communityAPI.js';
+import { fetchTopCommented, fetchTopViewed } from '../../api/communityAPI.js';
 import useAuthStore from '../../stores/authStore.js';
 import { useCreateCommunity } from '../../hooks/queries/useCommunityQueries';
 import LeftSidebar from '../../layout/CommunityLayout/LeftSidebar.jsx';

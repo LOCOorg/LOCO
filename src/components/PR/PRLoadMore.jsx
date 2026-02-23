@@ -1,5 +1,4 @@
 // src/components/pr/PRLoadMore.jsx
-import React from "react";
 
 const PRLoadMore = ({ loading, handleShowMore }) => (
     <div className="text-center my-8">

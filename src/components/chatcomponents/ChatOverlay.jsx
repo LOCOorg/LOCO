@@ -10,7 +10,6 @@ import { filterProfanity } from '../../utils/profanityFilter.js';
 import MessageReportModal from "./MessageReportModal.jsx";
 import { debounce } from 'lodash';
 import { useChatMessages } from "../../hooks/queries/useChatQueries.js"; // 추가
-import { useUserMinimal } from "../../hooks/queries/useUserQueries.js";
 import { useQueryClient } from '@tanstack/react-query'; // 추가
 
 // eslint-disable-next-line react/prop-types

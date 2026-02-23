@@ -6,7 +6,6 @@ import { Navigate } from 'react-router-dom';
 import useAuthStore from '../stores/authStore.js';
 
 function DeveloperGuard() {
-    // const user = useAuthStore(state => state.user);
     const user      = useAuthStore(state => state.user);
     const isLoading = useAuthStore(state => state.isLoading);
     if (isLoading) {

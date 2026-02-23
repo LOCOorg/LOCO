@@ -1,10 +1,9 @@
 // src/components/pr/PRTopSlider.jsx
-import React, {useState, useEffect, useRef, useLayoutEffect, useCallback} from "react";
+import {useState, useEffect, useRef, useLayoutEffect, useCallback} from "react";
 import PRProfileCard from "./PRProfileCard";
 
 
 const GAP_PX = 24;      // space-x-6 클래스의 gap (1.5rem = 24px)
-const CARD_WIDTH = 240;
 const AUTO_PLAY_MS = 3000; // 자동 재생 간격
 const STEP = 1;
 const FIXED_CARD_WIDTH = 206;   //카드 크기

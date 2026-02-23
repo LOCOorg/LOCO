@@ -4,18 +4,6 @@ import instance from "./axiosInstance.js"; // axios 모듈 import
 import { debounce } from 'lodash';
 
 
-
-// 유저 정보 조회 API 함수(사용 안함)
-export const getUserInfo = async (userId) => {
-    try {
-        const response = await instance.get(`/api/user/${userId}`); // API 호출
-        return response.data.data; // 성공적으로 데이터 받으면 반환
-        // eslint-disable-next-line no-unused-vars
-    } catch (error) {
-        throw new Error("유저 정보를 불러오는 데 실패했습니다."); // 에러 발생 시 에러 메시지
-    }
-};
-
 //====================================================================================================================
 //=========== 프롬프트 변경=========캐싱추가==========Request/Response확인============countDocuments 적용 가능성==============================================
 
@@ -265,14 +253,6 @@ export const getFriendsPage = async (userId, offset = 0, limit = 20, online) => 
     }
 };
 
-//=========== 프롬프트 변경=========캐싱추가==========Request/Response확인============countDocuments 적용 가능성==============================================
-
-
-
-
-
-
-//=========== 프롬프트 변경=========캐싱추가==========Request/Response확인============countDocuments 적용 가능성==============================================
 //추가 확인 필요
 export const updateUserPrefs = async (userId, prefs) => {
     try {
