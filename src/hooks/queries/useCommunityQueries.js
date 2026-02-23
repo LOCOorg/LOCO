@@ -469,17 +469,9 @@ export const useRecommendCommunity = () => {
 
         // 🎯 성공 시
         onSuccess: (data, variables) => {
-            // 인기글 캐시 무효화 (추천 수 변경이 인기글에 반영)
+            // 상세 페이지만 무효화 (추천은 조회수/댓글수와 무관)
             queryClient.invalidateQueries({
-                queryKey: ['communities', 'top-viewed']
-            });
-            queryClient.invalidateQueries({
-                queryKey: ['communities', 'top-commented']
-            });
-
-            // 게시글 목록 캐시 무효화
-            queryClient.invalidateQueries({
-                queryKey: ['communities', 'list']
+                queryKey: ['communities', 'detail', variables.postId]
             });
 
             console.log('✅ [Mutation] 추천 처리 완료');
