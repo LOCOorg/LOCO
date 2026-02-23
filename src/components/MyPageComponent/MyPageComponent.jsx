@@ -2,7 +2,6 @@
 import {useEffect, useRef, useState} from 'react';
 import { Link } from 'react-router-dom';
 import {uploadFile} from "../../api/fileUploadAPI";
-// import { updateUserPrefs } from '../../api/userAPI'; // ❌ 제거
 import useAuthStore from '../../stores/authStore';
 import { useUpdateUserProfile, useUserForEdit, useUpdateUserPrefs } from '../../hooks/queries/useUserQueries'; // ✅ Hook 추가
 import ProfilePhotoSection from './ProfilePhotoSection';
