@@ -24,7 +24,8 @@ export const useChatRooms = (params) => {
         queryFn: () => fetchChatRooms(params),
         staleTime: 10000,       // 10초
         gcTime: 300000,         // 5분
-        refetchInterval: 30000, // 30초마다 자동 갱신
+        // polling 제거 - WebSocket 이벤트 기반으로 캐시 무효화
+        refetchOnWindowFocus: true,
         enabled: !!params?.userId, // userId가 있을 때만 실행
     });
 };
