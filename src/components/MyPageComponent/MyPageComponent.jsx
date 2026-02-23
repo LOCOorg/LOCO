@@ -7,7 +7,7 @@ import useAuthStore from '../../stores/authStore';
 import { useUpdateUserProfile, useUserForEdit, useUpdateUserPrefs } from '../../hooks/queries/useUserQueries'; // ✅ Hook 추가
 import ProfilePhotoSection from './ProfilePhotoSection';
 import ProfileDetailSection from './ProfileDetailSection';
-import {toast, ToastContainer, Zoom} from "react-toastify";
+import {toast} from "react-toastify";
 import QnaHistoryComponent from "./QnaHistoryComponent.jsx";
 
 const MyPageContent = ({overrideProfile}) => {
@@ -326,19 +326,6 @@ const MyPageContent = ({overrideProfile}) => {
             <div className="mb-6">
                 {/* QnA 내역 */}
                 <QnaHistoryComponent profile={profile} />
-                
-                {/* 수정완료, 실패 알림임 옵션들은 gpt한테 물어보기*/}
-                <ToastContainer
-                    position="top-center"
-                    autoClose={1500}
-                    hideProgressBar={false}
-                    newestOnTop={true} // true : 새 알림이 맨 위, false 맨 아래
-                    closeOnClick
-                    pauseOnHover
-                    // draggable   //토스트를 “끌어서” 닫을 수 있게 해 주는 옵션
-                    pauseOnFocusLoss    //브라우저 창 또는 탭이 포커스를 잃었을 때(다른 탭으로 전환 등) autoClose 카운트다운을 일시정지할지 여부를 결정
-                    transition={Zoom}   //Slide, Zoom, Flip, Bounce
-                />
 
                 <div className="mt-8 text-center">
                     <Link to="/userLeave" className="text-sm text-gray-500 hover:text-red-500 hover:underline">

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { loginWithKakao } from '../../api/authAPI.js';
 import useAuthStore from "../../stores/authStore.js";
 import useNotificationStore from "../../stores/notificationStore.js";
+import { loadFullUser } from '../../utils/loadFullUser.js';
 import useReactivationStore from "../../stores/useReactivationStore.js";
 import CommonModal from "../../common/CommonModal.jsx";
 
@@ -27,7 +28,7 @@ const LoginHandler = () => {
                     // 서버 세션에 소셜 데이터가 저장되므로 바로 이동
                     navigate('/signupPage');
                 } else if (data.status === 'success') {
-                    setUser(data.user);
+                    await loadFullUser(data.user);
                     await syncWithUserPrefs({
                         friendReqEnabled: data.user.friendReqEnabled ?? true,
                         chatPreviewEnabled: data.user.chatPreviewEnabled ?? true,

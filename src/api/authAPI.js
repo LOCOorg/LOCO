@@ -18,9 +18,11 @@ export const loginWithNaver = (code, state) =>
 
 
 // Silent refresh: 쿠키에 담긴 Refresh Token으로 새 Access Token 발급
+// ✅ plain axios 사용 - instance 사용 시 401 인터셉터 재진입으로 데드락 발생
 export const refresh = () =>
-    instance.post('/api/auth/refresh')
-        .then(() => {});
+    axios.post(`${import.meta.env.VITE_API_HOST}/api/auth/refresh`, {}, {
+        withCredentials: true,
+    }).then(() => {});
 
 
 

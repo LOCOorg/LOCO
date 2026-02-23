@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { loginWithNaver } from '../../api/authAPI.js';
 import useAuthStore from "../../stores/authStore.js";
 import useNotificationStore from "../../stores/notificationStore.js";
+import { loadFullUser } from '../../utils/loadFullUser.js';
 import useReactivationStore from '../../stores/useReactivationStore.js';
 import CommonModal from "../../common/CommonModal.jsx";
 
@@ -27,7 +28,7 @@ const NaverLoginHandler = () => {
                 if (data.status === 'noUser' || data.status === 'new_registration_required') {
                     navigate('/signupPage');
                 } else if (data.status === 'success') {
-                    setUser(data.user);
+                    await loadFullUser(data.user);
                     await syncWithUserPrefs({
                         friendReqEnabled: data.user.friendReqEnabled ?? true,
                         chatPreviewEnabled: data.user.chatPreviewEnabled ?? true,
