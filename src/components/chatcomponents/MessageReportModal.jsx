@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import axios from 'axios';
+import instance from '../../api/axiosInstance.js';
 import useAuthStore from '../../stores/authStore.js';
 import CommonModal from '../../common/CommonModal.jsx';
 
@@ -22,10 +22,15 @@ const MessageReportModal = ({
     const [selectedCategory, setSelectedCategory] = useState('');
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [throwError, setThrowError] = useState(null);
     
     // 알림 모달 상태
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
+
+    if (throwError) {
+        throw throwError;
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -53,21 +58,25 @@ const MessageReportModal = ({
                 roomType: roomType
             };
 
-            const response = await axios.post(
-                `${import.meta.env.VITE_API_HOST}/api/chat/messages/${message._id}/report`,
-                reportData,
-                { withCredentials: true }
+            const response = await instance.post(
+                `/api/chat/messages/${message._id}/report`,
+                reportData
             );
             
             if (response.data.success) {
                 setAlertMessage('신고가 접수되었습니다. 검토 후 조치하겠습니다.');
                 setIsAlertOpen(true);
-                // 모달 닫기는 확인 버튼 누른 후 처리하거나 여기서 처리
-                // 여기서는 alert 확인 후 닫는게 자연스러우므로 상태 유지
             }
         } catch (error) {
             console.error('신고 실패:', error);
-            const errorMessage = error.response?.data?.message || '신고 처리 중 오류가 발생했습니다.';
+            const status = error.status || error.response?.status;
+            
+            if (status === 401 || status === 403 || status === 500) {
+                setThrowError(error);
+                return;
+            }
+
+            const errorMessage = error.response?.data?.message || error.message || '신고 처리 중 오류가 발생했습니다.';
             setAlertMessage(errorMessage);
             setIsAlertOpen(true);
         } finally {
