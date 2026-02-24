@@ -27,6 +27,7 @@ import BannerRouter from "./BannerRouter.jsx";
 import UserLeaveRouter from "./UserLeaveRouter.jsx";
 import TermsRouter from "./TermsRouter.jsx";
 import TermsPage from "../pages/TermsPage.jsx";
+import ErrorPage from "../pages/error/ErrorPage.jsx";
 
 const MainRouter = createBrowserRouter([
     {
@@ -34,6 +35,7 @@ const MainRouter = createBrowserRouter([
         element: <AuthGuard>
             <BasicLayout />
         </AuthGuard>,
+        errorElement: <ErrorPage />,
         children: [
             { index: true,                     element: <IndexPage /> },
             { path: "signupPage",              element: <SignupGuard><SignupPage /></SignupGuard> },
