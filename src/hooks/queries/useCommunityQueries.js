@@ -362,12 +362,13 @@ export const useCommunities = (params) => {
  * - 5분 캐싱 (상세 내용은 자주 안 바뀜)
  * 
  * @param {string} postId - 게시글 ID
+ * @param {boolean} incrementViews - 조회수 증가 여부
  * @returns {UseQueryResult}
  */
-export const useCommunity = (postId) => {
+export const useCommunity = (postId, incrementViews = true) => {
     return useQuery({
-        queryKey: ['communities', 'detail', postId],
-        queryFn: () => fetchCommunityById(postId),
+        queryKey: ['communities', 'detail', postId, { incrementViews }],
+        queryFn: () => fetchCommunityById(postId, incrementViews),
         
         // 🎯 캐싱 전략
         staleTime: 300000,             // 5분 - 상세 내용 자주 안 바뀜
@@ -468,13 +469,22 @@ export const useRecommendCommunity = () => {
         },
 
         // 🎯 성공 시
-        onSuccess: (data, variables) => {
-            // 상세 페이지만 무효화 (추천은 조회수/댓글수와 무관)
-            queryClient.invalidateQueries({
-                queryKey: ['communities', 'detail', variables.postId]
-            });
+        onSuccess: async (data, variables) => {
+            // 상세 페이지만 수동 업데이트 (조회수 증가 없이 최신 데이터 가져오기)
+            try {
+                const updatedData = await fetchCommunityById(variables.postId, false);
+                
+                // 기존에 사용 중인 모든 상세 쿼리 키에 대해 데이터 업데이트
+                queryClient.setQueryData(['communities', 'detail', variables.postId, { incrementViews: true }], updatedData);
+                queryClient.setQueryData(['communities', 'detail', variables.postId, { incrementViews: false }], updatedData);
+                // 기존 키 (incrementViews가 없던 시절의 키)도 대응
+                queryClient.setQueryData(['communities', 'detail', variables.postId], updatedData);
 
-            console.log('✅ [Mutation] 추천 처리 완료');
+            } catch (error) {
+                console.error('Failed to refresh community data after recommendation:', error);
+            }
+
+            console.log('✅ [Mutation] 추천 처리 완료 (조회수 증가 없이 갱신)');
         },
 
         // 🎯 실패 시 롤백
