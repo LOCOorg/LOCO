@@ -1,6 +1,5 @@
 // src/components/DeveloperComponent/UserListItem.jsx - 법적 안전성 향상 버전
 // 출생년도 대신 연령대 표시, 가명처리된 이름 사용
-import React from "react";
 
 const UserListItem = ({ user, onClick }) => {
     // 🔥 이제 백엔드에서 깔끔하게 정리된 데이터가 오므로 직접 사용

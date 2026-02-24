@@ -24,9 +24,14 @@ const CommentPollManager = ({
 
     // 댓글 투표 생성 권한 확인
     const canCreateCommentPoll = () => {
-        return currentUserId && (
-            comment.userId === currentUserId
-        );
+        if (!currentUserId || !comment) return false;
+        
+        // userId가 객체일 경우와 문자열일 경우 모두 대응
+        const commentAuthorId = typeof comment.userId === 'object' 
+            ? comment.userId._id 
+            : comment.userId;
+            
+        return commentAuthorId === currentUserId || isAdmin;
     };
 
     // 댓글에 이미 투표가 있는지 확인 (핵심 추가!)

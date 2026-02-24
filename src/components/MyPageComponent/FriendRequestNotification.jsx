@@ -15,10 +15,9 @@ const FriendRequestNotification = () => {
     const [toasts, setToasts] = useState([]);
     const friendReqEnabled = useNotificationStore((s) => s.friendReqEnabled);
 
-    /* -------- 소켓 통신 -------- */
+    /* -------- 소켓 통신 (register는 SocketContext에서 전역 처리) -------- */
     useEffect(() => {
         if (!socket || !user) return;
-        socket.emit('register', user._id);
 
         const handler = (data) => {
             if (!friendReqEnabled) return;

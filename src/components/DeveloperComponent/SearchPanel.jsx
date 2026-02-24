@@ -1,6 +1,5 @@
 // File: /src/components/DeveloperComponent/SearchPanel.jsx
 // 이 컴포넌트는 좌측 검색 패널로, 검색 인풋과 검색 결과 목록, 그리고 "Load More" 버튼을 포함합니다.
-import React from "react";
 import UserListItem from "./UserListItem.jsx";
 
 const SearchPanel = ({ keyword, setKeyword, pagination, users, loading, error, onUserClick, loadMore }) => {

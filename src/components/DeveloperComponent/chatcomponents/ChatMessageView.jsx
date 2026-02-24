@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ReportDetailModal from './ReportDetailModal.jsx';
 
 // 날짜를 YYYY.MM.DD로 포맷

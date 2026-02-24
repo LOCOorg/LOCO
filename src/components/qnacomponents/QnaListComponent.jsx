@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QnaDetailModal from './QnaDetailModal';
-//import { getQnaPageByStatus, deleteQna } from '../../api/qnaAPI.js';
 import { useQnAList, useDeleteQnA } from '../../hooks/queries/useQnAQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import useAuthStore from '../../stores/authStore';
@@ -18,13 +17,9 @@ function QnaListComponent() {
     const [searchType, setSearchType]    = useState('both');
 
     // "답변대기" 상태 목록 및 페이징 상태
-    // const [waitingQnas, setWaitingQnas] = useState([]);
-    // const [waitingPagination, setWaitingPagination] = useState(null);
     const [waitingPage, setWaitingPage] = useState(1);
 
     // "답변완료" 상태 목록 및 페이징 상태
-    // const [answeredQnas, setAnsweredQnas] = useState([]);
-    // const [answeredPagination, setAnsweredPagination] = useState(null);
     const [answeredPage, setAnsweredPage] = useState(1);
 
     const [pageSize] = useState(6);

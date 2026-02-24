@@ -1,4 +1,4 @@
-import React, {useMemo, useState, useEffect} from 'react';
+import {useMemo, useState, useEffect} from 'react';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
 import useAuthStore from '../../stores/authStore';
 import {sendFriendRequest, blockUserMinimal, unblockUserMinimal } from "../../api/userAPI.js";

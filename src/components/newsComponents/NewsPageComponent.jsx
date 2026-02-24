@@ -1,14 +1,11 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-//import { newsService } from '../../api/newsAPI.js';
 import { toast } from 'react-toastify';
-import useAuthStore from '../../stores/authStore.js';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
 import { useNews } from '../../hooks/queries/useNewsQueries';
 
 const NewsPageComponent = () => {
     const [searchParams, setSearchParams] = useSearchParams();
-    const { user } = useAuthStore();
 
     const [activeTab, setActiveTab] = useState(searchParams.get('category') || 'all');
     const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page')) || 1);

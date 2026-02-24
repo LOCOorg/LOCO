@@ -3,8 +3,8 @@
 
 const NaverLoginButton = ({ className, iconColor, textColor, customText }) => {
     // 실제 클라이언트 ID로 교체하세요.
-    const CLIENT_ID = '43hZkVrMUbaFIEUbgRCI';
-    const REDIRECT_URI = 'http://localhost:5173/auth/naver/callback';
+    const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
+    const REDIRECT_URI = import.meta.env.VITE_NAVER_REDIRECT_URI;
     // ✅ State 동적 생성 - CSRF 보호 및 재로그인 시 새로운 세션 구분
     const generateState = () => {
         const timestamp = Date.now();

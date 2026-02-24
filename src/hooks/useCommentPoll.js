@@ -6,7 +6,6 @@ import {
     voteCommentPoll,
     cancelCommentVote,
     deleteCommentPoll,
-    getCommentUserVoteStatus,
     getCommentPollResults
 } from '../api/communityApi.js';
 
@@ -187,7 +186,12 @@ export const useCommentPoll = (community, comment, currentUserId, isAdmin) => {
     const canDeleteCommentPoll = (comment, poll) => {
         if (!currentUserId) return false;
         if (isAdmin) return true;
-        if (comment.userId === currentUserId) return true;
+        
+        const commentAuthorId = typeof comment?.userId === 'object' 
+            ? comment.userId._id 
+            : comment?.userId;
+            
+        if (commentAuthorId === currentUserId) return true;
         if (poll?.createdBy === currentUserId) return true;
         return false;
     };

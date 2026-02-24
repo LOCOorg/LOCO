@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
+import { useState } from 'react';
 import instance from '../../api/axiosInstance.js';
 import useAuthStore from '../../stores/authStore.js';
 import CommonModal from '../../common/CommonModal.jsx';
@@ -23,7 +22,7 @@ const MessageReportModal = ({
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [throwError, setThrowError] = useState(null);
-    
+
     // 알림 모달 상태
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
@@ -70,7 +69,7 @@ const MessageReportModal = ({
         } catch (error) {
             console.error('신고 실패:', error);
             const status = error.status || error.response?.status;
-            
+
             if (status === 401 || status === 403 || status === 500) {
                 setThrowError(error);
                 return;
@@ -198,13 +197,6 @@ const MessageReportModal = ({
             </CommonModal>
         </div>
     );
-};
-
-MessageReportModal.propTypes = {
-    isOpen: PropTypes.bool.isRequired,
-    onClose: PropTypes.func.isRequired,
-    message: PropTypes.object,
-    roomType: PropTypes.oneOf(['random', 'friend'])
 };
 
 export default MessageReportModal;

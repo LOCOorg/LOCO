@@ -2,40 +2,9 @@
 // 이 컴포넌트는 우측 상세 정보 패널로, 선택된 유저의 정보를 편집하고 저장할 수 있도록 합니다.
 // "이름", "전화번호", "생년월일" 필드는 readOnly로 처리되어 있으며,
 // 저장 버튼 클릭 시 PATCH 요청을 통해 서버에 수정된 내용을 저장합니다.
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import CommonModal from "../../common/CommonModal";
-
-// 연령대 계산 함수
-const getDetailedAgeGroup = (age) => {
-    if (!age || age < 0 || age > 120) return '정보없음';
-    
-    // 미성년자 구분
-    if (age < 10) return '유아';
-    if (age >= 10 && age <= 13) return '10대 초반';
-    if (age >= 14 && age <= 16) return '10대 중반';
-    if (age >= 17 && age <= 19) return '10대 후반';
-    
-    // 성인 연령대 세분화
-    const decade = Math.floor(age / 10) * 10;
-    const ageInDecade = age - decade;
-    
-    let subGroup;
-    if (ageInDecade <= 3) {
-        subGroup = '초반';
-    } else if (ageInDecade <= 6) {
-        subGroup = '중반';
-    } else {
-        subGroup = '후반';
-    }
-    
-    // 60세 이상은 단순화
-    if (age >= 60) {
-        return age >= 70 ? '70세 이상' : '60대';
-    }
-    
-    return `${decade}대 ${subGroup}`;
-};
 
 const modes = [
     { key: "friends", label: "친구내역" },
@@ -325,7 +294,6 @@ const DetailPanel = ({ user, view, setView }) => {
                         name="accountLink"
                         value={formData.accountLink || ""}
                         readOnly
-                        //className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         className="bg-gray-100 cursor-not-allowed w-full p-3 border border-gray-300 rounded-md"
                     />
                 </div>

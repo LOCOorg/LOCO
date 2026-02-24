@@ -1,5 +1,5 @@
 // C:\Users\wjdtj\WebstormProjects\LOCO\src\components\DeveloperComponent\chatcomponents\ChatUserSearchPanel.jsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import UserListItem from '../UserListItem.jsx';
 

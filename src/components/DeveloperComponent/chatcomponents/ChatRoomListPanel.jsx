@@ -1,14 +1,12 @@
 // src/components/DeveloperComponent/chatcomponents/ChatRoomListPanel.jsx
 //관리자 페이지
-import {useState, useMemo, useEffect} from 'react';
-//import {fetchChatRoomHistory} from "../../../api/chatAPI.js";
+import {useState, useMemo } from 'react';
 
 const ChatRoomListPanel = ({
                                rooms,
                                pagination,
                                loading,
                                error,
-                               page,
                                setPage,
                                selectedRoom,
                                setSelectedRoom,
@@ -22,28 +20,6 @@ const ChatRoomListPanel = ({
     // 신고된 채팅방 ID 집합 생성
     const reportedRoomIds = new Set(reportedRooms.map(r => r.anchor?.roomId || r.roomId));
 
-    // // 🔧 히스토리 데이터만 추가
-    // const [historyData, setHistoryData] = useState({});
-    //
-    // // 🔧 히스토리 데이터 로드 (한 번만)
-    // useEffect(() => {
-    //     const loadHistoryData = async () => {
-    //         try {
-    //             const histories = await fetchChatRoomHistory({});
-    //             const historyMap = {};
-    //             histories.forEach(h => {
-    //                 if (h.chatRoomId && h.meta?.genderSelections) {
-    //                     historyMap[h.chatRoomId] = h.meta.genderSelections;
-    //                 }
-    //             });
-    //             setHistoryData(historyMap);
-    //         } catch (err) {
-    //             console.error('히스토리 로드 실패:', err);
-    //         }
-    //     };
-    //     loadHistoryData();
-    // }, []);
-
     // 2) 유니크한 타입 목록 뽑기
     const typeOptions = useMemo(() => {
         const types = rooms.map(r => r.roomType);
@@ -55,10 +31,6 @@ const ChatRoomListPanel = ({
         if (filterType === 'all') return rooms;
         return rooms.filter(r => r.roomType === filterType);
     }, [rooms, filterType]);
-
-
-
-
 
 
     return (

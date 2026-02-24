@@ -42,10 +42,7 @@ const GlobalChatNotification = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [dropdownOpen]);
 
-    // 소켓 등록
-    useEffect(() => {
-        if (socket && userId) socket.emit('register', userId);
-    }, [socket, userId]);
+    // register는 SocketContext에서 전역으로 처리
 
     // 알림 수신
     useEffect(() => {

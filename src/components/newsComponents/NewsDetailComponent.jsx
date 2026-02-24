@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {useParams, Link, useNavigate} from 'react-router-dom';
 import { newsService } from '../../api/newsAPI.js';
 import { toast } from 'react-toastify';
-import useAuthStore from '../../stores/authStore.js';
 import LoadingSpinner from '../common/LoadingSpinner.jsx';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
 
 const NewsDetailComponent = () => {
     const { id } = useParams();
-    const { user } = useAuthStore();
     const [news, setNews] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);

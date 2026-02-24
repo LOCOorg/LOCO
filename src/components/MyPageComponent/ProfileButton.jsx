@@ -1,6 +1,4 @@
-import React, { useState } from 'react';
-// import { getUserInfo } from '../../api/userAPI.js';
-// import { getUserMinimal, getUserFullProfile  } from '../../api/userProfileLightAPI.js';
+import { useState } from 'react';
 import { useUserMinimal, useUserFullProfile } from '../../hooks/queries/useUserQueries';
 import useAuthStore from '../../stores/authStore.js';
 import SimpleProfileModal from './SimpleProfileModal.jsx';

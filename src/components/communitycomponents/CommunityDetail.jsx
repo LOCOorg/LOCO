@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDeleteCommunity, useCommunity, useComments, useRecommendCommunity, useAddComment} from '../../hooks/queries/useCommunityQueries';
-import { useQueryClient } from '@tanstack/react-query';
 import useSidebarData from '../../hooks/useSidebarData.js';
 import CommonModal from '../../common/CommonModal.jsx';
 import useAuthStore from '../../stores/authStore.js';
@@ -38,14 +37,10 @@ const CommunityDetail = () => {
     const isAdmin = currentUser?.userLv >= 2;
     const API_HOST = import.meta.env.VITE_API_HOST;
 
-    // const [comments, setComments] = useState([]);
-    // const [commentsPage, setCommentsPage] = useState(1);
-    // const [hasMoreComments, setHasMoreComments] = useState(false);
-
     // 프로필 관련 상태
     const [postProfile, setPostProfile] = useState(null);
     const [isRecommended, setIsRecommended] = useState(false);
-    const [isRecommending, setIsRecommending] = useState(false); // ✅ 추천 로딩 상태
+
     
     // ✅ 댓글 수 로컬 관리 (파생 상태)
     const [localCommentCount, setLocalCommentCount] = useState(0);
@@ -86,9 +81,6 @@ const CommunityDetail = () => {
         isLoading: commentsLoading,
     } = useComments(id);
 
-    //  queryClient 선언
-    const queryClient = useQueryClient();
-
     //  게시글 삭제 Mutation Hook
     const deleteMutation = useDeleteCommunity();
 
@@ -112,21 +104,6 @@ const CommunityDetail = () => {
 
         return '알 수 없음';
     };
-
-    // // ✅ 댓글 로드 (useEffect 유지 - 나중에 useComments Hook으로 이동 예정)
-    // useEffect(() => {
-    //     const loadComments = async () => {
-    //         if (!id) return;
-    //         try {
-    //             const commentsData = await fetchCommentsByPostId(id, 1, 20);
-    //             setComments(commentsData.comments);
-    //             setHasMoreComments(commentsData.currentPage < commentsData.totalPages);
-    //         } catch (err) {
-    //             console.error('댓글 로드 실패:', err);
-    //         }
-    //     };
-    //     loadComments();
-    // }, [id]);
     
     // ✅ 초기 commentCount 동기화
     useEffect(() => {

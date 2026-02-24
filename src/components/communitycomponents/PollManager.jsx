@@ -24,9 +24,14 @@ const PollManager = ({
 
     // 투표 생성 권한 확인 (게시글 작성자나 관리자만)
     const canCreatePoll = () => {
-        return currentUserId && (
-            community?.userId === currentUserId
-        );
+        if (!currentUserId || !community) return false;
+        
+        // userId가 객체일 경우와 문자열일 경우 모두 대응
+        const postAuthorId = typeof community.userId === 'object' 
+            ? community.userId._id 
+            : community.userId;
+            
+        return postAuthorId === currentUserId;
     };
 
     // 이미 투표가 있는지 확인 (핵심 추가!)
