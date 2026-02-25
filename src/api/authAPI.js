@@ -1,6 +1,7 @@
 // src/api/authAPI.js
 // 로그인 새로고침
 import instance from './axiosInstance';
+import axios from 'axios';
 
 
 // 카카오 콜백으로부터 액세스 토큰·유저정보 받아오기
