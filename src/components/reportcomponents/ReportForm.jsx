@@ -94,7 +94,22 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '프
             // 신고 완료 모달 표시
             setShowCompleteModal(true);
         } catch (err) {
-            setError(err.message);
+            console.error('Report submission error:', err);
+            
+            const status = err.response?.status;
+            const backendMessage = err.response?.data?.message;
+            
+            let errorMessage = '';
+
+            if (status === 401 || err.message?.includes('401')) {
+                errorMessage = '로그인이 필요한 서비스입니다. 로그인 후 다시 시도해주세요.';
+            } else if (status === 400 || err.message?.includes('400')) {
+                errorMessage = backendMessage || '잘못된 요청입니다. 입력 내용을 확인해주세요.';
+            } else {
+                errorMessage = backendMessage || err.message || '신고 제출 중 오류가 발생했습니다.';
+            }
+            
+            setError(errorMessage);
         }
     };
 

@@ -1,5 +1,5 @@
 import { useRouteError, useNavigate } from 'react-router-dom';
-import { AlertTriangle, Home, RefreshCw, ArrowLeft, Lock, ShieldAlert, ServerCrash } from 'lucide-react';
+import { AlertTriangle, Home, RefreshCw, ArrowLeft, Lock, ShieldAlert, ServerCrash, AlertCircle } from 'lucide-react';
 
 const ErrorPage = () => {
     const error = useRouteError();
@@ -11,6 +11,14 @@ const ErrorPage = () => {
         const status = error?.status || error?.response?.status || (error instanceof Error ? error.status : null);
         
         switch (status) {
+            case 400:
+                return {
+                    title: "잘못된 요청입니다",
+                    description: error?.message || "입력하신 값이 올바르지 않거나 요청이 적절하지 않아요.",
+                    icon: <AlertCircle size={48} className="text-red-500" />,
+                    bgClass: "bg-red-50",
+                    label: "400"
+                };
             case 404:
                 return {
                     title: "페이지를 찾을 수 없어요",

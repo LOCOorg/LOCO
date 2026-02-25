@@ -438,6 +438,9 @@ export const useRecommendCommunity = () => {
                 return cancelRecommendCommunity(postId, userId);
             }
         },
+        
+        // ✅ 에러 발생 시 상위 에러 바운더리(errorElement)로 던짐
+        throwOnError: true,
 
         // 🎯 낙관적 업데이트 (API 호출 전)
         onMutate: async ({ postId, userId, isRecommend }) => {
