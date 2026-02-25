@@ -340,101 +340,109 @@ const SimpleProfileModal = ({ profile, onClose, area = '프로필', anchor, requ
                     </div>
                 </div>
 
-                {/* 액션 버튼 본인이면 액션버튼 다르게 보이기*/}
-                <div className="mt-6 flex flex-row-reverse flex-wrap gap-2">
+                {/* 액션 버튼 - 로그인한 사용자에게만 노출 */}
+                {authUser ? (
+                    <div className="mt-6 flex flex-row-reverse flex-wrap gap-2">
 
-                    {/* ─── 내 프로필 수정 ─── */}
-                    {isOwnProfile && (
-                        <button
-                            onClick={() => navigate('/mypage')}
-                            className="inline-flex items-center justify-center gap-1 rounded-md
-                 bg-orange-500 px-4 py-2 text-sm font-medium text-white
-                 shadow-sm transition hover:bg-slate-800 active:scale-95">
-                            프로필 수정
-                        </button>
-                    )}
+                        {/* ─── 내 프로필 수정 ─── */}
+                        {isOwnProfile && (
+                            <button
+                                onClick={() => navigate('/mypage')}
+                                className="inline-flex items-center justify-center gap-1 rounded-md
+                     bg-orange-500 px-4 py-2 text-sm font-medium text-white
+                     shadow-sm transition hover:bg-slate-800 active:scale-95">
+                                프로필 수정
+                            </button>
+                        )}
 
-                    {/* ─── 타인 프로필 ─── */}
-                    {!isOwnProfile && (
-                        <>
-                            {/* 친구 삭제 : 회색 테두리 */}
-                            {isFriend && !needAccept && (
-                                <button
-                                    onClick={() => setConfirmDeleteOpen(true)}
-                                    className="inline-flex items-center justify-center gap-1 rounded-md
-                     border border-gray-400 bg-white px-4 py-2 text-sm font-medium
-                     text-gray-800 shadow-sm transition hover:bg-gray-50 active:scale-95">
-                                    친구 삭제
-                                </button>
-                            )}
-
-                            {/* 수락 : 인디고  /  거절 : 주황 */}
-                            {needAccept && !isFriend && (
-                                <>
+                        {/* ─── 타인 프로필 ─── */}
+                        {!isOwnProfile && (
+                            <>
+                                {/* 친구 삭제 : 회색 테두리 */}
+                                {isFriend && !needAccept && (
                                     <button
-                                        onClick={onDecline || handleDeclineRequest}
+                                        onClick={() => setConfirmDeleteOpen(true)}
                                         className="inline-flex items-center justify-center gap-1 rounded-md
-                       bg-amber-500 px-4 py-2 text-sm font-medium text-white
-                       shadow-sm transition hover:bg-amber-600 active:scale-95">
-                                        <XMarkIcon className="h-5 w-5" />
-                                        거절
+                         border border-gray-400 bg-white px-4 py-2 text-sm font-medium
+                         text-gray-800 shadow-sm transition hover:bg-gray-50 active:scale-95">
+                                        친구 삭제
                                     </button>
+                                )}
+
+                                {/* 수락 : 인디고  /  거절 : 주황 */}
+                                {needAccept && !isFriend && (
+                                    <>
+                                        <button
+                                            onClick={onDecline || handleDeclineRequest}
+                                            className="inline-flex items-center justify-center gap-1 rounded-md
+                           bg-amber-500 px-4 py-2 text-sm font-medium text-white
+                           shadow-sm transition hover:bg-amber-600 active:scale-95">
+                                            <XMarkIcon className="h-5 w-5" />
+                                            거절
+                                        </button>
+                                        <button
+                                            onClick={onAccept || handleAcceptRequest}
+                                            className="inline-flex items-center justify-center gap-1 rounded-md
+                           bg-indigo-600 px-4 py-2 text-sm font-medium text-white
+                           shadow-sm transition hover:bg-indigo-700 active:scale-95">
+                                            <CheckIcon className="h-5 w-5" />
+                                            수락
+                                        </button>
+                                    </>
+                                )}
+
+                                {/* 친구 신청 : 인디고 */}
+                                {!isFriend && !needAccept && (
                                     <button
-                                        onClick={onAccept || handleAcceptRequest}
+                                        onClick={handleFriendRequest}
                                         className="inline-flex items-center justify-center gap-1 rounded-md
-                       bg-indigo-600 px-4 py-2 text-sm font-medium text-white
-                       shadow-sm transition hover:bg-indigo-700 active:scale-95">
-                                        <CheckIcon className="h-5 w-5" />
-                                        수락
+                         bg-indigo-600 px-4 py-2 text-sm font-medium text-white
+                         shadow-sm transition hover:bg-indigo-700 active:scale-95">
+                                        친구 신청
                                     </button>
-                                </>
-                            )}
+                                )}
 
-                            {/* 친구 신청 : 인디고 */}
-                            {!isFriend && !needAccept && (
-                                <button
-                                    onClick={handleFriendRequest}
-                                    className="inline-flex items-center justify-center gap-1 rounded-md
-                     bg-indigo-600 px-4 py-2 text-sm font-medium text-white
-                     shadow-sm transition hover:bg-indigo-700 active:scale-95">
-                                    친구 신청
-                                </button>
-                            )}
+                                {/* 차단/차단해제 버튼 */}
+                                {isBlocked ? (
+                                    <button
+                                        onClick={() => setConfirmUnblockOpen(true)}
+                                        className="inline-flex items-center justify-center gap-1 rounded-md
+                         bg-green-600 px-4 py-2 text-sm font-medium text-white
+                         shadow-sm transition hover:bg-green-700 active:scale-95"
+                                    >
+                                        차단 해제
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => setConfirmBlockOpen(true)}
+                                        className="inline-flex items-center justify-center gap-1 rounded-md
+                         bg-blue-600 px-4 py-2 text-sm font-medium text-white
+                         shadow-sm transition hover:bg-rose-700 active:scale-95"
+                                    >
+                                        차단
+                                    </button>
+                                )}
 
-                            {/* 차단/차단해제 버튼 */}
-                            {isBlocked ? (
-                                <button
-                                    onClick={() => setConfirmUnblockOpen(true)}
-                                    className="inline-flex items-center justify-center gap-1 rounded-md
-                     bg-green-600 px-4 py-2 text-sm font-medium text-white
-                     shadow-sm transition hover:bg-green-700 active:scale-95"
-                                >
-                                    차단 해제
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => setConfirmBlockOpen(true)}
-                                    className="inline-flex items-center justify-center gap-1 rounded-md
-                     bg-blue-600 px-4 py-2 text-sm font-medium text-white
-                     shadow-sm transition hover:bg-rose-700 active:scale-95"
-                                >
-                                    차단
-                                </button>
-                            )}
-
-                            {/* 신고 : 빨강 500 */}
-                            {!hideReport && (
-                                <button
-                                    onClick={() => setIsReportModalVisible(true)}
-                                    className="inline-flex items-center justify-center gap-1 rounded-md
-                     bg-red-500 px-4 py-2 text-sm font-medium text-white
-                     shadow-sm transition hover:bg-rose-600 active:scale-95">
-                                    신고
-                                </button>
-                            )}
-                        </>
-                    )}
-                </div>
+                                {/* 신고 : 빨강 500 */}
+                                {!hideReport && (
+                                    <button
+                                        onClick={() => setIsReportModalVisible(true)}
+                                        className="inline-flex items-center justify-center gap-1 rounded-md
+                         bg-red-500 px-4 py-2 text-sm font-medium text-white
+                         shadow-sm transition hover:bg-rose-600 active:scale-95">
+                                        신고
+                                    </button>
+                                )}
+                            </>
+                        )}
+                    </div>
+                ) : (
+                    <div className="mt-6 p-3 bg-gray-50 rounded-lg text-center">
+                        <p className="text-sm text-gray-500">
+                            상호작용을 하려면 로그인이 필요합니다.
+                        </p>
+                    </div>
+                )}
 
 
 
