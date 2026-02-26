@@ -30,9 +30,19 @@ const RewardLogTable = ({ logs, pagination, onPageChange, onSelectLog }) => {
                                 <td className="px-4 py-4 text-sm font-bold text-gray-900">{getLogDisplayName(log)}</td>
                                 <td className="px-4 py-4 text-sm text-blue-600 font-black">+{log.rewardAmount}</td>
                                 <td className="px-4 py-4 text-sm">
-                                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${log.hasCancelled ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
-                                        {log.hasCancelled ? '일부취소' : '지급완료'}
-                                    </span>
+                                    {log.allCancelled ? (
+                                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                                            전체취소
+                                        </span>
+                                    ) : log.hasCancelled ? (
+                                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
+                                            일부취소
+                                        </span>
+                                    ) : (
+                                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                                            지급완료
+                                        </span>
+                                    )}
                                 </td>
                             </tr>
                         ))}

@@ -1,4 +1,3 @@
-import React from 'react';
 
 const RewardSearchFilter = ({ searchNickname, setSearchNickname, startDate, setStartDate, endDate, setEndDate, onSearch }) => {
     return (

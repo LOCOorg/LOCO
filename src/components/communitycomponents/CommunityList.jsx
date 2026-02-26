@@ -161,6 +161,39 @@ const CommunityList = () => {
             }
         >
             <div className="space-y-4">
+                {/* 📢 LOCO 커뮤니티 가이드 */}
+                <div className="bg-white border border-blue-100 rounded-3xl p-5 sm:p-6 shadow-sm overflow-hidden relative">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 opacity-50"></div>
+                    <div className="relative">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {/* 투표 기능 강조 */}
+                            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 hover:bg-white hover:shadow-md transition-all cursor-default">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <span className="text-lg">📊</span>
+                                    <h4 className="text-sm sm:text-base font-bold text-gray-800">실시간 투표</h4>
+                                </div>
+                                <p className="text-[11px] sm:text-xs text-gray-500  leading-relaxed font-medium">궁금할 땐 유저들에게 직접 투표를 던져보세요.</p>
+                            </div>
+
+                            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 hover:bg-white hover:shadow-md transition-all cursor-default">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <span className="text-lg">☕</span>
+                                    <h4 className="text-sm sm:text-base font-bold text-gray-800">소소한 일상</h4>
+                                </div>
+                                <p className="text-[11px] sm:text-xs text-gray-500 leading-relaxed">자유와 유머로 가득한 소통의 공간입니다.</p>
+                            </div>
+
+                            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 hover:bg-white hover:shadow-md transition-all cursor-default">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <span className="text-lg">🎖️</span>
+                                    <h4 className="text-sm sm:text-base font-bold text-gray-800">전적 및 제보</h4>
+                                </div>
+                                <p className="text-[11px] sm:text-xs text-gray-500 leading-relaxed">나만의 활약상 인증과 생생한 제보를 공유하세요.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* 1단: 검색 및 액션 바 */}
                 <div className="flex flex-col lg:flex-row items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
                     {/* 검색 필터 그룹 */}

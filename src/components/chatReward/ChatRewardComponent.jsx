@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import useAuthStore from '../../stores/authStore';
 import * as adminRewardAPI from '../../api/adminRewardAPI';
 import CommonModal from '../../common/CommonModal';
@@ -70,7 +70,6 @@ const ChatRewardComponent = () => {
 
     // 🔎 사용자 목록 가져오기 (기간 검색 적용)
     const fetchUsers = async (page = 1) => {
-        setIsLoading(true);
         try {
             const data = await adminRewardAPI.searchUsersForReward({ 
                 nickname: searchNickname, 
@@ -81,8 +80,9 @@ const ChatRewardComponent = () => {
             });
             setUsers(data.users);
             setUserPagination(data.pagination);
-        } catch (error) { showAlert('오류', '사용자 목록을 불러오는 중 오류가 발생했습니다.'); } 
-        finally { setIsLoading(false); }
+        } catch (error) { 
+            showAlert('오류', '사용자 목록을 불러오는 중 오류가 발생했습니다.'); 
+        }
     };
 
     // 🔎 보상 내역 가져오기
