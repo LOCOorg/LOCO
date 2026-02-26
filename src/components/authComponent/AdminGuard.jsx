@@ -11,7 +11,7 @@ const AdminGuard = ({ children }) => {
     }
 
     // 로그인하지 않았거나 관리자(Lv 2) 미만인 경우
-    if (!user || user.userLv < 3) {
+    if (!user || user.userLv < 2) {
         alert("접근 권한이 없습니다.");
         return <Navigate to="/" replace />;
     }
