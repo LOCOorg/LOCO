@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSocket } from "../../hooks/useSocket.js";
 import { getBlockedUsers, unblockUserMinimal } from "../../api/userAPI";
@@ -111,43 +111,50 @@ const RandomChatComponent = () => {
     }, [userInfo?.nextRefillAt, userInfo?.numOfChat, userInfo?.maxChatCount]);
 
     useEffect(() => {
-        const checkForActiveRandomChat =  () => {
+        const checkForActiveRandomChat = () => {
+            // 정보가 없거나, 이미 체크했거나, 로딩 중이면 중단
             if (!userInfo || initialCheckComplete || roomsLoading) {
                 return;
             }
-            setInitialCheckComplete(true);
+
+            // 대기 중인 상태라면 자동 입장 체크를 하지 않음 (현재 대기 중인 방에 집중)
+            if (isWaiting) {
+                return;
+            }
 
             try {
-                // const rooms = await fetchChatRooms({ roomType: "random", userId });
                 const roomsArray = chatRoomsData?.rooms || [];
-                // const leftRooms = await fetchUserLeftRooms(userId);
 
-                // ✅ 추가 안전 장치 (혹시 모를 경우 대비)
-                if (!Array.isArray(roomsArray)) {
-                    console.warn('⚠️ roomsArray가 배열이 아닙니다:', roomsArray);
+                // 데이터가 비어있으면 체크 완료 처리만 하고 종료
+                if (roomsArray.length === 0) {
+                    setInitialCheckComplete(true);
                     return;
                 }
 
                 const blockedIds = (blockedUsers || []).map((u) => u._id);
 
+                // 현재 내가 실제로 참여 중이고 활성화된 방이 있는지 찾기
                 const existingRoom = roomsArray.find(
                     (room) =>
                         room.status !== 'closed' &&
                         room.chatUsers.some((u) => u._id === userId) &&
-                        // !leftRooms.includes(room._id) &&
                         !room.chatUsers.some((u) => blockedIds.includes(u._id))
                 );
 
                 if (existingRoom) {
+                    console.log('🚀 [Auto-Entry] 활성 방 발견, 입장:', existingRoom._id);
                     navigate(`/chat/${existingRoom._id}/${userId}`);
                 }
+                
+                // 체크 완료 플래그 설정 (한 번만 실행되도록)
+                setInitialCheckComplete(true);
             } catch (error) {
                 console.error("Error checking for active random chat:", error);
             }
         };
 
         checkForActiveRandomChat();
-    }, [userInfo, userId, navigate, blockedUsers, initialCheckComplete, chatRoomsData, roomsLoading]);
+    }, [userInfo, userId, navigate, blockedUsers, initialCheckComplete, chatRoomsData, roomsLoading, isWaiting]);
 
     // 소켓 이벤트 리스너 설정
     // ✅ 수정: isWaiting 조건을 제거하여 리스너를 항상 등록
@@ -432,23 +439,44 @@ const RandomChatComponent = () => {
         }
     };
 
-    // 대기 취소 함수
-    const cancelWaiting = async () => {
-        if (waitingRoomId && socket) {
-            try {
-                await leaveChatRoom(waitingRoomId, userId);
-                socket.emit("leaveRoom", { roomId: waitingRoomId, userId });
-            } catch (error) {
-                console.error("방 나가기 실패:", error);
+    // 대기 취소 함수 (useCallback으로 감싸서 cleanup에서도 안전하게 사용)
+    const cancelWaiting = useCallback(async () => {
+        // 현재 대기 중인 상태를 캡처하여 처리
+        setWaitingRoomId(prevRoomId => {
+            if (prevRoomId && socket) {
+                console.log('🧹 [cancelWaiting] 대기 취소 실행:', prevRoomId);
+                // 비동기로 방 나가기 처리
+                leaveChatRoom(prevRoomId, userId)
+                    .then(() => {
+                        // ⭐ 방 나가기 성공 후 즉시 캐시 무효화 (오래된 데이터로 인한 자동 입장 방지)
+                        queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
+                    })
+                    .catch(err => console.error("방 나가기 실패:", err));
+
+                socket.emit("leaveRoom", { roomId: prevRoomId, userId });
             }
-        }
+            return null; // ID 초기화
+        });
 
         setIsWaiting(false);
-        setWaitingRoomId(null);
         setCurrentParticipants([]);
         setWaitingCapacity(0);
         setShowWaitingModal(false);
-    };
+
+        // ⭐ 즉시 캐시 무효화 시도 (아이디가 없더라도 전체 목록 갱신)
+        queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
+    }, [socket, userId, queryClient]);
+
+    // 컴포넌트 언마운트 시 클린업 로직 추가
+    useEffect(() => {
+        return () => {
+            // 언마운트 시 대기 중이라면 취소 처리
+            if (isWaiting) {
+                console.log('👋 [Cleanup] 컴포넌트 언마운트 - 대기 취소');
+                cancelWaiting();
+            }
+        };
+    }, [isWaiting, cancelWaiting]);
 
 
     if (error) return <div>{error}</div>;
