@@ -14,7 +14,20 @@ export const usePoll = (community, currentUserId, isAdmin) => {
 
     // 커뮤니티 캐시 업데이트 헬퍼 함수
     const updateCommunityCache = (updateFn) => {
+        // 1. 기본 키 업데이트
         queryClient.setQueryData(['communities', 'detail', community._id], (oldData) => {
+            if (!oldData) return oldData;
+            return updateFn(oldData);
+        });
+
+        // 2. incrementViews 옵션이 있는 키들도 함께 업데이트 (중요!)
+        // 상세 페이지에서 useCommunity(id, true) 또는 useCommunity(id, false)를 사용하기 때문
+        queryClient.setQueryData(['communities', 'detail', community._id, { incrementViews: true }], (oldData) => {
+            if (!oldData) return oldData;
+            return updateFn(oldData);
+        });
+
+        queryClient.setQueryData(['communities', 'detail', community._id, { incrementViews: false }], (oldData) => {
             if (!oldData) return oldData;
             return updateFn(oldData);
         });
