@@ -2,7 +2,7 @@
 import CryptoJS from 'crypto-js';
 
 // Vite 환경변수는 VITE_ 접두사 사용하고 import.meta.env로 접근
-const SECRET_KEY = import.meta.env.VITE_STORAGE_SECRET_KEY || 'your-secret-key-here';
+const SECRET_KEY = import.meta.env.VITE_STORAGE_SECRET_KEY || 'loco-storage-fallback-key';
 
 /**
  * 데이터를 암호화하여 localStorage에 저장
