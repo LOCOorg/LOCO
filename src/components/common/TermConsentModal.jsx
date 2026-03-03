@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMissingConsents, submitConsent } from '../../api/termAPI';
 import useAuthStore from '../../stores/authStore';
@@ -143,7 +144,7 @@ const TermConsentModal = () => {
                                 
                                 {expandedTermId === term._id && (
                                     <div className="mt-2 p-3 bg-gray-50 rounded text-sm text-gray-600 h-40 overflow-y-auto border border-gray-100">
-                                        <div dangerouslySetInnerHTML={{ __html: term.content }} />
+                                        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(term.content) }} />
                                     </div>
                                 )}
                             </div>
