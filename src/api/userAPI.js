@@ -1,7 +1,7 @@
 // src/api/userAPI.js
 // import axios from "axios";
 import instance from "./axiosInstance.js"; // axios 모듈 import
-import { debounce } from 'lodash';
+import debounce from 'lodash.debounce';
 
 
 
