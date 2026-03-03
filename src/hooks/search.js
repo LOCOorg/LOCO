@@ -1,6 +1,6 @@
 // src/hooks/search.js
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import instance from '../api/axiosInstance.js';
 
 /**
  * 범용 검색 + 페이징 훅
@@ -24,8 +24,9 @@ export function useSearch({
     const [loading, setLoading]     = useState(false);
     const [error, setError]         = useState(null);
 
-    // 현재 keyword 추출
-    const { keyword = '' } = params;
+    // 현재 keyword 추출 + L-02 보안 조치: Unicode 정규화
+    const { keyword: rawKeyword = '' } = params;
+    const keyword = rawKeyword.normalize('NFC');
 
     useEffect(() => {
         // 키워드가 설정되어 있고, 너무 짧으면 요청하지 않고 빈 상태로 유지
@@ -39,7 +40,7 @@ export function useSearch({
             setLoading(true);
             setError(null);
             try {
-                const res = await axios.get(endpoint, { params });
+                const res = await instance.get(endpoint, { params });
                 setData(res.data.dtoList || res.data.results);
                 setPageInfo(res.data);
             } catch (err) {
