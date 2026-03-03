@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAllTerms, createTerm, deleteTerm, updateTerm } from '../../api/termAPI';
 import TipTapAdvancedEditor from '../editor/TipTapAdvancedEditor';
 import { toast } from 'react-toastify';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import useAuthStore from '../../stores/authStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,7 +18,7 @@ const TermsManagement = () => {
         type: 'TERMS',
         version: '',
         content: '',
-        effectiveDate: moment().add(7, 'days').format('YYYY-MM-DDTHH:mm'),
+        effectiveDate: dayjs().add(7, 'days').format('YYYY-MM-DDTHH:mm'),
         isRequired: true
     });
 
@@ -74,7 +75,7 @@ const TermsManagement = () => {
             type: 'TERMS',
             version: '',
             content: '',
-            effectiveDate: moment().add(7, 'days').format('YYYY-MM-DDTHH:mm'),
+            effectiveDate: dayjs().add(7, 'days').format('YYYY-MM-DDTHH:mm'),
             isRequired: true
         });
         editorRef.current?.setContent('');
@@ -93,7 +94,7 @@ const TermsManagement = () => {
             type: selectedTerm.type,
             version: selectedTerm.version,
             content: selectedTerm.content,
-            effectiveDate: moment(selectedTerm.effectiveDate).format('YYYY-MM-DDTHH:mm'),
+            effectiveDate: dayjs(selectedTerm.effectiveDate).format('YYYY-MM-DDTHH:mm'),
             isRequired: selectedTerm.isRequired
         });
         setViewMode('create');
@@ -191,14 +192,14 @@ const TermsManagement = () => {
                                             {term.isRequired ? '필수' : '선택'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {moment(term.effectiveDate).format('YYYY-MM-DD HH:mm')}
-                                            {moment().isAfter(term.effectiveDate) ? 
+                                            {dayjs(term.effectiveDate).format('YYYY-MM-DD HH:mm')}
+                                            {dayjs().isAfter(term.effectiveDate) ? 
                                                 <span className="ml-2 text-green-600 text-xs font-bold">(시행중)</span> : 
                                                 <span className="ml-2 text-orange-600 text-xs font-bold">(예정)</span>
                                             }
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {moment(term.createdAt).format('YYYY-MM-DD')}
+                                            {dayjs(term.createdAt).format('YYYY-MM-DD')}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button 
@@ -345,7 +346,7 @@ const TermsManagement = () => {
                                 [{termTypeLabels[selectedTerm.type]}] v{selectedTerm.version}
                             </h2>
                             <p className="text-gray-500 mt-1">
-                                시행일: {moment(selectedTerm.effectiveDate).format('YYYY-MM-DD HH:mm')} |
+                                시행일: {dayjs(selectedTerm.effectiveDate).format('YYYY-MM-DD HH:mm')} |
                                 {selectedTerm.isRequired ? ' 필수' : ' 선택'}
                             </p>
                         </div>
@@ -372,7 +373,7 @@ const TermsManagement = () => {
                     </div>
                     
                     <div className="prose max-w-none p-4 bg-gray-50 rounded border border-gray-200">
-                        <div dangerouslySetInnerHTML={{ __html: selectedTerm.content }} />
+                        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedTerm.content) }} />
                     </div>
                 </div>
             )}
