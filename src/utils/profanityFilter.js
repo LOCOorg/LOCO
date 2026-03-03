@@ -4,7 +4,7 @@ import { setEncryptedItem, getDecryptedItem, removeEncryptedItem } from './stora
 let badWords = [];
 let regex = null;
 let isInitialized = false;
-const CACHE_KEY = import.meta.env.VITE_PROFANITY_SECRET_KEY;
+const CACHE_KEY = 'profanity-word-cache';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 // Fetch bad words from the server and initialize the filter
