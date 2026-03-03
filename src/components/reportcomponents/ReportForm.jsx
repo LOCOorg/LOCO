@@ -4,7 +4,7 @@ import { getUserByNickname } from '../../api/userAPI.js';
 import useAuthStore from '../../stores/authStore.js';
 import CommonModal from '../../common/CommonModal.jsx';
 
-// eslint-disable-next-line react/prop-types
+
 const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '프로필', anchor }) => {
     // authStore에서 로그인한 사용자 정보 가져오기
     const { user } = useAuthStore();
@@ -15,7 +15,6 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '프
         reportArea: defaultArea,
         reportCategory: '욕설, 모욕, 혐오발언',
         reportContants: '',
-        // eslint-disable-next-line react/prop-types
         offenderNickname: reportedUser ? (reportedUser.nickname || reportedUser.name || '') : '',
         reportErId: user ? user._id : ''
     });
@@ -39,7 +38,6 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '프
         if (reportedUser) {
             setNewReport(prev => ({
                 ...prev,
-                // eslint-disable-next-line react/prop-types
                 offenderNickname: reportedUser.nickname || reportedUser.name || ''
             }));
         }
@@ -90,14 +88,28 @@ const ReportForm = ({ onReportCreated, onClose, reportedUser, defaultArea = '프
                 reportArea: '프로필',
                 reportCategory: '욕설, 모욕, 혐오발언',
                 reportContants: '',
-                // eslint-disable-next-line react/prop-types
                 offenderNickname: reportedUser ? (reportedUser.nickname || reportedUser.name || '') : '',
                 reportErId: user ? user._id : ''
             });
             // 신고 완료 모달 표시
             setShowCompleteModal(true);
         } catch (err) {
-            setError(err.message);
+            console.error('Report submission error:', err);
+            
+            const status = err.response?.status;
+            const backendMessage = err.response?.data?.message;
+            
+            let errorMessage = '';
+
+            if (status === 401 || err.message?.includes('401')) {
+                errorMessage = '로그인이 필요한 서비스입니다. 로그인 후 다시 시도해주세요.';
+            } else if (status === 400 || err.message?.includes('400')) {
+                errorMessage = backendMessage || '잘못된 요청입니다. 입력 내용을 확인해주세요.';
+            } else {
+                errorMessage = backendMessage || err.message || '신고 제출 중 오류가 발생했습니다.';
+            }
+            
+            setError(errorMessage);
         }
     };
 

@@ -1,6 +1,4 @@
 // src/components/loginComponent/LoginModal.jsx
-
-import React from 'react';
 import { createPortal } from 'react-dom';
 import KakaoLoginButton from "../kakao/KakaoLoginButton.jsx";
 import NaverLoginButton from "../naver/NaverLoginButton.jsx";

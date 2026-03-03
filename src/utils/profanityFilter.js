@@ -51,7 +51,6 @@ async function initializeProfanityFilter() {
         }
     } catch (error) {
         console.error('[ProfanityFilter] 비속어 목록 로드 실패:', error);
-        // On failure, regex will be null, and filterProfanity will just return the original text.
     }
 }
 

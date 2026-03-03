@@ -8,7 +8,7 @@ import PropTypes from "prop-types";
 import {useNavigate} from "react-router-dom";
 import {decrementChatCount,  rateUser} from "../../api/userAPI.js";
 import { getLeagueRecord } from "../../api/riotAPI.js";  // 라이엇 전적 API (DB 캐싱)
-import { getUserNickname, getUserBasic , getUserRiotInfo  } from "../../api/userLightAPI.js";  // 경량 API
+import { getUserBasic , getUserRiotInfo  } from "../../api/userLightAPI.js";  // 경량 API
 import CommonModal from "../../common/CommonModal.jsx";
 import ProfileButton from "../../components/MyPageComponent/ProfileButton.jsx";
 import LeagueRecordSection from "./LeagueRecordSection.jsx";
@@ -526,22 +526,6 @@ const ChatRoom = ({roomId, userId}) => {
         setReportTargetMessage(null);
         setShowMessageReportModal(false);
     };
-
-
-    // const getChatRoomDetails = async () => {
-    //     try {
-    //         const info  = await getChatRoomInfo(roomId);
-    //         if (info  && info .chatUsers) {
-    //             setRoomInfo(info);
-    //             // ① participants 상태에 저장
-    //             setParticipants(info .activeUsers);
-    //             setCapacity(info .capacity);
-    //         }
-    //     } catch (error) {
-    //         console.error("채팅방 정보 가져오기 오류:", error);
-    //     }
-    // };
-
 
     const handleUserLeft = ({ userId: leftId }) => {
         setParticipants(prev =>

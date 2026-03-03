@@ -9,7 +9,6 @@ import {
 import CommonModal from '../../common/CommonModal.jsx';
 import ReportForm from '../reportcomponents/ReportForm.jsx';
 import Comment from './Comment.jsx';
-import {useQueryClient} from '@tanstack/react-query';
 
 const CommentSection = ({
                             community,
@@ -52,8 +51,6 @@ const CommentSection = ({
     const [reportTarget, setReportTarget] = useState({nickname: '', anchor: null});
 
     const API_HOST = import.meta.env.VITE_API_HOST;
-
-    const queryClient = useQueryClient();
 
     // 대댓글/대대댓글 Mutation Hook
     const addReplyMutation = useAddReply();

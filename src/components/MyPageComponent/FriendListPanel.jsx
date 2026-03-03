@@ -1,8 +1,6 @@
 // src/components/FriendListPanel.jsx
 import { useState, useEffect, useMemo  } from 'react';
-// import { usePaginatedFriends } from '../../hooks/usePaginatedFriends';
 import useAuthStore from '../../stores/authStore';
-//import { getUserInfo } from '../../api/userAPI.js';
 import { getUserBasic } from '../../api/userLightAPI.js';  // ✅ 경량 API
 import ProfileButton from './ProfileButton';
 import CommonModal from '../../common/CommonModal.jsx';
@@ -36,23 +34,13 @@ const FriendListPanel = () => {
         return data.pages.flatMap(page => page.friends);
     }, [data]);
 
-    // 🆕 전체 친구 수
-    const totalFriendsCount = useMemo(() => {
-        if (!data?.pages || data.pages.length === 0) return 0;
-        return data.pages[0].total;  // 첫 페이지에 total 정보가 있음
-    }, [data]);
-
-
-
     // 프론트엔드에서 온라인/오프라인 분리
-
     const onlineFriends = useMemo(() => {
         console.log('🔍 온라인 친구 필터링 실행');
         return allFriends.filter(friend => friend.isOnline);
     }, [allFriends]);
 
     // allFriends가 변경될 때만 필터링 다시 실행
-
     const offlineFriends = useMemo(() => {
         console.log('🔍 오프라인 친구 필터링 실행');
         return allFriends.filter(friend => !friend.isOnline);
@@ -60,7 +48,6 @@ const FriendListPanel = () => {
 
 
     // 각 섹션의 total 계산
-
     const onlineTotal = onlineFriends.length;
     const offlineTotal = offlineFriends.length;
 

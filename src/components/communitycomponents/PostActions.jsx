@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { HandThumbUpIcon } from '@heroicons/react/24/outline';
-import PropTypes from 'prop-types';
 
 const PostActions = ({
     community,
@@ -83,23 +82,6 @@ const PostActions = ({
             )}
         </div>
     );
-};
-
-
-PostActions.propTypes = {
-    community: PropTypes.shape({
-        _id: PropTypes.string.isRequired,
-        userId: PropTypes.string.isRequired,
-        recommendedUsers: PropTypes.arrayOf(PropTypes.string),
-    }).isRequired,
-    isRecommended: PropTypes.bool.isRequired,
-    onToggleRecommend: PropTypes.func.isRequired,
-    onReport: PropTypes.func.isRequired,
-    onDelete: PropTypes.func.isRequired,
-    currentUserId: PropTypes.string,
-    isAdmin: PropTypes.bool,
-    isDeleting: PropTypes.bool,
-    isRecommending: PropTypes.bool,
 };
 
 export default PostActions;

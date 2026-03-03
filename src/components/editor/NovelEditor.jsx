@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import { forwardRef } from 'react';
 import TipTapAdvancedEditor from './TipTapAdvancedEditor';
 
 const NovelEditor = forwardRef((props, ref) => {

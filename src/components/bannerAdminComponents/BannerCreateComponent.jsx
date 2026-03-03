@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { bannerService } from '../../api/bannerAPI.js';
 import { toast } from 'react-toastify';

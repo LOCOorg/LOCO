@@ -7,8 +7,6 @@ import FriendRequestNotification from '../components/MyPageComponent/FriendReque
 import LoginModal from "../components/loginComponent/LoginModal.jsx";
 import {useEffect, useRef, useState} from "react";
 import {ToastContainer, Zoom} from "react-toastify";
-//import LogoutButton from '../components/authComponent/LogoutButton.jsx';
-//import MyMenus from './layoutMyMenus/MyMenus.jsx';
 import MyMenuDrop from "./layoutMyMenus/MyMenuDrop.jsx";
 import DropdownTransition from './css/DropdownTransition.jsx';
 import NotificationToggleButton from "./setting/NotificationToggleButton.jsx";
@@ -74,6 +72,10 @@ const BasicLayout = ({ children }) => {
                             <li ><Link to="/admin/banners" className="hover:text-gray-300">배너관리</Link></li>
                         )}
 
+                        {user && user.userLv >= 2 && (
+                            <li ><Link to="/admin/chat-reward" className="hover:text-gray-300">보상관리</Link></li>
+                        )}
+
                         {user && user.userLv >= 3 && (
                             <li ><Link to="/admin/terms" className="hover:text-gray-300">약관관리</Link></li>
                         )}
@@ -84,12 +86,6 @@ const BasicLayout = ({ children }) => {
                     </ul>
 
                 </nav>
-
-
-
-
-
-
 
 
 
@@ -122,6 +118,9 @@ const BasicLayout = ({ children }) => {
                                 )}
                                 {user && user.userLv >= 2 && (
                                     <li><Link to="/admin/banners" className="block px-4 py-2 hover:bg-gray-100">배너관리</Link></li>
+                                )}
+                                {user && user.userLv >= 2 && (
+                                    <li><Link to="/admin/chat-reward" className="block px-4 py-2 hover:bg-gray-100">보상관리</Link></li>
                                 )}
                                 {user && user.userLv >= 3 && (
                                     <li ><Link to="/admin/terms" className="hover:text-gray-300">약관관리</Link></li>

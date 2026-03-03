@@ -1,5 +1,5 @@
 // src/components/DeveloperComponent/BlockedUsersList.jsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import instance from '../../api/axiosInstance';
 import CommonModal from '../../common/CommonModal';
 

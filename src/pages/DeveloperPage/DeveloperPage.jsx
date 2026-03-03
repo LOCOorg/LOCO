@@ -1,5 +1,4 @@
 // DeveloperPage.jsx
-import React from 'react';
 import DeveloperComponent from '../../components/DeveloperComponent/DeveloperComponent.jsx';
 
 

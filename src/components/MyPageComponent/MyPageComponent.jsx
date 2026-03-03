@@ -2,7 +2,6 @@
 import {useEffect, useRef, useState} from 'react';
 import { Link } from 'react-router-dom';
 import {uploadFile} from "../../api/fileUploadAPI";
-// import { updateUserPrefs } from '../../api/userAPI'; // ❌ 제거
 import useAuthStore from '../../stores/authStore';
 import { useUpdateUserProfile, useUserForEdit, useUpdateUserPrefs } from '../../hooks/queries/useUserQueries'; // ✅ Hook 추가
 import ProfilePhotoSection from './ProfilePhotoSection';
@@ -198,14 +197,6 @@ const MyPageContent = ({overrideProfile}) => {
         setFormData((prev) => ({...prev, photo: filteredPhotos}));
 
         try {
-            // const updatedProfile = await updateUserProfile(authUser._id, {
-            //     ...formData,
-            //     photo: filteredPhotos
-            // }); 현재 컴포넌트의 이 로직을 아래로 다 바꿈
-            // const updatedProfile = await updateUserProfile(authUser._id, {
-            //     photo: filteredPhotos  // ← 이것만 전송!
-            // });
-            // Mutation Hook 사용
             const updatedProfile = await updateProfileMutation.mutateAsync({
                 userId: authUser._id,
                 formData: { photo: filteredPhotos }
@@ -316,8 +307,6 @@ const MyPageContent = ({overrideProfile}) => {
                 {/* 왼쪽 끝*/}
 
 
-
-
                 {/* 오른쪽 섹션 (분리된 컴포넌트) */}
                 <ProfileDetailSection
                     profile={profile}
@@ -330,21 +319,21 @@ const MyPageContent = ({overrideProfile}) => {
                     handlePrivacyToggle={handlePrivacyToggle} // ✅ 추가
                 />
             </div>
-
             {/* 오른쪽 섹션 끝 */}
 
 
             <div className="mb-6">
-
                 {/* QnA 내역 */}
                 <QnaHistoryComponent profile={profile} />
-                
+
                 <div className="mt-8 text-center">
                     <Link to="/userLeave" className="text-sm text-gray-500 hover:text-red-500 hover:underline">
                         회원 탈퇴
                     </Link>
                 </div>
+
             </div>
+
         </div>
     );
 };

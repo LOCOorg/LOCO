@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import PropTypes from 'prop-types';
 import { useRefreshLeagueRecord } from '../../hooks/queries/useLeagueQueries';
 
 /**
@@ -87,13 +86,6 @@ function RefreshButton({ gameName, tagLine, lastUpdatedAt, onRefreshSuccess }) {
         </button>
     );
 }
-
-RefreshButton.propTypes = {
-    gameName: PropTypes.string.isRequired,
-    tagLine: PropTypes.string.isRequired,
-    lastUpdatedAt: PropTypes.string,
-    onRefreshSuccess: PropTypes.func,
-};
 
 /**
  * 마지막 갱신 시간 포맷
@@ -316,9 +308,3 @@ export default function LeagueRecordSection({ partnerRecords, loading, error, on
     );
 }
 
-LeagueRecordSection.propTypes = {
-    partnerRecords: PropTypes.array.isRequired,
-    loading: PropTypes.bool.isRequired,
-    error: PropTypes.string,
-    onRecordUpdate: PropTypes.func,  // 갱신 성공 시 부모에게 알림
-};

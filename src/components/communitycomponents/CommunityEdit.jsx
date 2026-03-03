@@ -2,12 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-    fetchCommunityForEdit,
-    fetchTopCommented,
-    fetchTopViewed,
-    //updateCommunity,
-} from '../../api/communityApi.js';
+import { fetchCommunityForEdit, fetchTopCommented, fetchTopViewed } from '../../api/communityApi.js';
 import { useUpdateCommunity } from '../../hooks/queries/useCommunityQueries';
 import LeftSidebar from '../../layout/CommunityLayout/LeftSidebar.jsx';
 import RightSidebar from '../../layout/CommunityLayout/RightSidebar.jsx';
@@ -449,15 +444,6 @@ const CommunityEdit = () => {
 
                     {/* 제출 버튼 */}
                     <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
-                        {/*<button*/}
-                        {/*    type="submit"*/}
-                        {/*    className="flex-1 sm:flex-initial px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center"*/}
-                        {/*>*/}
-                        {/*    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">*/}
-                        {/*        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>*/}
-                        {/*    </svg>*/}
-                        {/*    수정 완료*/}
-                        {/*</button>*/}
                         <button
                             type="submit"
                             disabled={updateMutation.isPending}

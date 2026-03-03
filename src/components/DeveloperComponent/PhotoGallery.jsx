@@ -1,6 +1,6 @@
 // src/components/DeveloperComponent/PhotoGallery.jsx
 
-import React, {useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import PropTypes from "prop-types";
 import {getUserUploads} from "../../api/fileUploadAPI.js";  // 업로드 메타데이터(여기에 sourcePage 포함) 가져오는 API
 
@@ -77,22 +77,3 @@ PhotoGallery.propTypes = {
     userId: PropTypes.string.isRequired,
     className: PropTypes.string,
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

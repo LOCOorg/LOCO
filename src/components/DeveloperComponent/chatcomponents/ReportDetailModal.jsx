@@ -1,6 +1,3 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-
 const ReportDetailModal = ({ isOpen, onClose, reportData }) => {
     if (!isOpen || !reportData) return null;
 
@@ -146,12 +143,6 @@ const ReportDetailModal = ({ isOpen, onClose, reportData }) => {
             </div>
         </div>
     );
-};
-
-ReportDetailModal.propTypes = {
-    isOpen: PropTypes.bool.isRequired,
-    onClose: PropTypes.func.isRequired,
-    reportData: PropTypes.object
 };
 
 export default ReportDetailModal;

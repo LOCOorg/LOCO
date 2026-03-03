@@ -173,7 +173,12 @@ export const usePoll = (community, currentUserId, isAdmin) => {
     const canDeletePoll = (poll) => {
         if (!currentUserId) return false;
         if (isAdmin) return true;
-        if (community?.userId === currentUserId) return true;
+        
+        const postAuthorId = typeof community?.userId === 'object' 
+            ? community.userId._id 
+            : community?.userId;
+            
+        if (postAuthorId === currentUserId) return true;
         if (poll?.createdBy === currentUserId) return true;
         return false;
     };

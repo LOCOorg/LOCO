@@ -26,9 +26,9 @@ export const fetchCommunities = async (
 };
 
 
-export const fetchCommunityById = async (id) => {
+export const fetchCommunityById = async (id, incrementViews = true) => {
     try {
-        const response = await instance.get(`/api/communities/${id}`);
+        const response = await instance.get(`/api/communities/${id}?incrementViews=${incrementViews}`);
         return response.data;
     } catch (error) {
         console.error("fetchCommunityById error:", error);

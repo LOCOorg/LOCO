@@ -1,6 +1,5 @@
 // src/stores/notificationStore.js
 import { create } from 'zustand';
-import { updateUserPrefs } from "../api/userAPI.js";
 import useAuthStore from "./authStore.js";
 import { setEncryptedItem, getDecryptedItem, removeEncryptedItem } from '../utils/storageUtils.js';
 

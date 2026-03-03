@@ -18,16 +18,6 @@ export const getPRUserList = async (params) => {
         // axiosInstance 에서는 이미 baseURL, withCredentials 등을 전역 설정해두었다고 가정
         const { data } = await instance.get(`/api/pr/list`, { params });
 
-        // 만약 백엔드가 { success, users, total } 형태로 내려온다면,
-        // 호출부에서 매번 data.users 를 구조분해하기 번거로울 수 있으니
-        // 필요한 형태로 가공해서 리턴해도 좋습니다:
-        //
-        // return {
-        //   users:   data.users,
-        //   total:   data.total,
-        //   success: data.success,
-        // };
-
         return data;
     } catch (err) {
         console.error("[PR] getPRUserList error:", err);

@@ -1,6 +1,5 @@
 //서브사진 클릭 메인사진 변경
 //src/components/MyPageComponent/PhotoGallery.jsx
-import React from 'react';
 import useImageModal from '../../hooks/useImageModal.jsx';
 
 

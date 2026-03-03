@@ -193,7 +193,7 @@ const TermsManagement = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {dayjs(term.effectiveDate).format('YYYY-MM-DD HH:mm')}
-                                            {dayjs().isAfter(term.effectiveDate) ? 
+                                            {dayjs().isAfter(term.effectiveDate) ?
                                                 <span className="ml-2 text-green-600 text-xs font-bold">(시행중)</span> : 
                                                 <span className="ml-2 text-orange-600 text-xs font-bold">(예정)</span>
                                             }

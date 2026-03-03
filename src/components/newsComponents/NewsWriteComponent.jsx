@@ -1,6 +1,5 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { newsService } from '../../api/newsAPI.js';
 import { editorService } from '../../api/editorAPI.js';
 import { toast } from 'react-toastify';
 import NovelEditor from '../editor/NovelEditor.jsx';

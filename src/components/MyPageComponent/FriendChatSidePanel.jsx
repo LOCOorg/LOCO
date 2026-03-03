@@ -3,20 +3,11 @@ import useAuthStore from '../../stores/authStore';
 import useFriendChatStore from '../../stores/useFriendChatStore';
 import { NotificationContext } from '../../hooks/NotificationContext';
 import {
-    // fetchChatRooms,
-    // fetchMessages,
     markRoomAsRead,
-    // getUnreadCount,
     getUnreadCountsBatch,
     fetchLastMessagesBatch
 } from '../../api/chatAPI';
 import { useSocket } from '../../hooks/useSocket';
-import {
-    // acceptFriendRequest,
-    // declineFriendRequest,
-    // getFriendRequestList,
-    // getFriendRequestCount,
-} from '../../api/userAPI';
 import { getUserFriendProfile } from '../../api/userLightAPI.js';
 import {
     useFriendRequestCount,
@@ -211,52 +202,6 @@ const FriendChatSidePanel = () => {
         });
     }, [setRoomSummary]);
 
-    // // 개별 채팅방 요약 정보 업데이트 함수
-    // const updateRoomSummary = useCallback(async (roomId) => {
-    //     if (!user?._id || !roomId) return;
-    //
-    //     try {
-    //         const data = await fetchMessages(roomId, 1, 1);
-    //         const messages = data.messages;
-    //
-    //         if (messages && messages.length > 0) {
-    //             const lastMessage = messages[0];
-    //
-    //             // ✅ setRoomSummary를 함수형 업데이트로 변경
-    //             setRoomSummary(prev => {
-    //                 // 기존 상태에서 현재 방의 정보 가져오기
-    //                 const existing = prev[roomId] || { unreadCount: 0 };
-    //
-    //                 return {
-    //                     ...prev,
-    //                     [roomId]: {
-    //                         lastMessage: lastMessage?.text || '',
-    //                         lastMessageTime: lastMessage?.textTime || lastMessage?.timestamp || null,
-    //                         unreadCount: existing.unreadCount  // ✅ 기존 값 유지
-    //                     }
-    //                 };
-    //             });
-    //         }
-    //         // 아래 코드를 위 코드로 바꿈
-    //         // const { unreadCount } = await getUnreadCount(roomId, user._id);
-    //         //
-    //         // if (messages && messages.length > 0) {
-    //         //     const lastMessage = messages[0];
-    //         //
-    //         //     const summary = {
-    //         //         lastMessage: lastMessage?.text || '',
-    //         //         lastMessageTime: lastMessage?.textTime || lastMessage?.timestamp || null,
-    //         //         unreadCount: unreadCount || 0
-    //         //     };
-    //         //
-    //         //     setRoomSummary(roomId, summary);
-    //         // }
-    //     } catch (error) {
-    //         console.error(`채팅방 ${roomId} 요약 정보 업데이트 실패:`, error);
-    //     }
-    // }, [user?._id, setRoomSummary]);
-
-
     const loadRoomSummaries = useCallback(async () => {
         if (!friendRooms || friendRooms.length === 0 || !user?._id) return;
 
@@ -322,77 +267,6 @@ const FriendChatSidePanel = () => {
             setRoomSummaries(fallbackSummaries);
         }
     }, [friendRooms, user?._id, setRoomSummaries]);
-
-
-
-    // 전체 채팅방 요약 정보 로드
-    // const loadRoomSummaries = useCallback(async () => {
-    //     if (!friendRooms || friendRooms.length === 0 || !user?._id) return;
-    //
-    //     const summaries = {};
-    //
-    //     for (const room of friendRooms) {
-    //         if (!room || !room.roomId) continue;
-    //
-    //         try {
-    //             const data = await fetchMessages(room.roomId, 1, 1);
-    //             const messages = data.messages;
-    //             const { unreadCount } = await getUnreadCount(room.roomId, user._id);
-    //
-    //             if (messages && messages.length > 0) {
-    //                 const lastMessage = messages[0];
-    //
-    //                 summaries[room.roomId] = {
-    //                     lastMessage: lastMessage?.text || '',
-    //                     lastMessageTime: lastMessage?.textTime || lastMessage?.timestamp || null,
-    //                     unreadCount: unreadCount || 0
-    //                 };
-    //             } else {
-    //                 summaries[room.roomId] = {
-    //                     lastMessage: '메시지가 없습니다.',
-    //                     lastMessageTime: null,
-    //                     unreadCount: unreadCount || 0
-    //                 };
-    //             }
-    //         } catch (error) {
-    //             console.error(`채팅방 ${room.roomId} 요약 정보 로드 실패:`, error);
-    //             summaries[room.roomId] = {
-    //                 lastMessage: '정보 로드 실패',
-    //                 lastMessageTime: null,
-    //                 unreadCount: 0
-    //             };
-    //         }
-    //     }
-    //
-    //     setRoomSummaries(summaries);
-    // }, [friendRooms, user?._id, setRoomSummaries]);
-
-    // // 채팅방 로드
-    // const loadRooms = useCallback(async () => {
-    //     if (!user?._id) return;
-    //     try {
-    //         const rooms = await fetchChatRooms({ roomType: 'friend', isActive: true  });
-    //         if (!rooms || !Array.isArray(rooms)) return;
-    //
-    //         const myRooms = rooms.filter((r) =>
-    //             r?.chatUsers &&
-    //             Array.isArray(r.chatUsers) &&
-    //             r.chatUsers.some((u) => u?._id === user._id)
-    //         );
-    //
-    //         const mapped = myRooms
-    //             .filter((r) => r?.isActive)
-    //             .map((r) => ({
-    //                 roomId: r._id,
-    //                 friend: r.chatUsers?.find((u) => u?._id !== user._id),
-    //             }))
-    //             .filter(room => room && room.friend && room.roomId);
-    //
-    //         setFriendRooms(mapped);
-    //     } catch (e) {
-    //         console.error('친구 채팅방 조회 실패', e);
-    //     }
-    // }, [user?._id, setFriendRooms]);
 
     // 채팅방 로드 대체
     // 🆕 React Query 데이터를 Zustand Store에 동기화

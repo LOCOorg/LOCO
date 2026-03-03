@@ -18,7 +18,11 @@ const queryClient = new QueryClient({
             gcTime: 300000,             // 5분간 캐시 유지
             refetchOnWindowFocus: false, // 창 포커스 시 자동 재요청 비활성화
             retry: 1,                    // 실패 시 1회 재시도
+            throwOnError: true,          // ✅ 에러 발생 시 ErrorBoundary(errorElement)로 던짐
         },
+        mutations: {
+            throwOnError: false,         // 생성/수정/삭제는 보통 직접 처리하므로 false가 안전해요
+        }
     },
 });
 

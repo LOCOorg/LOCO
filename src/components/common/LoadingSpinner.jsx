@@ -1,4 +1,3 @@
-import React from 'react';
 
 const LoadingSpinner = ({ size = 'md', text = '로딩 중...' }) => {
     const sizeClasses = {

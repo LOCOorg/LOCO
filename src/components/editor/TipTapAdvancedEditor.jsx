@@ -1,4 +1,4 @@
-import React, { forwardRef, useImperativeHandle, useCallback, useState } from 'react';
+import { forwardRef, useImperativeHandle, useCallback, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
