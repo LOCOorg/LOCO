@@ -27,7 +27,7 @@ const ReportDetailModal = ({ reportId, onClose, onUpdateReport }) => {
     const getImgSrc = (path) => {
         if (!path) return '';
         if (path.startsWith('http')) return path;
-        const host = import.meta.env.VITE_API_HOST || 'http://localhost:3000';
+        const host = import.meta.env.VITE_API_HOST;
         return `${host}${path.startsWith('/') ? '' : '/'}${path}`;
     };
 
@@ -81,7 +81,7 @@ const ReportDetailModal = ({ reportId, onClose, onUpdateReport }) => {
     const goTarget = () => {
         if (!localReport?.anchor) return;
         const { parentId, type, targetId } = localReport.anchor;
-        window.open(`/community/${parentId}#${type}-${targetId}`, '_blank');
+        window.open(`/community/${parentId}#${type}-${targetId}`, '_blank', 'noopener,noreferrer');
     };
 
     if (!localReport) return null;
@@ -238,7 +238,7 @@ const ReportDetailModal = ({ reportId, onClose, onUpdateReport }) => {
                                                         src={getImgSrc(img)} 
                                                         alt="증거"
                                                         className="w-24 h-24 object-cover rounded-lg border cursor-pointer hover:ring-2 ring-orange-400 transition-all shadow-sm"
-                                                        onClick={() => window.open(getImgSrc(img), '_blank')}
+                                                        onClick={() => window.open(getImgSrc(img), '_blank', 'noopener,noreferrer')}
                                                     />
                                                 ))}
                                             </div>
@@ -277,14 +277,14 @@ const ReportDetailModal = ({ reportId, onClose, onUpdateReport }) => {
                                                         src={getImgSrc(localReport.offenderId?.profilePhoto)} 
                                                         className="w-20 h-20 rounded-full object-cover border-2 border-purple-200 shadow-md cursor-pointer"
                                                         alt="프로필"
-                                                        onClick={() => window.open(getImgSrc(localReport.offenderId?.profilePhoto), '_blank')}
+                                                        onClick={() => window.open(getImgSrc(localReport.offenderId?.profilePhoto), '_blank', 'noopener,noreferrer')}
                                                     />
                                                 </div>
                                                 <div className="flex-1">
                                                     <span className="text-[10px] text-gray-400 mb-1 block">앨범 사진 ({localReport.offenderId?.photo?.length || 0})</span>
                                                     <div className="flex flex-wrap gap-2">
                                                         {localReport.offenderId?.photo?.map((p, i) => (
-                                                            <img key={i} src={getImgSrc(p)} className="w-12 h-12 rounded-md object-cover border shadow-sm cursor-pointer" alt="앨범" onClick={() => window.open(getImgSrc(p), '_blank')} />
+                                                            <img key={i} src={getImgSrc(p)} className="w-12 h-12 rounded-md object-cover border shadow-sm cursor-pointer" alt="앨범" onClick={() => window.open(getImgSrc(p), '_blank', 'noopener,noreferrer')} />
                                                         ))}
                                                     </div>
                                                 </div>
