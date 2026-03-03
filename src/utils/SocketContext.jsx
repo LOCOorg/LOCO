@@ -59,7 +59,7 @@ export const SocketProvider = ({ children }) => {
             return;
         }
 
-        const SOCKET_URL = import.meta.env.VITE_API_SOCKET || 'http://localhost:3000';
+        const SOCKET_URL = import.meta.env.VITE_API_SOCKET;
         const newSocket = io(SOCKET_URL, {
             transports: ['websocket', 'polling'],
             reconnection: true,
