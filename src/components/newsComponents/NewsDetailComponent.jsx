@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import {useParams, Link, useNavigate} from 'react-router-dom';
 import { newsService } from '../../api/newsAPI.js';
 import { toast } from 'react-toastify';
@@ -148,7 +149,7 @@ const NewsDetailComponent = () => {
             <div className="prose max-w-none mb-8">
                 <div 
                     className="text-gray-800 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: news.content }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(news.content) }}
                 />
             </div>
 
