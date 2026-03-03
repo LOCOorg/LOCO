@@ -1,6 +1,6 @@
 // File: src/hooks/useChatConversation.js
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import instance from '../api/axiosInstance.js';
 
 /**
  * 채팅 모드에서 활성 방(active)과 종료된 랜덤 방(history)을
@@ -21,7 +21,7 @@ export function useChatConversation(chatUser, mode) {
             (async () => {
                 try {
                     // ─ 활성 채팅방 조회 ─
-                    const activeRes = await axios.get('/api/chat/rooms', {
+                    const activeRes = await instance.get('/api/chat/rooms', {
                         params: { chatUsers: chatUser._id }
                     });
                     
@@ -35,7 +35,7 @@ export function useChatConversation(chatUser, mode) {
                     }));
 
                     // ─ 종료된 랜덤채팅 히스토리 조회 ─
-                    const histRes = await axios.get('/api/chat/search/chat-room-history', {
+                    const histRes = await instance.get('/api/chat/search/chat-room-history', {
                         params: {
                             'meta.chatUsers': chatUser._id,
                             page: 1,
@@ -94,7 +94,7 @@ export function useChatConversation(chatUser, mode) {
                     ? { includeDeleted: true }
                     : {};
 
-            axios
+            instance
                 .get(`/api/chat/messages/${selectedRoom._id}`, { params })
                 .then(res => setMessages(res.data.messages || []))
                 .catch(console.error);
