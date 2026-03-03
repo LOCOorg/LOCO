@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import DOMPurify from 'dompurify';
 import { getActiveTerms } from '../../api/termAPI';
 import LoadingSpinner from '../common/LoadingSpinner';
 
@@ -21,7 +22,7 @@ const TermsViewer = ({ type }) => {
                 {term ? (
                     <div 
                         className="prose prose-blue max-w-none"
-                        dangerouslySetInnerHTML={{ __html: term.content }} 
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(term.content) }}
                     />
                 ) : (
                     <p className="text-gray-500 text-center py-20">등록된 내용이 없습니다.</p>
