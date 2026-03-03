@@ -21,21 +21,15 @@ export default function LogoutButton() {
             const response = await logoutAPI();
             console.log('네이버 연동해제 포함 로그아웃 성공:', response);
             
-            // 2) 프론트엔드 상태 초기화
+            // 2) 프론트엔드 상태 초기화 (authStore.logout()에서 스토리지 정리 포함)
             clearUser();
-            localStorage.clear();
-            sessionStorage.clear();
-            
-            console.log('로그아웃 완료 - 메인 페이지로 이동');
             navigate('/');
-            
+
         } catch (err) {
             console.error("로그아웃 처리 중 오류:", err);
-            
-            // 오류가 발생해도 프론트엔드 상태는 초기화
+
+            // 오류가 발생해도 프론트엔드 상태는 초기화 (authStore.logout()에서 처리됨)
             clearUser();
-            localStorage.clear();
-            sessionStorage.clear();
             navigate('/');
             
         } finally {

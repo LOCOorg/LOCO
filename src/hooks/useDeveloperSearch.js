@@ -1,6 +1,6 @@
 // src/hooks/useDeveloperSearch.js - 성능 모니터링이 추가된 최적화 버전
 import { useState, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
+import instance from '../api/axiosInstance.js';
 
 /**
  * 개발자 페이지 전용 최적화된 검색 훅
@@ -89,7 +89,7 @@ export function useDeveloperSearch({
                 limit: pageSize
             });
             
-            const res = await axios.get('/api/developer/users', { params });
+            const res = await instance.get('/api/developer/users', { params });
             const searchDuration = Date.now() - requestStartTime.current;
             
             console.log('✅ [최적화된 검색] 응답:', {
@@ -265,7 +265,7 @@ export function useCacheStatus() {
     const fetchCacheStatus = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await axios.get('/api/developer/cache-status');
+            const res = await instance.get('/api/developer/cache-status');
             setCacheStatus(res.data);
             console.log('📊 [캐시 상태]:', res.data);
         } catch (error) {

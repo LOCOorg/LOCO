@@ -11,7 +11,7 @@ import ChatMessageView from "./chatcomponents/ChatMessageView.jsx";
 import {useChatConversation} from "../../hooks/useChatConversation";
 import HistoryPanel from "./HistoryPanel.jsx";
 import {useSocket} from "../../hooks/useSocket.js";
-import axios from "axios";
+import instance from "../../api/axiosInstance.js";
 import ProfanityManager from './ProfanityManager.jsx'; // 비속어 관리 컴포넌트 import
 
 const PAGE_SIZE = 30;
@@ -68,7 +68,7 @@ const DeveloperComponent = () => {
         if (mode === 'chat' && selectedRoom) {
             console.log('🔍 [신고조회] API 호출:', `/api/chat/rooms/${selectedRoom._id}/reported-messages`);
 
-            axios.get(`/api/chat/rooms/${selectedRoom._id}/reported-messages`)
+            instance.get(`/api/chat/rooms/${selectedRoom._id}/reported-messages`)
                 .then(res => {
                     console.log('🚨 [신고조회] 응답 전체:', res.data);
                     console.log('🚨 [신고조회] reportedMessages:', res.data.reportedMessages);
@@ -100,7 +100,7 @@ const DeveloperComponent = () => {
     }, [mode, selectedRoom]);
 
     useEffect(() => {
-        axios
+        instance
             .get("/api/user/user-count")
             .then(res => {
                 if (res.data.success) setTotalUsers(res.data.count);
@@ -108,7 +108,7 @@ const DeveloperComponent = () => {
             .catch(err => console.error(err));
 
         // 2) 성별별 카운트
-        axios.get("/api/user/gender-count")
+        instance.get("/api/user/gender-count")
             .then(res => {
                 if (res.data.success) {
                     setMaleUsers(res.data.male);
@@ -119,7 +119,7 @@ const DeveloperComponent = () => {
 
 
         // 2) 소셜 기반 성별 집계
-        axios
+        instance
             .get("/api/user/social-gender-count")
             .then(res => {
                 if (res.data.success) {
@@ -131,7 +131,7 @@ const DeveloperComponent = () => {
             
         // 🔧 3) 온라인 통계 조회 및 실시간 업데이트 리스너 등록
         const fetchOnlineStats = () => {
-            axios
+            instance
                 .get("/api/online-status/stats")
                 .then(res => {
                     if (res.data.success) {
