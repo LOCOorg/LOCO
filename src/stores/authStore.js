@@ -1,6 +1,22 @@
 // src/stores/authStore.js
 import { create } from 'zustand';
 import { logoutAPI } from '../api/authAPI';
+import { removeEncryptedItem } from '../utils/storageUtils.js';
+
+// L-06 보안 조치: 로그아웃 시 삭제할 localStorage 키 목록
+const STORAGE_KEYS_TO_CLEAR = [
+    'notifications',
+    'friendReqEnabled',
+    'toastEnabled',
+    'chatPreviewEnabled',
+    'wordFilterEnabled',
+    'friend-chat-storage',
+];
+
+const clearAuthStorage = () => {
+    STORAGE_KEYS_TO_CLEAR.forEach(key => removeEncryptedItem(key));
+    sessionStorage.clear();
+};
 
 const useAuthStore = create((set) => ({
     user: undefined,
@@ -14,24 +30,17 @@ const useAuthStore = create((set) => ({
 
     logout: async  () => {
         try {
-            console.log('🔴 로그아웃 시작...');
-
             // 1. 백엔드 로그아웃 API 호출 (네이버 연동해제 + 쿠키 삭제)
             await logoutAPI();
-            console.log('✅ 백엔드 로그아웃 완료');
 
             // 2. 프론트엔드 상태 초기화
-            localStorage.clear();
-            sessionStorage.clear();
+            clearAuthStorage();
             set({ user: null, accessToken: null, isLoading: false });
-
-            console.log('✅ 로그아웃 완료');
         } catch (error) {
-            console.error('❌ 로그아웃 중 오류:', error);
+            console.error('로그아웃 중 오류:', error);
 
             // 오류 발생해도 프론트엔드 상태는 초기화
-            localStorage.clear();
-            sessionStorage.clear();
+            clearAuthStorage();
             set({ user: null, accessToken: null, isLoading: false });
         }
     },
