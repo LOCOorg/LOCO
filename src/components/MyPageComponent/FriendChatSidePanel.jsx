@@ -40,7 +40,7 @@ import FriendListPanel from "./FriendListPanel.jsx";
 import ChatOverlay from "../chatcomponents/ChatOverlay.jsx";
 import { filterProfanity } from '../../utils/profanityFilter.js';
 import useNotificationStore from '../../stores/notificationStore.js';
-import { debounce } from 'lodash';
+import debounce from 'lodash.debounce';
 import CommonModal from '../../common/CommonModal.jsx';
 
 const FriendChatSidePanel = () => {
