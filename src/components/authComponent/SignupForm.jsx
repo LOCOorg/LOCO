@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import DOMPurify from 'dompurify';
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../api/axiosInstance";
 import { checkNickname } from "../../api/userAPI";
@@ -15,7 +16,6 @@ const SignupForm = () => {
     const [nickname, setNickname] = useState("");
     const [email, setEmail] = useState("");
     const [formGender, setFormGender] = useState("");
-    const [pass, setPass] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
     const [deactivationCount, setDeactivationCount] = useState(0);
 
@@ -182,7 +182,7 @@ const SignupForm = () => {
         setModalTitle(`${labels[term.type] || term.type} (v${term.version})`);
         setModalContent(
             <div className="text-sm text-gray-700 max-h-[60vh] overflow-y-auto p-2 border border-gray-100 rounded bg-gray-50">
-                <div dangerouslySetInnerHTML={{ __html: term.content }} />
+                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(term.content) }} />
             </div>
         );
     };
@@ -271,7 +271,6 @@ const SignupForm = () => {
             info,
             nickname,
             email,
-            pass,
             deactivationCount,
             termIds: agreedTermIds, // 약관 동의 ID 목록 전송
         };
