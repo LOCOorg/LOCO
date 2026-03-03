@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useCallback, useRef} from 'react';
-import axios from 'axios';
+import instance from '../../api/axiosInstance.js';
 
 const ProfanityManager = () => {
     const [words, setWords] = useState([]);
@@ -24,9 +24,8 @@ const ProfanityManager = () => {
 
         try {
             setLoading(true);
-            const response = await axios.get('/api/profanity/words', {
-                params: { page, limit: 50 },
-                withCredentials: true
+            const response = await instance.get('/api/profanity/words', {
+                params: { page, limit: 50 }
             });
             const data = response.data;
             if (data.success) {
@@ -60,7 +59,7 @@ const ProfanityManager = () => {
         if (!newWord.trim()) return;
 
         try {
-            await axios.post('/api/profanity/words', { word: newWord.trim() }, { withCredentials: true });
+            await instance.post('/api/profanity/words', { word: newWord.trim() });
             setNewWord('');
             setCurrentPage(1);
             fetchWords(1);
@@ -77,9 +76,8 @@ const ProfanityManager = () => {
         const currentScrollPosition = scrollContainerRef.current?.scrollTop || 0;
 
         try {
-            await axios.delete('/api/profanity/words', {
-                data: { word: wordToDelete },
-                withCredentials: true
+            await instance.delete('/api/profanity/words', {
+                data: { word: wordToDelete }
             });
 
             // state에서 단어 제거
