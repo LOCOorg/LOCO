@@ -82,11 +82,14 @@ const MainBannerComponent = () => {
                 console.error('배너 조회수 증가 실패 (백그라운드):', error);
             });
 
-            // 링크는 즉시 이동
-            if (banner.linkUrl.startsWith('http')) {
-                window.open(banner.linkUrl, '_blank', 'noopener,noreferrer');
+            // A-09 보안 조치: URL 허용목록 검증 (http://, https://, / 만 허용)
+            const url = banner.linkUrl;
+            if (url.startsWith('https://') || url.startsWith('http://')) {
+                window.open(url, '_blank', 'noopener,noreferrer');
+            } else if (url.startsWith('/')) {
+                window.location.href = url;
             } else {
-                window.location.href = banner.linkUrl;
+                console.warn('허용되지 않는 배너 URL 형식:', url);
             }
         }
     };
@@ -117,7 +120,7 @@ const MainBannerComponent = () => {
         }
         
         // uploads로 시작하는 경우 API_HOST와 결합
-        const baseUrl = import.meta.env.VITE_API_HOST || 'http://localhost:3000';
+        const baseUrl = import.meta.env.VITE_API_HOST;
         
         // 경로 정규화 (이중 슬래시 방지)
         const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
