@@ -26,7 +26,10 @@ const FORBIDDEN_WORDS = ['관리자', 'admin', 'root', 'system', '운영자'];
  * validateNicknameClient("a")
  * // → { valid: false, message: "닉네임은 최소 2자 이상이어야 합니다." }
  */
-export const validateNicknameClient = (nickname) => {
+export const validateNicknameClient = (rawNickname) => {
+    // L-02 보안 조치: Unicode 정규화 (NFC) — 조합형/분해형 문자 통일
+    const nickname = rawNickname ? rawNickname.normalize('NFC') : rawNickname;
+
     // 1️⃣ 빈 값 체크
     if (!nickname || nickname.trim() === '') {
         return {

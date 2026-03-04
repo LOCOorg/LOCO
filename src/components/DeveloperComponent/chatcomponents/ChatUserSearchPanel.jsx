@@ -1,6 +1,6 @@
 // C:\Users\wjdtj\WebstormProjects\LOCO\src\components\DeveloperComponent\chatcomponents\ChatUserSearchPanel.jsx
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import instance from '../../../api/axiosInstance.js';
 import UserListItem from '../UserListItem.jsx';
 
 const ChatUserSearchPanel = ({ selectedUser, setSelectedUser }) => {
@@ -8,7 +8,7 @@ const ChatUserSearchPanel = ({ selectedUser, setSelectedUser }) => {
     const [users, setUsers] = useState([]);
 
     useEffect(() => {
-        axios
+        instance
             .get(`/api/developer/users?query=${encodeURIComponent(query)}`)
             .then(res => setUsers(res.data.results || []))
             .catch(console.error);

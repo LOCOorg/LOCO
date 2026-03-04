@@ -22,6 +22,16 @@ const NaverLoginHandler = () => {
 
     useEffect(() => {
         if (!(code && state)) return;
+
+        // H-08 보안 조치: OAuth state 파라미터 검증 (CSRF 방지)
+        const savedState = sessionStorage.getItem('oauth_state');
+        sessionStorage.removeItem('oauth_state');
+        if (!savedState || state !== savedState) {
+            setAlertMessage('로그인 요청이 유효하지 않습니다. 다시 시도해 주세요.');
+            setIsAlertOpen(true);
+            return;
+        }
+
         (async () => {
             try {
                 const data = await loginWithNaver(code, state);

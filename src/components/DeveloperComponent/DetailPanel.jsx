@@ -2,8 +2,8 @@
 // 이 컴포넌트는 우측 상세 정보 패널로, 선택된 유저의 정보를 편집하고 저장할 수 있도록 합니다.
 // "이름", "전화번호", "생년월일" 필드는 readOnly로 처리되어 있으며,
 // 저장 버튼 클릭 시 PATCH 요청을 통해 서버에 수정된 내용을 저장합니다.
-import { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import instance from "../../api/axiosInstance.js";
 import CommonModal from "../../common/CommonModal";
 
 const modes = [
@@ -27,7 +27,7 @@ const DetailPanel = ({ user, view, setView }) => {
 
     // 마운트 시에 /api/product/names 호출
     useEffect(() => {
-        axios
+        instance
             .get("/api/product/names")
             .then(res => setProductNames(res.data))
             .catch(err => console.error(err));
@@ -66,7 +66,7 @@ const DetailPanel = ({ user, view, setView }) => {
         e.preventDefault();
         try {
             // PATCH 요청: 선택된 유저의 _id를 경로에 포함
-            const response = await axios.patch(`/api/developer/users/${formData._id}`, formData);
+            const response = await instance.patch(`/api/developer/users/${formData._id}`, formData);
             setAlertMessage("User info saved successfully!");
             setIsAlertOpen(true);
             // 필요에 따라 response 데이터를 이용해 state를 업데이트할 수 있습니다.

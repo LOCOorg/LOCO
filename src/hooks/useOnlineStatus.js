@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSocket } from './useSocket';
-import axios from 'axios';
+import instance from '../api/axiosInstance.js';
 import debounce from 'lodash.debounce';
 
 /**
@@ -36,7 +36,7 @@ export const useOnlineStatus = (userIds = []) => {
             
             setIsLoading(true);
             try {
-                const response = await axios.post('/api/online-status/bulk', {
+                const response = await instance.post('/api/online-status/bulk', {
                     userIds: newIds
                 });
                 
@@ -59,7 +59,7 @@ export const useOnlineStatus = (userIds = []) => {
         
         setIsLoading(true);
         try {
-            const response = await axios.post('/api/online-status/bulk', {
+            const response = await instance.post('/api/online-status/bulk', {
                 userIds: userIds
             });
             

@@ -8,7 +8,7 @@ import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
 import useNotificationStore from '../../stores/notificationStore.js';
 import { filterProfanity } from '../../utils/profanityFilter.js';
 import MessageReportModal from "./MessageReportModal.jsx";
-import { debounce } from 'lodash';
+import debounce from 'lodash.debounce';
 import { useChatMessages } from "../../hooks/queries/useChatQueries.js"; // 추가
 import { useQueryClient } from '@tanstack/react-query'; // 추가
 

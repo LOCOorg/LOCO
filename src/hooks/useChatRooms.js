@@ -1,8 +1,7 @@
 // src/hooks/useChatRooms.js
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-const host = `${import.meta.env.VITE_API_HOST}/api/search`;
+import instance from '../api/axiosInstance.js';
 /**
  * 훅: 채팅방 목록 + 필터(친구/랜덤) + 참여자 검색 + 페이징
  *
@@ -66,7 +65,7 @@ export default function useChatRooms({
                 };
 
                 // API 호출
-                const { data } = await axios.get(`${host}/chat-rooms-all`, { params });
+                const { data } = await instance.get('/api/search/chat-rooms-all', { params });
 
                 // 방 목록 세팅
                 setRooms(data.docs || []);

@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import {useParams, Link, useNavigate} from 'react-router-dom';
 import { newsService } from '../../api/newsAPI.js';
 import { toast } from 'react-toastify';
+import useAuthStore from '../../stores/authStore.js';
 import LoadingSpinner from '../common/LoadingSpinner.jsx';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
 
 const NewsDetailComponent = () => {
     const { id } = useParams();
+    const { user } = useAuthStore();
     const [news, setNews] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
@@ -146,7 +149,7 @@ const NewsDetailComponent = () => {
             <div className="prose max-w-none mb-8">
                 <div 
                     className="text-gray-800 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: news.content }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(news.content) }}
                 />
             </div>
 
